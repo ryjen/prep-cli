@@ -9,6 +9,7 @@ void print_help()
     printf("      : cpppm [-g] update <package>\n");
     printf("      : cpppm check\n");
 }
+
 int main(int argc, char *const argv[])
 {
     arg3::cpppm::repository  repo;
@@ -53,7 +54,8 @@ int main(int argc, char *const argv[])
         }
         else
         {
-            config.set_path(argv[optind++]);
+            const char *arg = argv[optind++];
+
         }
 
         if (config.load())

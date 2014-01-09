@@ -131,7 +131,6 @@ namespace arg3
             return 0;
         }
 
-
         const char *const repository::LOCAL_REPO = ".cpppm";
 
         const char *const repository::GLOBAL_REPO = "/usr/local/share/cpppm";
@@ -195,15 +194,6 @@ namespace arg3
             return 1;
         }
 
-        int repository::build_cmake(const char *path)
-        {
-            char buf[BUFSIZ + 1] = {0};
-
-            snprintf(buf, BUFSIZ, "%s/cmake -DCMAKE_INSTALL_PREFIX:PATH=%s . && make all install", path, get_path().c_str());
-
-            return pipe_command(buf);
-        }
-
         const char *const repository::get_home_dir() const
         {
             char *homedir = getenv("HOME");
@@ -224,6 +214,16 @@ namespace arg3
 
             return homedir;
         }
+
+        int repository::build_cmake(const char *path)
+        {
+            char buf[BUFSIZ + 1] = {0};
+
+            snprintf(buf, BUFSIZ, "%s/cmake -DCMAKE_INSTALL_PREFIX:PATH=%s/%s . && make all install", path, get_home_dir(), get_path().c_str());
+
+            return pipe_command(buf);
+        }
+
         int repository::build_autotools(const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
