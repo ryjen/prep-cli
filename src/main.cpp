@@ -7,6 +7,7 @@ void print_help()
     printf("Syntax: cpppm [-g] install <package>\n");
     printf("      : cpppm [-g] remove <package>\n");
     printf("      : cpppm [-g] update <package>\n");
+    printf("      : cpppm check\n");
 }
 int main(int argc, char *const argv[])
 {
@@ -34,7 +35,7 @@ int main(int argc, char *const argv[])
         return 1;
     }
 
-    if (optind < 0 && optind >= argc)
+    if (optind < 2 && optind >= argc)
     {
         print_help();
         return 1;
@@ -44,12 +45,30 @@ int main(int argc, char *const argv[])
 
     if (!strcmp(command, "install"))
     {
+        arg3::cpppm::package_config config;
+
         if (optind < 0 || optind >= argc)
         {
-            printf("Please specify a git url");
+            config.set_path(".");
+        }
+        else
+        {
+            config.set_path(argv[optind++]);
+        }
+
+        if (config.load())
+        {
+            return repo.get(config);
+        }
+        else
+        {
+            printf("Error %s is not a valid cpppm package\n", config.path().c_str());
             return 1;
         }
-        repo.get(argv[optind++]);
+    }
+    else if (!strcmp(command, "check"))
+    {
+        return 0;
     }
 
 

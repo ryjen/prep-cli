@@ -15,16 +15,18 @@ namespace arg3
         {
         public:
             package_config();
+            package_config(const std::string &path);
             ~package_config();
-            bool load(const std::string &filename);
-            string name() const;
-            string include_dir() const;
-            string source_dir() const;
-            vector<string> link_options() const;
-            vector<string> compile_options() const;
+            bool load();
+            void set_path(const std::string &path);
+            string path() const;
+            const char *name() const;
+            const char *git_url() const;
+            const char *build_system() const;
+            bool is_loaded() const;
         private:
-            vector<string> get_array(const std::string &name) const;
             json_object *values_;
+            string path_;
         };
     }
 }

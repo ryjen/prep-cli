@@ -12,6 +12,11 @@ namespace arg3
 
         }
 
+        package_config::package_config(const std::string &path) : values_(NULL), path_(path)
+        {
+
+        }
+
         package_config::~package_config()
         {
             if (values_ != NULL)
@@ -20,9 +25,29 @@ namespace arg3
                 values_ = NULL;
             }
         }
-        bool package_config::load(const string &filename)
+
+        string package_config::path() const
+        {
+            return path_;
+        }
+
+        void package_config::set_path(const std::string &path)
+        {
+            path_ = path;
+        }
+
+        bool package_config::is_loaded() const
+        {
+            return values_ != NULL;
+        }
+
+        bool package_config::load()
         {
             ifstream file;
+
+            string filename(path_);
+
+            filename += "/cpppm.conf";
 
             file.open(filename);
 
@@ -45,44 +70,22 @@ namespace arg3
             return values_ != NULL;
         }
 
-        string package_config::name() const
+        const char *package_config::name() const
         {
             json_object *obj = json_object_object_get(values_, "name");
             return json_object_get_string(obj);
         }
-        string package_config::include_dir() const
+        const char *package_config::git_url() const
         {
-            json_object *obj = json_object_object_get(values_, "include_dir");
+            json_object *obj = json_object_object_get(values_, "git_url");
             return json_object_get_string(obj);
         }
-        string package_config::source_dir() const
+
+        const char *package_config::build_system() const
         {
-            json_object *obj = json_object_object_get(values_, "source_dir");
+            json_object *obj = json_object_object_get(values_, "build_system");
             return json_object_get_string(obj);
         }
-        vector<string> package_config::get_array(const std::string &name) const
-        {
-            json_object *obj = json_object_object_get(values_, name.c_str());
 
-            int size = json_object_array_length(obj);
-
-            vector<string> values(size);
-
-            for (int i = 0; i < size; i++)
-            {
-                json_object *option = json_object_array_get_idx(obj, i);
-                values.push_back( json_object_get_string(option) );
-            }
-            return values;
-        }
-
-        vector<string> package_config::link_options() const
-        {
-            return get_array("link_options");
-        }
-        vector<string> package_config::compile_options() const
-        {
-            return get_array("compile_options");
-        }
     }
 }
