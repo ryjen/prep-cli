@@ -90,8 +90,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_cpppm_OBJECTS = main.$(OBJEXT) package_config.$(OBJEXT) \
-	repository.$(OBJEXT)
+am_cpppm_OBJECTS = main.$(OBJEXT) argument_resolver.$(OBJEXT) \
+	package_config.$(OBJEXT) repository.$(OBJEXT) util.$(OBJEXT)
 cpppm_OBJECTS = $(am_cpppm_OBJECTS)
 cpppm_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -241,7 +241,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-cpppm_SOURCES = main.cpp package_config.cpp repository.cpp
+cpppm_SOURCES = main.cpp argument_resolver.cpp package_config.cpp repository.cpp util.cpp
 all: all-am
 
 .SUFFIXES:
@@ -329,9 +329,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argument_resolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/repository.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

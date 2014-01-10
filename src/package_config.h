@@ -17,11 +17,10 @@ namespace arg3
             package_config();
             package_config(const std::string &path);
             ~package_config();
-            bool load();
+            int load();
             void set_path(const std::string &path);
             string path() const;
             const char *name() const;
-            const char *git_url() const;
             const char *build_system() const;
             bool is_loaded() const;
         private:

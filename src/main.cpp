@@ -1,5 +1,6 @@
 #include <iostream>
 #include "repository.h"
+#include "argument_resolver.h"
 #include <unistd.h>
 
 void print_help()
@@ -46,27 +47,27 @@ int main(int argc, char *const argv[])
 
     if (!strcmp(command, "install"))
     {
-        arg3::cpppm::package_config config;
+        arg3::cpppm::argument_resolver resolver;
 
         if (optind < 0 || optind >= argc)
         {
-            config.set_path(".");
+            resolver.set_arg(".");
         }
         else
         {
-            const char *arg = argv[optind++];
-
+            resolver.set_arg(argv[optind++]);
         }
 
-        if (config.load())
+        arg3::cpppm::package_config config;
+
+        if (resolver.resolve_package(config))
         {
-            return repo.get(config);
-        }
-        else
-        {
-            printf("Error %s is not a valid cpppm package\n", config.path().c_str());
+            printf("Error %s is not a valid cpppm package\n", resolver.arg().c_str());
             return 1;
         }
+
+        return repo.get(config);
+
     }
     else if (!strcmp(command, "check"))
     {

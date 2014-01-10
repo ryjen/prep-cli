@@ -41,20 +41,25 @@ namespace arg3
             return values_ != NULL;
         }
 
-        bool package_config::load()
+        int package_config::load()
         {
             ifstream file;
 
-            string filename(path_);
+            if (path_.empty())
+                return EXIT_FAILURE;
 
-            filename += "/cpppm.conf";
+            if (values_ != NULL)
+            {
+                json_object_put(values_);
+                values_ = NULL;
+            }
 
-            file.open(filename);
+            file.open(path_ + "/cpppm.conf");
 
             if (!file.is_open())
             {
-                printf("unabel to open %s\n", filename.c_str());
-                return false;
+                printf("unabel to open %s/cpppm.conf\n", path_.c_str());
+                return EXIT_FAILURE;
             }
 
             std::ostringstream os;
@@ -66,18 +71,14 @@ namespace arg3
             if (values_ == NULL)
             {
                 printf("invalid configuration for %s\n", os.str().c_str());
+                return EXIT_FAILURE;
             }
-            return values_ != NULL;
+            return EXIT_SUCCESS;
         }
 
         const char *package_config::name() const
         {
             json_object *obj = json_object_object_get(values_, "name");
-            return json_object_get_string(obj);
-        }
-        const char *package_config::git_url() const
-        {
-            json_object *obj = json_object_object_get(values_, "git_url");
             return json_object_get_string(obj);
         }
 

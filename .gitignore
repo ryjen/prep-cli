@@ -5,3 +5,11 @@ depcomp
 install-sh
 missing
 aclocal.m4
+*.cache
+*.o
+*~
+cpppm
+*.log
+stamp-h1
+.deps
+*.status

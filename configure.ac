@@ -16,6 +16,8 @@ AC_PROG_CC
 AC_CHECK_LIB(arg3json, main)
 AC_CHECK_LIB(json-c, json_tokener_parse)
 AC_CHECK_LIB(git2, git_libgit2_version)
+AC_CHECK_LIB(curl, curl_easy_init)
+AC_CHECK_LIB(z, inflate)
 
 # Checks for header files.
 
