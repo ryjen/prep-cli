@@ -8,33 +8,64 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <cerrno>
+#include <sys/param.h>
 
 namespace arg3
 {
     namespace cpppm
     {
 
-        int pipe_command(const char *buf)
+        int make_temp_file(char *buffer, size_t size)
         {
+            strncpy(buffer, "/tmp/cpppm-XXXXXX", size);
+
+            return mkstemp (buffer);
+        }
+
+        char *make_temp_dir(char *buffer, size_t size)
+        {
+            strncpy(buffer, "/tmp/cpppm-XXXXXX", size);
+
+            return mkdtemp (buffer);
+        }
+
+        int pipe_command(const char *buf, const char *directory)
+        {
+
+            char cur_dir[MAXPATHLEN + 1] = {0};
+
+            if (directory)
+            {
+                if (!getcwd(cur_dir, MAXPATHLEN))
+                {
+                    return EXIT_FAILURE;
+                }
+
+                if (chdir(directory))
+                {
+                    return EXIT_FAILURE;
+                }
+            }
+
             FILE *out = popen(buf, "r");
+            int rval = EXIT_FAILURE;
 
-            if (out == NULL)
+            if (out != NULL)
             {
-                perror("unable to run configuration");
-                exit(1);
+                char line[BUFSIZ + 1] = {0};
+
+                while (fgets(line, BUFSIZ, out) != NULL)
+                    fputs(line, stdout);
+
+                if (pclose(out) != -1)
+                    rval = EXIT_SUCCESS;
             }
 
-            char line[BUFSIZ];
-
-            while (fgets(line, BUFSIZ, out) != NULL)
-                fputs(line, stdout);
-
-            if (pclose(out) == -1)
+            if (directory)
             {
-                perror("could not build");
-                return 1;
+                chdir(cur_dir);
             }
-            return 0;
+            return rval;
         }
 
         int remove_directory(const char *path)

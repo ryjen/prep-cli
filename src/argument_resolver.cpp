@@ -11,6 +11,7 @@
 #include <curl/easy.h>
 #include <zlib.h>
 #include <cassert>
+#include <decompressor.h>
 
 namespace arg3
 {
@@ -75,11 +76,9 @@ namespace arg3
             }
             git_repository_free(repo);
 
-            int rval = resolve_package_directory(config, buffer);
+            config.set_temp_path(true);
 
-            remove_directory(buffer);
-
-            return rval;
+            return resolve_package_directory(config, buffer);
         }
 
         size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
@@ -111,7 +110,7 @@ namespace arg3
             curl_easy_cleanup(curl);
             fclose(fp);
 
-            int rval = resolve_package_tar_gz(config, buffer);
+            int rval = resolve_package_archive(config, buffer);
 
             unlink(buffer);
 
@@ -121,136 +120,17 @@ namespace arg3
 #endif
         }
 
-#ifdef HAVE_LIBZ
-        class decompressor
+        int argument_resolver::resolve_package_archive(package_config &config, const char *path) const
         {
-        public:
-            decompressor() : status_(-1)
-            {}
+            decompressor d(path);
 
-            ~decompressor()
-            {
+            if (d.decompress())
+                return EXIT_FAILURE;
 
-                if (status_ == Z_OK)
-                {
-                    inflateEnd(&strm);
-                    status_ = -1;
-                }
-
-                if (out_ != NULL)
-                {
-                    fclose(out_);
-                    out_ = NULL;
-                }
-                if (in_ != NULL)
-                {
-                    fclose(in_);
-                    in_ = NULL;
-                }
-
-            }
-
-#define windowBits 15
-#define ENABLE_ZLIB_GZIP 32
-
-            int init(const char *path)
-            {
-                char buffer [BUFSIZ + 1] = {0};
-                int fd = -1;
-
-                strncpy(buffer, "/tmp/cpppm-XXXXXX", BUFSIZ);
-
-                if ((fd = mkstemp (buffer)) == -1 || (out_ = fdopen(fd, "wb")) == NULL)
-                    return EXIT_FAILURE;
-
-                if ((in_ = fopen (path, "rb")) == NULL)
-                {
-                    return EXIT_FAILURE;
-                }
-
-                strm.zalloc = Z_NULL;
-                strm.zfree = Z_NULL;
-                strm.opaque = Z_NULL;
-                strm.avail_in = 0;
-                strm.next_in = Z_NULL;
-
-                if ((status_ = inflateInit2 (& strm, windowBits | ENABLE_ZLIB_GZIP)) != Z_OK)
-                {
-                    fprintf(stderr, "unable to initialize decompression\n");
-                    return EXIT_FAILURE;
-                }
-
-                return EXIT_SUCCESS;
-            }
-
-            int decompress()
-            {
-
-                unsigned char in[BUFSIZ] = {0};
-                unsigned char out[BUFSIZ] = {0};
-                int ret;
-
-                do
-                {
-                    strm.avail_in = fread(in, 1, BUFSIZ, in_);
-
-                    if (ferror(in_))
-                    {
-                        return EXIT_FAILURE;
-                    }
-                    if (strm.avail_in == 0)
-                        break;
-                    strm.next_in = in;
-
-                    do
-                    {
-                        strm.avail_out = BUFSIZ;
-                        strm.next_out = out;
-
-                        ret = inflate(&strm, Z_NO_FLUSH);
-                        assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
-                        switch (ret)
-                        {
-                        case Z_NEED_DICT:
-                            ret = Z_DATA_ERROR;     /* and fall through */
-                        case Z_DATA_ERROR:
-                        case Z_MEM_ERROR:
-                            return ret;
-                        }
-
-                        int have = BUFSIZ - strm.avail_out;
-                        if (fwrite(out, 1, have, out_) != have || ferror(out_))
-                        {
-                            return EXIT_FAILURE;
-                        }
-                    }
-                    while (strm.avail_out == 0);
-                    /* done when inflate() says it's done */
-                }
-                while (ret != Z_STREAM_END);
-
-                return ret == Z_STREAM_END ? EXIT_SUCCESS : EXIT_FAILURE;
-            }
-        private:
-            FILE *in_;
-            FILE *out_;
-            z_stream strm;
-            int status_;
-        };
-#endif
-
-        int argument_resolver::resolve_package_tar_gz(package_config &config, const char *path) const
-        {
-#ifdef HAVE_LIBZ
-            decompressor d;
-
-            d.init(path);
+            config.set_temp_path(true);
 
             // decompress
-            return resolve_package_directory(config, path);
-#else
-            return EXIT_FAILURE;
-#endif
+            return resolve_package_directory(config, d.outputPath().c_str());
         }
 
         int argument_resolver::resolve_package_directory(package_config &config, const char *path) const
@@ -270,16 +150,7 @@ namespace arg3
             }
             else if (fileType == 2)
             {
-                if (arg_.rfind(".tar.gz") != std::string::npos || arg_.rfind(".tgz") != std::string::npos)
-                {
-                    // decompress tarball to temp folder
-                    // run on temp folder
-                    return resolve_package_tar_gz(config, arg_.c_str());
-                }
-                else
-                {
-                    return EXIT_FAILURE;
-                }
+                return resolve_package_archive(config, arg_.c_str());
             }
             else if (arg_.find("://") != std::string::npos)
             {

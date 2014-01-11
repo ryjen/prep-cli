@@ -34,13 +34,13 @@ int main(int argc, char *const argv[])
     catch (const std::exception &e)
     {
         std::cerr << e.what() << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (optind < 2 && optind >= argc)
     {
         print_help();
-        return 1;
+        return EXIT_FAILURE;
     }
 
     char *command = argv[optind++];
@@ -63,7 +63,7 @@ int main(int argc, char *const argv[])
         if (resolver.resolve_package(config))
         {
             printf("Error %s is not a valid cpppm package\n", resolver.arg().c_str());
-            return 1;
+            return EXIT_FAILURE;
         }
 
         return repo.get(config);
@@ -71,9 +71,8 @@ int main(int argc, char *const argv[])
     }
     else if (!strcmp(command, "check"))
     {
-        return 0;
     }
 
 
-    return 0;
+    return EXIT_SUCCESS;
 }

@@ -25,7 +25,7 @@ namespace arg3
             int resolve_package_git(package_config &config) const;
             int resolve_package_directory(package_config &config, const char *path) const;
             int resolve_package_download(package_config &config) const;
-            int resolve_package_tar_gz(package_config &config, const char *path) const;
+            int resolve_package_archive(package_config &config, const char *path) const;
             std::string arg_;
         };
     }

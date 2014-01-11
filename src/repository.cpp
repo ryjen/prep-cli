@@ -65,17 +65,26 @@ namespace arg3
         {
             assert(config.is_loaded());
 
+            int rval = EXIT_FAILURE;
+
             if (!strcmp(config.build_system(), "autotools"))
             {
-                return build_autotools(config.path().c_str());
+                rval = build_autotools(config.path().c_str());
             }
             else if (!strcmp(config.build_system(), "cmake"))
             {
-                return build_cmake(config.path().c_str());
+                rval = build_cmake(config.path().c_str());
+            }
+            else
+            {
+                printf("unknown build system\n");
             }
 
-            printf("unknown build system\n");
-            return 1;
+            if (config.is_temp_path())
+            {
+                remove_directory(config.path().c_str());
+            }
+            return rval;
         }
 
         const char *const repository::get_home_dir() const
@@ -90,7 +99,7 @@ namespace arg3
                 if (pw == NULL)
                 {
                     printf("Failed to get user home directory\n");
-                    return "";
+                    exit(EXIT_FAILURE);
                 }
 
                 homedir = pw->pw_dir;
@@ -103,18 +112,30 @@ namespace arg3
         {
             char buf[BUFSIZ + 1] = {0};
 
-            snprintf(buf, BUFSIZ, "%s/cmake -DCMAKE_INSTALL_PREFIX:PATH=%s/%s . && make all install", path, get_home_dir(), get_path().c_str());
+            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", get_path().c_str());
 
-            return pipe_command(buf);
+            if (pipe_command(buf, path) || pipe_command("make install", path))
+            {
+                perror("unable to execute commands");
+                return EXIT_FAILURE;
+            }
+            return EXIT_SUCCESS;
         }
 
         int repository::build_autotools(const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
 
-            snprintf(buf, BUFSIZ, "%s/configure --prefix=%s/%s && make all install", path, get_home_dir(), get_path().c_str());
+            getcwd(buf, BUFSIZ);
 
-            return pipe_command(buf);
+            snprintf(buf, BUFSIZ, "./configure --prefix=%s", get_path().c_str());
+
+            if (pipe_command(buf, path) || pipe_command("make all install", path))
+            {
+                perror("unable to execute commands");
+                return EXIT_FAILURE;
+            }
+            return EXIT_SUCCESS;
         }
 
         int repository::get_from_folder(const char *path)

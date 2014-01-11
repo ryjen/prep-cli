@@ -41,6 +41,16 @@ namespace arg3
             return values_ != NULL;
         }
 
+        bool package_config::is_temp_path() const
+        {
+            return isTemp_;
+        }
+
+        void package_config::set_temp_path(bool value)
+        {
+            isTemp_ = value;
+        }
+
         int package_config::load()
         {
             ifstream file;

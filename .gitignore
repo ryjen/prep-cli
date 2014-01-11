@@ -13,3 +13,4 @@ cpppm
 stamp-h1
 .deps
 *.status
+*.tar.gz

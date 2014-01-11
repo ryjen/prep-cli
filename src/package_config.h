@@ -23,9 +23,12 @@ namespace arg3
             const char *name() const;
             const char *build_system() const;
             bool is_loaded() const;
+            bool is_temp_path() const;
+            void set_temp_path(bool value);
         private:
             json_object *values_;
             string path_;
+            bool isTemp_;
         };
     }
 }
