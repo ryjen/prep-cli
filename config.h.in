@@ -1,13 +1,13 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Lib archive has headers */
+#undef HAVE_ARCHIVE_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define to 1 if you have the `archive' library (-larchive). */
 #undef HAVE_LIBARCHIVE
-
-/* Define to 1 if you have the `arg3json' library (-larg3json). */
-#undef HAVE_LIBARG3JSON
 
 /* Define to 1 if you have the `curl' library (-lcurl). */
 #undef HAVE_LIBCURL

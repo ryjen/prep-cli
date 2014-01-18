@@ -3,7 +3,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_LIBARCHIVE
 #include <archive.h>
+#endif
+
 #include <string>
 #define windowBits 15
 #define ENABLE_ZLIB_GZIP 32

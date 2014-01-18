@@ -3,13 +3,19 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_LIBGIT2
 #include <git2/clone.h>
 #include <git2/errors.h>
 #include <git2/types.h>
+#endif
 #include "util.h"
+#ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 #include <curl/easy.h>
+#endif
+#ifdef HAVE_LIBZ
 #include <zlib.h>
+#endif
 #include <cassert>
 #include <decompressor.h>
 
@@ -35,7 +41,7 @@ namespace arg3
         {
             arg_ = arg;
         }
-
+#ifdef HAVE_LIBGIT2
         int fetch_progress(const git_transfer_progress *stats, void *payload)
         {
             printf("%d/%d %.0f%%\n", stats->indexed_objects, stats->total_objects,
@@ -48,9 +54,11 @@ namespace arg3
         {
             printf("%ld/%ld %.0f%%\n", cur, tot, (float) cur / (float) tot * 100.f);
         }
+#endif
 
         int argument_resolver::resolve_package_git(package_config &config) const
         {
+#ifdef HAVE_LIBGIT2
             char buffer [BUFSIZ + 1] = {0};
             strncpy(buffer, "/tmp/cpppm-XXXXXX", BUFSIZ);
 
@@ -79,13 +87,18 @@ namespace arg3
             config.set_temp_path(true);
 
             return resolve_package_directory(config, buffer);
+#else
+            return EXIT_FAILURE;
+#endif
         }
 
+#ifdef HAVE_LIBCURL
         size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
         {
             size_t written = fwrite(ptr, size, nmemb, stream);
             return written;
         }
+#endif
 
         int argument_resolver::resolve_package_download(package_config &config) const
         {

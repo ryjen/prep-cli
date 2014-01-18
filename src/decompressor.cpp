@@ -1,7 +1,10 @@
 
 #include "decompressor.h"
 
+#ifdef HAVE_LIBARCHIVE
 #include <archive_entry.h>
+#endif
+
 #include <cstdlib>
 
 namespace arg3
@@ -64,7 +67,7 @@ namespace arg3
             if (in_ != NULL)
             {
                 archive_read_close(in_);
-                archive_read_free(in_);
+                archive_read_finish(in_);
                 in_ = NULL;
             }
 
@@ -72,7 +75,7 @@ namespace arg3
             {
 
                 archive_write_close(out_);
-                archive_write_free(out_);
+                archive_write_finish(out_);
                 out_ = NULL;
             }
 #endif
@@ -92,7 +95,7 @@ namespace arg3
             in_ = archive_read_new();
 
             archive_read_support_format_all(in_);
-            archive_read_support_filter_all(in_);
+            archive_read_support_compression_all(in_);
 
             if ((r = archive_read_open_filename(in_, path_.c_str(), 10240)))
             {
