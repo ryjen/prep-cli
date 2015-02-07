@@ -12,19 +12,19 @@
 
 namespace arg3
 {
-    namespace cpppm
+    namespace prep
     {
 
         int make_temp_file(char *buffer, size_t size)
         {
-            strncpy(buffer, "/tmp/cpppm-XXXXXX", size);
+            strncpy(buffer, "/tmp/prep-XXXXXX", size);
 
             return mkstemp (buffer);
         }
 
         char *make_temp_dir(char *buffer, size_t size)
         {
-            strncpy(buffer, "/tmp/cpppm-XXXXXX", size);
+            strncpy(buffer, "/tmp/prep-XXXXXX", size);
 
             return mkdtemp (buffer);
         }

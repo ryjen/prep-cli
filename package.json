@@ -1,0 +1,17 @@
+{
+	"name": "prep",
+	"version": 1.0,
+	"author": {
+		"name": "Ryan Jennings",
+		"email": "c0der78@gmail.com"
+	},
+
+	"dependencies": [
+		{
+			"name": "arg3",
+			"git": "https://github.com/c0der78/libarg3.git",
+			"build_system": "autotools"
+		}
+	]
+
+}

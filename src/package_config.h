@@ -1,7 +1,13 @@
 #ifndef INCLUDE_CPPPM_CONFIG
 #define INCLUDE_CPPPM_CONFIG
 
+#include "config.h"
+
+#ifndef HAVE_JSON_C_H
 #include <json/json.h>
+#else
+#include <json-c/json.h>
+#endif
 #include <string>
 #include <vector>
 
@@ -9,7 +15,7 @@ using namespace std;
 
 namespace arg3
 {
-    namespace cpppm
+    namespace prep
     {
         class package_config
         {

@@ -1,4 +1,4 @@
 
-EXTRA_DIST = cpppm.conf
+EXTRA_DIST = package.json
 
 SUBDIRS = src

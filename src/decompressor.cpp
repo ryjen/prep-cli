@@ -9,7 +9,7 @@
 
 namespace arg3
 {
-    namespace cpppm
+    namespace prep
     {
 #ifdef HAVE_LIBARCHIVE
         static int copy_data(struct archive *ar, struct archive *aw)

@@ -5,7 +5,7 @@
 
 namespace arg3
 {
-    namespace cpppm
+    namespace prep
     {
         package_config::package_config() : values_(NULL)
         {
@@ -64,11 +64,11 @@ namespace arg3
                 values_ = NULL;
             }
 
-            file.open(path_ + "/cpppm.conf");
+            file.open(path_ + "/package.json");
 
             if (!file.is_open())
             {
-                printf("unabel to open %s/cpppm.conf\n", path_.c_str());
+                printf("unabel to open %s/package.json\n", path_.c_str());
                 return EXIT_FAILURE;
             }
 
@@ -88,14 +88,22 @@ namespace arg3
 
         const char *package_config::name() const
         {
-            json_object *obj = json_object_object_get(values_, "name");
-            return json_object_get_string(obj);
+            json_object *obj;
+
+            if (json_object_object_get_ex(values_, "name", &obj))
+                return json_object_get_string(obj);
+
+            return NULL;
         }
 
         const char *package_config::build_system() const
         {
-            json_object *obj = json_object_object_get(values_, "build_system");
-            return json_object_get_string(obj);
+            json_object *obj;
+
+            if (json_object_object_get_ex(values_, "build_system", &obj))
+                return json_object_get_string(obj);
+
+            return NULL;
         }
 
     }

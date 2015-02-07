@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
-AC_INIT([cpppm], [0.1], [c0der78@gmail.com])
+AC_PREREQ([2.68])
+AC_INIT([prep], [0.1], [c0der78@gmail.com])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES(Makefile src/Makefile)
@@ -20,6 +20,8 @@ AC_CHECK_LIB(archive, archive_read_new)
 
 if test "$ac_cv_lib_json_c_json_tokener_parse" = "no"; then
 	AC_MSG_ERROR([libjson-c is required])
+else
+	AC_CHECK_HEADER([json-c/json.h], AC_DEFINE(HAVE_JSON_C_H, 1, [Lib json-c has json-c header folder]))
 fi
 
 if test "$ac_cv_lib_archive_archive_read_new" = "yes"; then

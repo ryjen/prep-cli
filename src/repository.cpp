@@ -10,12 +10,12 @@
 
 namespace arg3
 {
-    namespace cpppm
+    namespace prep
     {
 
-        const char *const repository::LOCAL_REPO = ".cpppm";
+        const char *const repository::LOCAL_REPO = ".prep";
 
-        const char *const repository::GLOBAL_REPO = "/usr/local/share/cpppm";
+        const char *const repository::GLOBAL_REPO = "/usr/local/share/prep";
 
         string repository::get_path() const
         {
@@ -77,7 +77,7 @@ namespace arg3
             }
             else
             {
-                printf("unknown build system\n");
+                printf("unknown build system '%s'", config.build_system());
             }
 
             if (config.is_temp_path())

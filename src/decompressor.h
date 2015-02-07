@@ -1,5 +1,5 @@
 #ifndef INCLUDE_DECOMPRESSOR
-#define INCLUDE_DECOMRPESSOR
+#define INCLUDE_DECOMPRESSOR
 
 #include "config.h"
 
@@ -13,7 +13,7 @@
 
 namespace arg3
 {
-    namespace cpppm
+    namespace prep
     {
         class decompressor
         {

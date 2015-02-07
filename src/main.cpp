@@ -3,17 +3,17 @@
 #include "argument_resolver.h"
 #include <unistd.h>
 
-void print_help()
+void print_help(char *exe)
 {
-    printf("Syntax: cpppm [-g] install <package>\n");
-    printf("      : cpppm [-g] remove <package>\n");
-    printf("      : cpppm [-g] update <package>\n");
-    printf("      : cpppm check\n");
+    printf("Syntax: %s [-g] install <package>\n", exe);
+    printf("      : %s [-g] remove <package>\n", exe);
+    printf("      : %s [-g] update <package>\n", exe);
+    printf("      : %s check\n", exe);
 }
 
 int main(int argc, char *const argv[])
 {
-    arg3::cpppm::repository  repo;
+    arg3::prep::repository repo;
 
     int option;
 
@@ -39,7 +39,7 @@ int main(int argc, char *const argv[])
 
     if (optind < 2 && optind >= argc)
     {
-        print_help();
+        print_help(argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -47,7 +47,7 @@ int main(int argc, char *const argv[])
 
     if (!strcmp(command, "install"))
     {
-        arg3::cpppm::argument_resolver resolver;
+        arg3::prep::argument_resolver resolver;
 
         if (optind < 0 || optind >= argc)
         {
@@ -58,11 +58,11 @@ int main(int argc, char *const argv[])
             resolver.set_arg(argv[optind++]);
         }
 
-        arg3::cpppm::package_config config;
+        arg3::prep::package_config config;
 
         if (resolver.resolve_package(config))
         {
-            printf("Error %s is not a valid cpppm package\n", resolver.arg().c_str());
+            printf("Error %s is not a valid prep package\n", resolver.arg().c_str());
             return EXIT_FAILURE;
         }
 
