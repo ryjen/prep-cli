@@ -7,23 +7,34 @@ namespace arg3
 {
     namespace prep
     {
-        package_config::package_config() : values_(NULL)
+        package::package() : values_(NULL)
         {
 
         }
 
-        package_config::package_config(const std::string &path) : values_(NULL), path_(path)
+        package::package(json_object *obj) : values_(obj)
+        {}
+
+        package_config::package_config()
+        {
+
+        }
+        package_config::package_config(const std::string &path) : package(), path_(path)
         {
 
         }
 
-        package_config::~package_config()
+        package::~package()
         {
             if (values_ != NULL)
             {
                 json_object_put(values_);
                 values_ = NULL;
             }
+        }
+
+        package_config::~package_config()
+        {
         }
 
         string package_config::path() const
@@ -83,10 +94,26 @@ namespace arg3
                 printf("invalid configuration for %s\n", os.str().c_str());
                 return EXIT_FAILURE;
             }
+
+            json_object *depjson;
+
+            if (json_object_object_get_ex(values_, "dependencies", &depjson))
+            {
+                int len = json_object_array_length(depjson);
+
+                for (int i = 0; i < len; i++)
+                {
+
+                    json_object *dep = json_object_array_get_idx(depjson, i);
+
+                    dependencies_.push_back(package(json_object_get(dep)));
+                }
+            }
+
             return EXIT_SUCCESS;
         }
 
-        const char *package_config::name() const
+        const char *package::name() const
         {
             json_object *obj;
 
@@ -96,7 +123,7 @@ namespace arg3
             return NULL;
         }
 
-        const char *package_config::build_system() const
+        const char *package::build_system() const
         {
             json_object *obj;
 

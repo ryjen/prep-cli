@@ -99,7 +99,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_prep_OBJECTS = main.$(OBJEXT) argument_resolver.$(OBJEXT) \
+am_prep_OBJECTS = main.$(OBJEXT) package_resolver.$(OBJEXT) \
 	decompressor.$(OBJEXT) package_config.$(OBJEXT) \
 	repository.$(OBJEXT) util.$(OBJEXT)
 prep_OBJECTS = $(am_prep_OBJECTS)
@@ -252,7 +252,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-prep_SOURCES = main.cpp argument_resolver.cpp decompressor.cpp package_config.cpp repository.cpp util.cpp
+AM_CPPFLAGS = -std=c++11 -stdlib=libc++
+prep_SOURCES = main.cpp package_resolver.cpp decompressor.cpp package_config.cpp repository.cpp util.cpp
 all: all-am
 
 .SUFFIXES:
@@ -339,10 +340,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argument_resolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/decompressor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_config.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_resolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/repository.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
 

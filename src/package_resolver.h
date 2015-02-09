@@ -9,12 +9,12 @@ namespace arg3
 {
     namespace prep
     {
-        class argument_resolver
+        class package_resolver
         {
         public:
             static const int UNKNOWN = 255;
-            argument_resolver(const std::string &arg);
-            argument_resolver();
+            package_resolver(const std::string &arg);
+            package_resolver();
 
             void set_arg(const std::string &arg);
             std::string arg() const;

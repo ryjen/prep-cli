@@ -17,7 +17,20 @@ namespace arg3
 {
     namespace prep
     {
-        class package_config
+        class package
+        {
+        public:
+            package();
+            virtual ~package();
+            const char *name() const;
+            const char *build_system() const;
+        protected:
+            friend class package_config;
+            package(json_object *obj);
+            json_object *values_;
+        };
+
+        class package_config : public package
         {
         public:
             package_config();
@@ -26,15 +39,14 @@ namespace arg3
             int load();
             void set_path(const std::string &path);
             string path() const;
-            const char *name() const;
-            const char *build_system() const;
             bool is_loaded() const;
             bool is_temp_path() const;
             void set_temp_path(bool value);
+            const vector<package> dependencies() const;
         private:
-            json_object *values_;
             string path_;
             bool isTemp_;
+            vector<package> dependencies_;
         };
     }
 }

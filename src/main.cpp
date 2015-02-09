@@ -1,6 +1,6 @@
 #include <iostream>
 #include "repository.h"
-#include "argument_resolver.h"
+#include "package_resolver.h"
 #include <unistd.h>
 
 void print_help(char *exe)
@@ -47,7 +47,7 @@ int main(int argc, char *const argv[])
 
     if (!strcmp(command, "install"))
     {
-        arg3::prep::argument_resolver resolver;
+        arg3::prep::package_resolver resolver;
 
         if (optind < 0 || optind >= argc)
         {

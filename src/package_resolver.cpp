@@ -1,4 +1,4 @@
-#include "argument_resolver.h"
+#include "package_resolver.h"
 #include "config.h"
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,20 +24,20 @@ namespace arg3
     namespace prep
     {
 
-        argument_resolver::argument_resolver()
+        package_resolver::package_resolver()
         {}
 
-        argument_resolver::argument_resolver(const std::string &arg) : arg_(arg)
+        package_resolver::package_resolver(const std::string &arg) : arg_(arg)
         {
 
         }
 
-        std::string argument_resolver::arg() const
+        std::string package_resolver::arg() const
         {
             return arg_;
         }
 
-        void argument_resolver::set_arg(const std::string &arg)
+        void package_resolver::set_arg(const std::string &arg)
         {
             arg_ = arg;
         }
@@ -56,7 +56,7 @@ namespace arg3
         }
 #endif
 
-        int argument_resolver::resolve_package_git(package_config &config) const
+        int package_resolver::resolve_package_git(package_config &config) const
         {
 #ifdef HAVE_LIBGIT2
             char buffer [BUFSIZ + 1] = {0};
@@ -100,7 +100,7 @@ namespace arg3
         }
 #endif
 
-        int argument_resolver::resolve_package_download(package_config &config) const
+        int package_resolver::resolve_package_download(package_config &config) const
         {
 #ifdef HAVE_LIBCURL
             char buffer [BUFSIZ + 1] = {0};
@@ -133,7 +133,7 @@ namespace arg3
 #endif
         }
 
-        int argument_resolver::resolve_package_archive(package_config &config, const char *path) const
+        int package_resolver::resolve_package_archive(package_config &config, const char *path) const
         {
             decompressor d(path);
 
@@ -146,14 +146,14 @@ namespace arg3
             return resolve_package_directory(config, d.outputPath().c_str());
         }
 
-        int argument_resolver::resolve_package_directory(package_config &config, const char *path) const
+        int package_resolver::resolve_package_directory(package_config &config, const char *path) const
         {
             config.set_path(path);
 
             return config.load();
         }
 
-        int argument_resolver::resolve_package(package_config &config) const
+        int package_resolver::resolve_package(package_config &config) const
         {
             int fileType = directory_exists(arg_.c_str());
 
