@@ -37,13 +37,21 @@ int main(int argc, char *const argv[])
         return EXIT_FAILURE;
     }
 
-    if (optind < 2 && optind >= argc)
+    const char *command;
+
+    if (optind == 1)
+    {
+        command = "install";
+    }
+    else if (optind >= argc)
     {
         print_help(argv[0]);
         return EXIT_FAILURE;
     }
-
-    char *command = argv[optind++];
+    else
+    {
+        command = argv[optind++];
+    }
 
     if (!strcmp(command, "install"))
     {

@@ -15,11 +15,11 @@ namespace arg3
         package::package(json_object *obj) : values_(obj)
         {}
 
-        package_config::package_config()
+        package_config::package_config() : isTemp_(false)
         {
 
         }
-        package_config::package_config(const std::string &path) : package(), path_(path)
+        package_config::package_config(const std::string &path) : package(), path_(path), isTemp_(false)
         {
 
         }

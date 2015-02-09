@@ -82,7 +82,8 @@ namespace arg3
 
             if (config.is_temp_path())
             {
-                remove_directory(config.path().c_str());
+                //remove_directory(config.path().c_str());
+                printf("would have removed %s\n", config.path().c_str());
             }
             return rval;
         }
@@ -148,7 +149,7 @@ namespace arg3
             }
             else
             {
-                printf("Error %s is not a valid cpppm package\n", path);
+                printf("Error %s is not a valid prep package\n", path);
                 return 1;
             }
         }
