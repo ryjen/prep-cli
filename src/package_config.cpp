@@ -15,11 +15,10 @@ namespace arg3
         package::package(json_object *obj) : values_(obj)
         {}
 
-        package_config::package_config() : isTemp_(false)
-        {
+        package_dependency::package_dependency(json_object *obj) : package(obj)
+        {}
 
-        }
-        package_config::package_config(const std::string &path) : package(), path_(path), isTemp_(false)
+        package_config::package_config()
         {
 
         }
@@ -37,36 +36,23 @@ namespace arg3
         {
         }
 
-        string package_config::path() const
-        {
-            return path_;
-        }
-
-        void package_config::set_path(const std::string &path)
-        {
-            path_ = path;
-        }
+        package_dependency::~package_dependency()
+        {}
 
         bool package_config::is_loaded() const
         {
             return values_ != NULL;
         }
 
-        bool package_config::is_temp_path() const
+        vector<package_dependency> package_config::dependencies() const
         {
-            return isTemp_;
+            return dependencies_;
         }
-
-        void package_config::set_temp_path(bool value)
-        {
-            isTemp_ = value;
-        }
-
-        int package_config::load()
+        int package_config::load(const std::string &path)
         {
             ifstream file;
 
-            if (path_.empty())
+            if (path.empty())
                 return EXIT_FAILURE;
 
             if (values_ != NULL)
@@ -75,11 +61,11 @@ namespace arg3
                 values_ = NULL;
             }
 
-            file.open(path_ + "/package.json");
+            file.open(path + "/package.json");
 
             if (!file.is_open())
             {
-                printf("unabel to open %s/package.json\n", path_.c_str());
+                printf("unabel to open %s/package.json\n", path.c_str());
                 return EXIT_FAILURE;
             }
 
@@ -103,13 +89,17 @@ namespace arg3
 
                 for (int i = 0; i < len; i++)
                 {
-
                     json_object *dep = json_object_array_get_idx(depjson, i);
 
-                    dependencies_.push_back(package(json_object_get(dep)));
+                    dependencies_.push_back(package_dependency(json_object_get(dep)));
                 }
             }
 
+            return EXIT_SUCCESS;
+        }
+
+        int package_dependency::load(const std::string &path)
+        {
             return EXIT_SUCCESS;
         }
 
@@ -128,6 +118,16 @@ namespace arg3
             json_object *obj;
 
             if (json_object_object_get_ex(values_, "build_system", &obj))
+                return json_object_get_string(obj);
+
+            return NULL;
+        }
+
+        const char *package_dependency::location() const
+        {
+            json_object *obj;
+
+            if (json_object_object_get_ex(values_, "location", &obj))
                 return json_object_get_string(obj);
 
             return NULL;

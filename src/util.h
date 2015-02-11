@@ -3,6 +3,7 @@ namespace arg3
 {
     namespace prep
     {
+        int fork_command(const char *argv[], const char *directory);
 
         int pipe_command(const char *buf, const char *directory);
 

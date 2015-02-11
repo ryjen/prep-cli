@@ -9,6 +9,7 @@ namespace arg3
 {
     namespace prep
     {
+        /* resolves a package from a download, git, archive or folder */
         class package_resolver
         {
         public:
@@ -16,17 +17,22 @@ namespace arg3
             package_resolver(const std::string &arg);
             package_resolver();
 
-            void set_arg(const std::string &arg);
-            std::string arg() const;
+            void set_location(const std::string &arg);
+            std::string location() const;
 
-            int resolve_package(package_config &config) const;
+            int resolve_package(package *config);
 
+            bool is_temp_path() const;
+
+            std::string working_dir() const;
         private:
-            int resolve_package_git(package_config &config) const;
-            int resolve_package_directory(package_config &config, const char *path) const;
-            int resolve_package_download(package_config &config) const;
-            int resolve_package_archive(package_config &config, const char *path) const;
-            std::string arg_;
+            int resolve_package_git(package *config);
+            int resolve_package_directory(package *config, const char *path);
+            int resolve_package_download(package *config);
+            int resolve_package_archive(package *config, const char *path);
+            std::string location_;
+            std::string workingDir_;
+            bool isTemp_;
         };
     }
 }

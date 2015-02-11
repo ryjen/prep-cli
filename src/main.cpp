@@ -1,5 +1,5 @@
 #include <iostream>
-#include "repository.h"
+#include "package_builder.h"
 #include "package_resolver.h"
 #include <unistd.h>
 
@@ -13,7 +13,7 @@ void print_help(char *exe)
 
 int main(int argc, char *const argv[])
 {
-    arg3::prep::repository repo;
+    arg3::prep::package_builder prep;
 
     int option;
 
@@ -22,14 +22,14 @@ int main(int argc, char *const argv[])
         switch (option)
         {
         case 'g':
-            repo.set_global(true);
+            prep.set_global(true);
             break;
         }
     }
 
     try
     {
-        repo.initialize();
+        prep.initialize();
     }
     catch (const std::exception &e)
     {
@@ -59,22 +59,22 @@ int main(int argc, char *const argv[])
 
         if (optind < 0 || optind >= argc)
         {
-            resolver.set_arg(".");
+            resolver.set_location(".");
         }
         else
         {
-            resolver.set_arg(argv[optind++]);
+            resolver.set_location(argv[optind++]);
         }
 
         arg3::prep::package_config config;
 
-        if (resolver.resolve_package(config))
+        if (resolver.resolve_package(&config))
         {
-            printf("Error %s is not a valid prep package\n", resolver.arg().c_str());
+            printf("Error %s is not a valid prep package\n", resolver.location().c_str());
             return EXIT_FAILURE;
         }
 
-        return repo.get(config);
+        return prep.build(config, resolver.working_dir().c_str());
 
     }
     else if (!strcmp(command, "check"))

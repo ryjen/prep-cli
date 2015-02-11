@@ -101,7 +101,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_prep_OBJECTS = main.$(OBJEXT) package_resolver.$(OBJEXT) \
 	decompressor.$(OBJEXT) package_config.$(OBJEXT) \
-	repository.$(OBJEXT) util.$(OBJEXT)
+	package_builder.$(OBJEXT) util.$(OBJEXT)
 prep_OBJECTS = $(am_prep_OBJECTS)
 prep_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -253,7 +253,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -std=c++11 -stdlib=libc++
-prep_SOURCES = main.cpp package_resolver.cpp decompressor.cpp package_config.cpp repository.cpp util.cpp
+prep_SOURCES = main.cpp package_resolver.cpp decompressor.cpp package_config.cpp package_builder.cpp util.cpp
 all: all-am
 
 .SUFFIXES:
@@ -342,9 +342,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/decompressor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_builder.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_resolver.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/repository.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
 
 .cpp.o:

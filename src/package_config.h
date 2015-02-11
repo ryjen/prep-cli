@@ -20,33 +20,37 @@ namespace arg3
         class package
         {
         public:
-            package();
             virtual ~package();
             const char *name() const;
             const char *build_system() const;
+            virtual int load(const std::string &path) = 0;
         protected:
-            friend class package_config;
+            package();
             package(json_object *obj);
             json_object *values_;
+        };
+
+        class package_dependency : public package
+        {
+            friend class package_config;
+        public:
+            ~package_dependency();
+            const char *location() const;
+            int load(const std::string &path);
+        protected:
+            package_dependency(json_object *obj);
         };
 
         class package_config : public package
         {
         public:
             package_config();
-            package_config(const std::string &path);
             ~package_config();
-            int load();
-            void set_path(const std::string &path);
-            string path() const;
+            int load(const std::string &path);
             bool is_loaded() const;
-            bool is_temp_path() const;
-            void set_temp_path(bool value);
-            const vector<package> dependencies() const;
+            vector<package_dependency> dependencies() const;
         private:
-            string path_;
-            bool isTemp_;
-            vector<package> dependencies_;
+            vector<package_dependency> dependencies_;
         };
     }
 }

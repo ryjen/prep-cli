@@ -10,6 +10,8 @@
 #include <cerrno>
 #include <sys/param.h>
 
+extern char *const environ[];
+
 namespace arg3
 {
     namespace prep
@@ -27,6 +29,53 @@ namespace arg3
             strncpy(buffer, "/tmp/prep-XXXXXX", size);
 
             return mkdtemp (buffer);
+        }
+
+        int fork_command(const char *argv[], const char *directory)
+        {
+            char cur_dir[MAXPATHLEN + 1] = {0};
+
+            if (directory)
+            {
+                if (!getcwd(cur_dir, MAXPATHLEN))
+                {
+                    return EXIT_FAILURE;
+                }
+
+                if (chdir(directory))
+                {
+                    return EXIT_FAILURE;
+                }
+            }
+            int rval = EXIT_FAILURE;
+
+            pid_t pid = fork();
+
+            if (pid == -1)
+            {
+                perror("unable to fork command");
+            }
+            else if (pid == 0)
+            {
+                // we are the child
+                execve(argv[0], (char *const *) &argv[0], environ);
+                exit(EXIT_FAILURE);   // exec never returns
+            }
+            else
+            {
+                int status = 0;
+                waitpid(pid, &status, 0);
+                if (WIFEXITED(status))
+                {
+                    rval = WEXITSTATUS(status);
+                }
+            }
+
+            if (directory)
+            {
+                chdir(cur_dir);
+            }
+            return rval;
         }
 
         int pipe_command(const char *buf, const char *directory)
