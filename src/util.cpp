@@ -33,20 +33,7 @@ namespace arg3
 
         int fork_command(const char *argv[], const char *directory)
         {
-            char cur_dir[MAXPATHLEN + 1] = {0};
-
-            if (directory)
-            {
-                if (!getcwd(cur_dir, MAXPATHLEN))
-                {
-                    return EXIT_FAILURE;
-                }
-
-                if (chdir(directory))
-                {
-                    return EXIT_FAILURE;
-                }
-            }
+            
             int rval = EXIT_FAILURE;
 
             pid_t pid = fork();
@@ -57,8 +44,29 @@ namespace arg3
             }
             else if (pid == 0)
             {
+                char buf1[BUFSIZ], buf2[BUFSIZ], buf3[BUFSIZ], buf4[BUFSIZ], *tmp;
+
+                snprintf(buf1, BUFSIZ, "CPPFLAGS=%s", (tmp = getenv("CPPFLAGS")) ? tmp : "");
+                snprintf(buf2, BUFSIZ, "CXXFLAGS=%s", (tmp = getenv("CXXFLAGS")) ? tmp : "");
+                snprintf(buf3, BUFSIZ, "CFLAGS=%s", (tmp = getenv("CFLAGS")) ? tmp : "");
+                snprintf(buf4, BUFSIZ, "LDFLAGS=%s", (tmp = getenv("LDFLAGS")) ? tmp : "");
+                
+                char *const envp[] = { buf1, buf2, buf3, buf4, NULL };
+
+                if (chdir(directory))
+                {
+                    return EXIT_FAILURE;
+                }
+                
+                printf("%s ", directory);
+                
+                for(int i = 0; argv[i] != NULL; i++) {
+                    printf("%s ", argv[i]);
+                }
+                puts(":");
+
                 // we are the child
-                execve(argv[0], (char *const *) &argv[0], environ);
+                execve(argv[0], (char *const *) &argv[0], envp);
                 exit(EXIT_FAILURE);   // exec never returns
             }
             else
@@ -71,10 +79,6 @@ namespace arg3
                 }
             }
 
-            if (directory)
-            {
-                chdir(cur_dir);
-            }
             return rval;
         }
 
@@ -103,15 +107,15 @@ namespace arg3
             {
                 char line[BUFSIZ + 1] = {0};
 
-                while (fgets(line, BUFSIZ, out) != NULL)
+                while (fgets(line, BUFSIZ, out) != NULL) {
                     fputs(line, stdout);
+                }
 
                 if (pclose(out) != -1)
                     rval = EXIT_SUCCESS;
             }
 
-            if (directory)
-            {
+            if (directory) {
                 chdir(cur_dir);
             }
             return rval;

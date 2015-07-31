@@ -109,7 +109,7 @@ namespace arg3
 
                 working_dir = exists_in_history(p.location());
 
-                if (working_dir.empty()) {
+                if (working_dir.empty() || !directory_exists(working_dir.c_str())) {
                     resolver.set_location(p.location());
 
                     if (resolver.resolve_package(&p)) {
@@ -193,14 +193,15 @@ namespace arg3
         int package_builder::build_cmake(const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
+            struct stat st;
 
             snprintf(buf, BUFSIZ, "%s/Makefile", path);
 
-            if (stat(buf, NULL))
+            if (stat(buf, &st))
             {
-                snprintf(buf, BUFSIZ, "-DCMAKE_INSTALL_PREFIX:PATH=%s", get_path().c_str());
+                snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", get_path().c_str());
 
-                const char *cmake_args[] = { "/bin/sh", "-c", "cmake", buf, ".", NULL };
+                const char *cmake_args[] = { "/bin/sh", "-c", buf, NULL };
 
                 if (fork_command(cmake_args, path))
                 {
@@ -209,7 +210,7 @@ namespace arg3
                 }
             }
 
-            const char *make_args[] = { "/bin/sh", "-c", "make", "install", NULL };
+            const char *make_args[] = { "/bin/sh", "-c", "make install", NULL };
 
             if (fork_command(make_args, path))
             {
@@ -223,14 +224,15 @@ namespace arg3
         int package_builder::build_autotools(const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
+            struct stat st;
 
             snprintf(buf, BUFSIZ, "%s/Makefile", path);
 
-            if (stat(buf, NULL))
+            if (stat(buf, &st))
             {
-                snprintf(buf, BUFSIZ, "--prefix=%s", get_path().c_str());
+                snprintf(buf, BUFSIZ, "./configure --prefix=%s", get_path().c_str());
 
-                const char *configure_args[] = { "/bin/sh", "-c", "./configure", buf, NULL };
+                const char *configure_args[] = { "/bin/sh", "-c", buf, NULL };
 
                 if (fork_command(configure_args, path))
                 {
@@ -239,7 +241,7 @@ namespace arg3
                 }
             }
 
-            const char *make_args[] = { "/bin/sh", "-c", "make", "install", NULL };
+            const char *make_args[] = { "/bin/sh", "-c", "make install", NULL };
 
             if (fork_command(make_args, path))
             {

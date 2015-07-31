@@ -11,7 +11,7 @@ void print_help(char *exe)
     printf("      : %s check\n", exe);
 }
 
-int main(int argc, char *const argv[])
+int main(int argc, char *const argv[], char *const envp[])
 {
     arg3::prep::package_builder prep;
 
