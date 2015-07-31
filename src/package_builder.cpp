@@ -7,12 +7,28 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
+#include <map>
 #include "util.h"
+
+namespace std {
+
+    istream& operator >> (istream& is, pair<string, string>& ps)
+    {
+       return is >> ps.first >> ps.second;
+    }
+    ostream& operator << (ostream& os, const pair<const string, string>& ps)
+    {
+       return os << ps.first << " " << ps.second;
+    }
+}
 
 namespace arg3
 {
     namespace prep
     {
+
+        const char *const package_builder::HISTORY_FILE = ".history";
 
         const char *const package_builder::LOCAL_REPO = ".prep";
 
@@ -77,7 +93,6 @@ namespace arg3
                 printf("unknown build system '%s'", config.build_system());
                 return EXIT_FAILURE;
             }
-
         }
 
         int package_builder::build(const package_config &config, const char *path)
@@ -86,24 +101,72 @@ namespace arg3
 
             for (package_dependency &p : config.dependencies())
             {
-                printf("Building dependency %s...\n", p.name());
-
                 package_resolver resolver;
 
-                resolver.set_location(p.location());
+                string working_dir;
 
-                if (resolver.resolve_package(&p))
-                {
-                    return EXIT_FAILURE;
+                printf("Building dependency %s...\n", p.name());
+
+                working_dir = exists_in_history(p.location());
+
+                if (working_dir.empty()) {
+                    resolver.set_location(p.location());
+
+                    if (resolver.resolve_package(&p)) {
+                        return EXIT_FAILURE;
+                    }
+
+                    working_dir = resolver.working_dir();
+
+                    save_history(p.location(), working_dir);
                 }
 
-                if (build_package(p, resolver.working_dir().c_str()))
-                {
+                if (build_package(p, working_dir.c_str())) {
                     return EXIT_FAILURE;
                 }
             }
 
             return build_package(config, path);
+        }
+
+        std::string package_builder::exists_in_history(const std::string &location) const
+        {
+            ifstream is(get_path() + "/" + HISTORY_FILE);
+
+            std::map<std::string, std::string> mps;
+            std::insert_iterator< std::map<std::string, std::string> > mpsi(mps, mps.begin());
+
+            const std::istream_iterator<std::pair<std::string,std::string> > eos; 
+            std::istream_iterator<std::pair<std::string,std::string> > its (is);
+    
+            std::copy(its, eos, mpsi);
+
+            is.close();
+
+            return mps[location];
+        }
+
+        void package_builder::save_history(const std::string &location, const std::string &working_dir) const
+        {
+            ifstream is(get_path() + "/" + HISTORY_FILE);
+
+            std::map<std::string, std::string> mps;
+            std::insert_iterator< std::map<std::string, std::string> > mpsi(mps, mps.begin());
+
+            const std::istream_iterator<std::pair<std::string,std::string> > eos; 
+            std::istream_iterator<std::pair<std::string,std::string> > its (is);
+    
+            std::copy(its, eos, mpsi);
+
+            is.close();
+
+            mps[location] = working_dir;
+
+            ofstream os(get_path() + "/" + HISTORY_FILE);
+
+            std::copy(mps.begin(), mps.end(), std::ostream_iterator<std::pair<std::string,std::string> >(os, "\n"));
+
+            os.close();
         }
 
         const char *const package_builder::get_home_dir() const
@@ -131,14 +194,19 @@ namespace arg3
         {
             char buf[BUFSIZ + 1] = {0};
 
-            snprintf(buf, BUFSIZ, "-DCMAKE_INSTALL_PREFIX:PATH=%s", get_path().c_str());
+            snprintf(buf, BUFSIZ, "%s/Makefile", path);
 
-            const char *cmake_args[] = { "/bin/sh", "-c", "cmake", buf, ".", NULL };
-
-            if (fork_command(cmake_args, path))
+            if (stat(buf, NULL))
             {
-                perror("unable to execute cmake");
-                return EXIT_FAILURE;
+                snprintf(buf, BUFSIZ, "-DCMAKE_INSTALL_PREFIX:PATH=%s", get_path().c_str());
+
+                const char *cmake_args[] = { "/bin/sh", "-c", "cmake", buf, ".", NULL };
+
+                if (fork_command(cmake_args, path))
+                {
+                    perror("unable to execute cmake");
+                    return EXIT_FAILURE;
+                }
             }
 
             const char *make_args[] = { "/bin/sh", "-c", "make", "install", NULL };
@@ -156,14 +224,19 @@ namespace arg3
         {
             char buf[BUFSIZ + 1] = {0};
 
-            snprintf(buf, BUFSIZ, "--prefix=%s", get_path().c_str());
+            snprintf(buf, BUFSIZ, "%s/Makefile", path);
 
-            const char *configure_args[] = { "/bin/sh", "-c", "./configure", buf, NULL };
-
-            if (fork_command(configure_args, path))
+            if (stat(buf, NULL))
             {
-                perror("unable to execute configure");
-                return EXIT_FAILURE;
+                snprintf(buf, BUFSIZ, "--prefix=%s", get_path().c_str());
+
+                const char *configure_args[] = { "/bin/sh", "-c", "./configure", buf, NULL };
+
+                if (fork_command(configure_args, path))
+                {
+                    perror("unable to execute configure");
+                    return EXIT_FAILURE;
+                }
             }
 
             const char *make_args[] = { "/bin/sh", "-c", "make", "install", NULL };

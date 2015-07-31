@@ -15,6 +15,8 @@ int main(int argc, char *const argv[])
 {
     arg3::prep::package_builder prep;
 
+    const char *command;
+
     int option;
 
     while ((option = getopt(argc, argv, "g")) != EOF)
@@ -37,8 +39,6 @@ int main(int argc, char *const argv[])
         return EXIT_FAILURE;
     }
 
-    const char *command;
-
     if (optind == 1)
     {
         command = "install";
@@ -56,6 +56,7 @@ int main(int argc, char *const argv[])
     if (!strcmp(command, "install"))
     {
         arg3::prep::package_resolver resolver;
+        arg3::prep::package_config config;
 
         if (optind < 0 || optind >= argc)
         {
@@ -66,8 +67,6 @@ int main(int argc, char *const argv[])
             resolver.set_location(argv[optind++]);
         }
 
-        arg3::prep::package_config config;
-
         if (resolver.resolve_package(&config))
         {
             printf("Error %s is not a valid prep package\n", resolver.location().c_str());
@@ -75,7 +74,6 @@ int main(int argc, char *const argv[])
         }
 
         return prep.build(config, resolver.working_dir().c_str());
-
     }
     else if (!strcmp(command, "check"))
     {

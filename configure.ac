@@ -26,6 +26,12 @@ fi
 
 if test "$ac_cv_lib_archive_archive_read_new" = "yes"; then
 	AC_CHECK_HEADER([archive.h], [AC_DEFINE(HAVE_ARCHIVE_H, 1, [Lib archive has headers])], [AC_MSG_ERROR([archive.h is required])])
+else
+	AC_MSG_ERROR([libarchive is required])
+fi
+
+if test "$ac_cv_lib_git2_git_libgit2_version" = "no"; then
+	AC_MSG_ERROR([libgit2 is required])
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.

@@ -20,11 +20,15 @@ namespace arg3
             int build_cmake(const char *path);
             string get_path() const;
             const char *const get_home_dir() const;
+            std::string exists_in_history(const std::string &) const;
+            void save_history(const std::string &, const std::string &) const;
             bool global_;
 
             static const char *const LOCAL_REPO;
 
             static const char *const GLOBAL_REPO;
+
+            static const char *const HISTORY_FILE;
         };
     }
 }

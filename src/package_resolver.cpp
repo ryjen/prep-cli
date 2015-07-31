@@ -21,7 +21,6 @@ namespace arg3
 {
     namespace prep
     {
-
         package_resolver::package_resolver(): isTemp_(false)
         {}
 
@@ -53,7 +52,7 @@ namespace arg3
 #ifdef HAVE_LIBGIT2
         int fetch_progress(const git_transfer_progress *stats, void *payload)
         {
-            printf("\rfetching %d/%d %.0f%%\n", stats->indexed_objects, stats->total_objects,
+            printf("\033[Afetching %d/%d %.0f%%\n\r", stats->indexed_objects, stats->total_objects,
                    (float) stats->indexed_objects / (float) stats->total_objects * 100.f);
 
             return 0;
@@ -61,7 +60,7 @@ namespace arg3
 
         void checkout_progress(const char *path, size_t cur, size_t tot, void *payload)
         {
-            printf("\rcheckout %ld/%ld %.0f%%\n", cur, tot, (float) cur / (float) tot * 100.f);
+            printf("\033[A checkout %ld/%ld %.0f%%\n\r", cur, tot, (float) cur / (float) tot * 100.f);
         }
 #endif
 
@@ -72,7 +71,6 @@ namespace arg3
             strncpy(buffer, "/tmp/prep-XXXXXX", BUFSIZ);
 
             mkdtemp (buffer);
-
 
             git_libgit2_init();
             git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
@@ -99,6 +97,7 @@ namespace arg3
 
             return resolve_package_directory(config, buffer);
 #else
+            puts("libgit2 is not installed or configured.");
             return EXIT_FAILURE;
 #endif
         }
@@ -140,6 +139,7 @@ namespace arg3
 
             return rval;
 #else
+            puts("libcurl not installed or configured");
             return EXIT_FAILURE;
 #endif
         }

@@ -67,7 +67,7 @@ namespace arg3
             if (in_ != NULL)
             {
                 archive_read_close(in_);
-                archive_read_finish(in_);
+                archive_read_free(in_);
                 in_ = NULL;
             }
 
@@ -75,7 +75,7 @@ namespace arg3
             {
 
                 archive_write_close(out_);
-                archive_write_finish(out_);
+                archive_write_free(out_);
                 out_ = NULL;
             }
 #endif
@@ -95,7 +95,7 @@ namespace arg3
             in_ = archive_read_new();
 
             archive_read_support_format_all(in_);
-            archive_read_support_compression_all(in_);
+            archive_read_support_filter_all(in_);
 
             if ((r = archive_read_open_filename(in_, path_.c_str(), 10240)))
             {
@@ -127,8 +127,9 @@ namespace arg3
 
             while (r == ARCHIVE_OK)
             {
-                if (archive_write_header(out_, entry) != ARCHIVE_OK)
+                if (archive_write_header(out_, entry) != ARCHIVE_OK) {
                     printf("unable to write header from decompression %d:%s", r, archive_error_string(in_));
+                }
                 else
                 {
                     copy_data(in_, out_);

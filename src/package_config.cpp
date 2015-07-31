@@ -51,9 +51,12 @@ namespace arg3
         int package_config::load(const std::string &path)
         {
             ifstream file;
+            json_object *depjson;
+            std::ostringstream os;
 
-            if (path.empty())
+            if (path.empty()) {
                 return EXIT_FAILURE;
+            }
 
             if (values_ != NULL)
             {
@@ -69,8 +72,6 @@ namespace arg3
                 return EXIT_FAILURE;
             }
 
-            std::ostringstream os;
-
             file >> os.rdbuf();
 
             values_ = json_tokener_parse(os.str().c_str());
@@ -80,8 +81,6 @@ namespace arg3
                 printf("invalid configuration for %s\n", os.str().c_str());
                 return EXIT_FAILURE;
             }
-
-            json_object *depjson;
 
             if (json_object_object_get_ex(values_, "dependencies", &depjson))
             {
