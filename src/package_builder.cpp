@@ -50,8 +50,9 @@ namespace arg3
 
             while (dir != NULL)
             {
-                if (repo_path == dir)
+                if (repo_path == dir) {
                     break;
+                }
 
                 dir = strtok(NULL, ":");
             }
@@ -66,11 +67,11 @@ namespace arg3
         {
             if (!strcmp(config.build_system(), "autotools"))
             {
-                return build_autotools(path);
+                return build_autotools(config, path);
             }
             else if (!strcmp(config.build_system(), "cmake"))
             {
-                return build_cmake(path);
+                return build_cmake(config, path);
             }
             else
             {
@@ -127,11 +128,37 @@ namespace arg3
             return homedir;
         }
 
-        int package_builder::build_cmake(const char *path)
+        string package_builder::build_cflags(const package_config &config, const string varName) const
+        {
+            ostringstream buf;
+
+            if (directory_exists(LOCAL_REPO)) {
+                buf << "-I " << LOCAL_REPO << "/include ";
+            }
+
+            if (directory_exists(GLOBAL_REPO)) {
+                buf << "-I " << GLOBAL_REPO << "/include ";
+            }
+
+            string flags = buf.str();
+
+            if (flags.empty()) {
+                return flags;
+            }
+
+            return varName + "=\"" + buf + "\"";
+        }
+
+        int package_builder::build_cmake(const package_config &config, const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
+            char cflags[3][BUFSIZ + 1] = {0};
+            char ldflags[BUFSIZ + 1] = {0};
 
             snprintf(buf, BUFSIZ, "-DCMAKE_INSTALL_PREFIX:PATH=%s", get_path().c_str());
+
+            snprintf(cflags[0], BUFSIZ, "CFLAGS=\"-I %s/include\"", get_path().c_str());
+            snprintf(cflags[1], BUFSIZ, "CXXFLAGS=\"-I %s/include\"", get_path().c_str());
 
             const char *cmake_args[] = { "/bin/sh", "-c", "cmake", buf, ".", NULL };
 
@@ -152,7 +179,7 @@ namespace arg3
             return EXIT_SUCCESS;
         }
 
-        int package_builder::build_autotools(const char *path)
+        int package_builder::build_autotools(const package_config &config, const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
 

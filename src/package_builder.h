@@ -16,6 +16,8 @@ namespace arg3
             int build_from_folder(const char *path);
         private:
             int build_package(const package &p, const char *path);
+            string build_cflags() const;
+            string build_ldflags() const;
             int build_autotools(const char *path);
             int build_cmake(const char *path);
             string get_path() const;
