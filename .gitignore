@@ -16,3 +16,5 @@ stamp-h1
 *.tar.gz
 .lineno
 prep
+Makefile
+config.h

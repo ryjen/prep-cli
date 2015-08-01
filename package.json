@@ -5,12 +5,11 @@
 		"name": "Ryan Jennings",
 		"email": "c0der78@gmail.com"
 	},
-	"dependency_install_dir": "/usr/local",
 	"build_system": "autotools",
 	"dependencies": [
 		{
-			"name": "arg3",
-			"location": "http://github.com/c0der78/libarg3.git",
+			"name": "cparse",
+			"location": "http://github.com/c0der78/cparse.git",
 			"build_system": "autotools"
 		}
 	]

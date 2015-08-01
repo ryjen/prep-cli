@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <cerrno>
 #include <sys/param.h>
+#include <libgen.h>
 
 extern char *const environ[];
 
@@ -31,22 +32,8 @@ namespace arg3
             return mkdtemp (buffer);
         }
 
-        int fork_command(const char *argv[], const char *directory)
+        int fork_command(const char *argv[], const char *directory, char *const envp[])
         {
-            char cur_dir[MAXPATHLEN + 1] = {0};
-
-            if (directory)
-            {
-                if (!getcwd(cur_dir, MAXPATHLEN))
-                {
-                    return EXIT_FAILURE;
-                }
-
-                if (chdir(directory))
-                {
-                    return EXIT_FAILURE;
-                }
-            }
             int rval = EXIT_FAILURE;
 
             pid_t pid = fork();
@@ -57,24 +44,34 @@ namespace arg3
             }
             else if (pid == 0)
             {
+
+                if (chdir(directory))
+                {
+                    return EXIT_FAILURE;
+                }
+
+                for (int i = 0; argv[i] != NULL; i++) {
+                    printf("%s ", argv[i]);
+                }
+                puts(":");
+
                 // we are the child
-                execve(argv[0], (char *const *) &argv[0], environ);
+                execve(argv[0], (char *const *) &argv[0], envp);
+
                 exit(EXIT_FAILURE);   // exec never returns
             }
             else
             {
                 int status = 0;
+
                 waitpid(pid, &status, 0);
+
                 if (WIFEXITED(status))
                 {
                     rval = WEXITSTATUS(status);
                 }
             }
 
-            if (directory)
-            {
-                chdir(cur_dir);
-            }
             return rval;
         }
 
@@ -103,15 +100,16 @@ namespace arg3
             {
                 char line[BUFSIZ + 1] = {0};
 
-                while (fgets(line, BUFSIZ, out) != NULL)
+                while (fgets(line, BUFSIZ, out) != NULL) {
                     fputs(line, stdout);
+                }
 
-                if (pclose(out) != -1)
+                if (pclose(out) != -1) {
                     rval = EXIT_SUCCESS;
+                }
             }
 
-            if (directory)
-            {
+            if (directory) {
                 chdir(cur_dir);
             }
             return rval;
@@ -209,6 +207,29 @@ namespace arg3
                     return 2;
                 }
             }
+        }
+
+        int mkpath(const char *dir, mode_t mode)
+        {
+            if (!dir) {
+                errno = EINVAL;
+                return 1;
+            }
+
+            if (strlen(dir) == 1 && dir[0] == '/') {
+                return 0;
+            }
+
+            if (*dir) {
+
+                char buf[PATH_MAX] = {0};
+
+                strncpy(buf, dir, PATH_MAX);
+
+                mkpath(dirname(buf), mode);
+            }
+
+            return mkdir(dir, mode);
         }
 
     }

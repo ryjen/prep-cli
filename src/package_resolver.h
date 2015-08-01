@@ -13,26 +13,22 @@ namespace arg3
         class package_resolver
         {
         public:
-            static const int UNKNOWN = 255;
-            package_resolver(const std::string &arg);
             package_resolver();
 
-            void set_location(const std::string &arg);
-            std::string location() const;
-
-            int resolve_package(package *config);
+            int resolve_package(package &config, const options &opts, const std::string &path);
 
             bool is_temp_path() const;
 
             std::string working_dir() const;
         private:
-            int resolve_package_git(package *config);
-            int resolve_package_directory(package *config, const char *path);
-            int resolve_package_download(package *config);
-            int resolve_package_archive(package *config, const char *path);
-            std::string location_;
-            std::string workingDir_;
+            int resolve_package_git(package &config, const options &opts);
+            int resolve_package_directory(package &config, const options &opts, const char *path);
+            int resolve_package_download(package &config, const options &opts);
+            int resolve_package_archive(package &config, const options &opts, const char *path);
+            string workingDir_;
             bool isTemp_;
+
+            static const char *const PACKAGE_FILE;
         };
     }
 }

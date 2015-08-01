@@ -4820,6 +4820,12 @@ else
 fi
 
 
+else
+	as_fn_error $? "libarchive is required" "$LINENO" 5
+fi
+
+if test "$ac_cv_lib_git2_git_libgit2_version" = "no"; then
+	as_fn_error $? "libgit2 is required" "$LINENO" 5
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.

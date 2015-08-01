@@ -3,7 +3,7 @@ namespace arg3
 {
     namespace prep
     {
-        int fork_command(const char *argv[], const char *directory);
+        int fork_command(const char *argv[], const char *directory, char *const envp[]);
 
         int pipe_command(const char *buf, const char *directory);
 
@@ -17,5 +17,6 @@ namespace arg3
 
         char *make_temp_dir(char *buffer, size_t size);
 
+        int mkpath(const char *dir, mode_t mode);
     }
 }

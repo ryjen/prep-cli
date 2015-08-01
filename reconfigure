@@ -1,1 +1,1 @@
-./configure --prefix=/usr/local/Cellar/cpppm/0.1 CPPFLAGS=-I/usr/local/opt/libarchive/include LDFLAGS=-L/usr/local/opt/libarchive/lib
+./configure --prefix=/usr/local/Cellar/prep/0.1 CPPFLAGS=-I/usr/local/opt/libarchive/include LDFLAGS=-L/usr/local/opt/libarchive/lib

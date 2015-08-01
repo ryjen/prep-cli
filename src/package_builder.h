@@ -10,23 +10,30 @@ namespace arg3
         class package_builder
         {
         public:
-            void initialize();
-            void set_global(bool value);
-            int build(const package_config &config, const char *path);
-            int build_from_folder(const char *path);
+            void initialize(const options &opts);
+            int build(const package_config &config, const options &opts, const std::string &path);
+            int build_from_folder(const options &opts, const char *path);
+            string repo_path() const;
         private:
             int build_package(const package &p, const char *path);
-            string build_cflags() const;
-            string build_ldflags() const;
-            int build_autotools(const char *path);
-            int build_cmake(const char *path);
-            string get_path() const;
+            string build_cflags(const package &config, const std::string &varName) const;
+            string build_ldflags(const package &config, const std::string &varName) const;
+            int build_autotools(const package &config, const char *path);
+            int build_cmake(const package &config, const char *path);
             const char *const get_home_dir() const;
-            bool global_;
+            std::string exists_in_history(const std::string &) const;
+            void save_history(const std::string &, const std::string &) const;
+            int save_meta(const package &config) const;
+
+            string repo_path_;
 
             static const char *const LOCAL_REPO;
 
             static const char *const GLOBAL_REPO;
+
+            static const char *const HISTORY_FILE;
+
+            static const char *const META_FOLDER;
         };
     }
 }

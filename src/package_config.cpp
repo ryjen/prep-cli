@@ -1,5 +1,6 @@
 
 #include "package_config.h"
+#include "log.h"
 #include <fstream>
 #include <sstream>
 
@@ -7,6 +8,13 @@ namespace arg3
 {
     namespace prep
     {
+        static const char *const DEFAULT_LOCATION = ".";
+
+        static const char *const PACKAGE_FILE = "package.json";
+
+        options::options_s() : global(false), package_file(PACKAGE_FILE), location(DEFAULT_LOCATION)
+        {}
+
         package::package() : values_(NULL)
         {
 
@@ -48,12 +56,16 @@ namespace arg3
         {
             return dependencies_;
         }
-        int package_config::load(const std::string &path)
+
+        int package_config::load(const std::string &path, const options &opts)
         {
             ifstream file;
+            json_object *depjson;
+            std::ostringstream os;
 
-            if (path.empty())
+            if (path.empty()) {
                 return EXIT_FAILURE;
+            }
 
             if (values_ != NULL)
             {
@@ -61,15 +73,13 @@ namespace arg3
                 values_ = NULL;
             }
 
-            file.open(path + "/package.json");
+            file.open(path + "/" + opts.package_file);
 
             if (!file.is_open())
             {
-                printf("unabel to open %s/package.json\n", path.c_str());
+                log_error("unable to open %s/%s\n", path.c_str(), opts.package_file.c_str());
                 return EXIT_FAILURE;
             }
-
-            std::ostringstream os;
 
             file >> os.rdbuf();
 
@@ -80,8 +90,6 @@ namespace arg3
                 printf("invalid configuration for %s\n", os.str().c_str());
                 return EXIT_FAILURE;
             }
-
-            json_object *depjson;
 
             if (json_object_object_get_ex(values_, "dependencies", &depjson))
             {
@@ -98,40 +106,77 @@ namespace arg3
             return EXIT_SUCCESS;
         }
 
-        int package_dependency::load(const std::string &path)
+        int package_dependency::load(const std::string &path, const options &opts)
         {
             return EXIT_SUCCESS;
         }
 
         const char *package::name() const
         {
-            json_object *obj;
+            return get_str("name");
+        }
 
-            if (json_object_object_get_ex(values_, "name", &obj))
-                return json_object_get_string(obj);
-
-            return NULL;
+        const char *package::version() const
+        {
+            return get_str("version");
         }
 
         const char *package::build_system() const
         {
             json_object *obj;
 
-            if (json_object_object_get_ex(values_, "build_system", &obj))
+            if (json_object_object_get_ex(values_, "build_system", &obj)) {
                 return json_object_get_string(obj);
+            }
 
             return NULL;
         }
 
-        const char *package_dependency::location() const
+        const char *package::location() const
         {
-            json_object *obj;
+            return get_str( "location");
+        }
 
-            if (json_object_object_get_ex(values_, "location", &obj))
+        void package::set_str(const std::string &key, const std::string &value)
+        {
+            json_object *obj = NULL;
+
+            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
+                json_object_put(obj);
+            }
+            json_object_object_add(values_, key.c_str(), json_object_new_string(value.c_str()));
+        }
+
+        void package::set_bool(const std::string &key, bool value)
+        {
+            json_object *obj = NULL;
+
+            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
+                json_object_put(obj);
+            }
+            json_object_object_add(values_, key.c_str(), json_object_new_boolean(value));
+        }
+
+        const char *package::get_str(const std::string &key) const
+        {
+            json_object *obj = NULL;
+
+            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
                 return json_object_get_string(obj);
+            }
 
             return NULL;
         }
 
+        bool package::get_bool(const std::string &key) const
+        {
+            json_object *obj = NULL;
+
+            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
+                return json_object_get_boolean(obj);
+            }
+
+            return false;
+        }
     }
 }
