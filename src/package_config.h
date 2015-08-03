@@ -10,6 +10,7 @@
 #endif
 #include <string>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
@@ -26,6 +27,8 @@ namespace arg3
             string location;
         } options;
 
+        class package_dependency;
+
         class package
         {
         public:
@@ -35,21 +38,29 @@ namespace arg3
             const char *build_system() const;
             virtual int load(const std::string &path, const options &opts) = 0;
             virtual const char *location() const;
+            bool is_loaded() const;
+            vector<package_dependency> dependencies() const;
         protected:
             package();
             package(json_object *obj);
+            package(const package &other);
+            package &operator=(const package &other);
             const char *get_str(const std::string &key) const;
             bool get_bool(const std::string &key) const;
             void set_str(const std::string &key, const std::string &value);
             void set_bool(const std::string &key, bool value);
             json_object *values_;
+            vector<package_dependency> dependencies_;
         };
 
         class package_dependency : public package
         {
+            friend class package;
             friend class package_config;
         public:
             ~package_dependency();
+            package_dependency(const package_dependency &other);
+            package_dependency &operator=(const package_dependency &);
             int load(const std::string &path, const options &opts);
         protected:
             package_dependency(json_object *obj);
@@ -60,12 +71,13 @@ namespace arg3
         {
         public:
             package_config();
+            package_config(const package_config &);
             ~package_config();
+            package_config &operator=(const package_config &other);
             int load(const std::string &path, const options &opts);
-            bool is_loaded() const;
-            vector<package_dependency> dependencies() const;
         private:
-            vector<package_dependency> dependencies_;
+            int resolve_package_file(const string &path, const string &filename, ifstream &file);
+            int download_package_file(const string &path, const string &url, ifstream &file);
         };
     }
 }

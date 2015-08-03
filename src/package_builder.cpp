@@ -38,8 +38,10 @@ namespace arg3
 
         const char *const package_builder::META_FOLDER = ".meta";
 
-        void package_builder::initialize(const options &opts)
+        int package_builder::initialize(const options &opts)
         {
+            char path[BUFSIZ + 1] = {0};
+
             if (opts.global)
             {
                 repo_path_ = GLOBAL_REPO;
@@ -49,9 +51,22 @@ namespace arg3
                 repo_path_ = string(get_home_dir()) + "/" + LOCAL_REPO;
             }
 
-            mkdir(repo_path_.c_str(), 0700);
 
-            char *path = getenv("PATH");
+            if (!directory_exists(repo_path_.c_str())) {
+                int ch;
+
+                printf("OK to create folder %s? (Y/n) ", repo_path_.c_str());
+
+                ch = getchar();
+
+                if (ch != 10 && toupper(ch) != 'Y') {
+                    return EXIT_FAILURE;
+                }
+
+                mkdir(repo_path_.c_str(), 0700);
+            }
+
+            strncpy(path, getenv("PATH"), BUFSIZ);
 
             char *dir = strtok(path, ":");
 
@@ -66,21 +81,29 @@ namespace arg3
 
             if (dir == NULL)
             {
-                std::cout << repo_path_ << " is not added to your PATH, you should set this to include packages\n";
+                std::cout << "Warning: " << repo_path_ << " is not added to your PATH\n";
             }
+
+            return EXIT_SUCCESS;
         }
 
         int package_builder::build_package(const package &config, const char *path)
         {
-            if (!strcmp(config.build_system(), "autotools"))
+            if (!str_cmp(config.build_system(), "autotools"))
             {
                 if ( build_autotools(config, path) ) {
                     return EXIT_FAILURE;
                 }
             }
-            else if (!strcmp(config.build_system(), "cmake"))
+            else if (!str_cmp(config.build_system(), "cmake"))
             {
                 if ( build_cmake(config, path) ) {
+                    return EXIT_FAILURE;
+                }
+            }
+            else if (!str_cmp(config.build_system(), "make"))
+            {
+                if ( build_make(config, path)) {
                     return EXIT_FAILURE;
                 }
             }
@@ -100,7 +123,6 @@ namespace arg3
 
         int package_builder::save_meta(const package &config) const
         {
-
             if (config.version() == NULL) {
                 return EXIT_SUCCESS;
             }
@@ -123,14 +145,17 @@ namespace arg3
             return EXIT_SUCCESS;
         }
 
-        int package_builder::build(const package_config &config, const options &opts, const std::string &path)
+        int package_builder::build(const package &config, options &opts, const std::string &path)
         {
             assert(config.is_loaded());
+
+            if (config.location() != NULL) {
+                save_history(config.location(), path);
+            }
 
             for (package_dependency &p : config.dependencies())
             {
                 package_resolver resolver;
-
                 string working_dir;
 
                 log_info("Building dependency %s...", p.name());
@@ -145,10 +170,9 @@ namespace arg3
 
                     working_dir = resolver.working_dir();
 
-                    save_history(p.location(), working_dir);
                 }
 
-                if (build_package(p, working_dir.c_str())) {
+                if (build(p, opts, working_dir)) {
                     return EXIT_FAILURE;
                 }
             }
@@ -280,35 +304,35 @@ namespace arg3
         int package_builder::build_cmake(const package &config, const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
+            char flags[5][BUFSIZ];
 
-            struct stat st;
+            log_debug("building cmake [%s]", path);
 
-            snprintf(buf, BUFSIZ, "%s/Makefile", path);
+            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", repo_path_.c_str());
 
-            if (stat(buf, &st))
+            const char *cmake_args[] = { "/bin/sh", "-c", buf, NULL };
+
+            strncpy(flags[0], build_cflags(config, "CPPFLAGS").c_str(), BUFSIZ);
+            strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
+            strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
+            strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
+            snprintf(flags[4], BUFSIZ, "PATH=%s", getenv("PATH"));
+
+            char *const envp[] = {
+                flags[0], flags[1], flags[2], flags[3], flags[4], NULL
+            };
+
+            if (fork_command(cmake_args, path, envp))
             {
-                char flags[4][BUFSIZ];
-
-                snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", repo_path_.c_str());
-
-                const char *cmake_args[] = { "/bin/sh", "-c", buf, NULL };
-
-                strncpy(flags[0], build_cflags(config, "CPPFLAGS").c_str(), BUFSIZ);
-                strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
-                strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
-                strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
-
-                char *const envp[] = {
-                    flags[0], flags[1], flags[2], flags[3], NULL
-                };
-
-                if (fork_command(cmake_args, path, envp))
-                {
-                    log_error("unable to execute cmake");
-                    return EXIT_FAILURE;
-                }
+                log_error("unable to execute cmake");
+                return EXIT_FAILURE;
             }
 
+            return build_make(config, path);
+        }
+
+        int package_builder::build_make(const package &config, const char *path)
+        {
             const char *make_args[] = { "/bin/sh", "-c", "make install", NULL };
 
             if (fork_command(make_args, path, NULL))
@@ -323,46 +347,49 @@ namespace arg3
         int package_builder::build_autotools(const package &config, const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
-            struct stat st;
 
-            snprintf(buf, BUFSIZ, "%s/Makefile", path);
+            char flags[5][BUFSIZ];
 
-            if (stat(buf, &st))
-            {
-                char flags[4][BUFSIZ];
+            log_debug("building autotools [%s]", path);
 
+            snprintf(buf, BUFSIZ, "%s/configure", path);
+
+            if (file_exists(buf)) {
                 snprintf(buf, BUFSIZ, "./configure --prefix=%s", repo_path_.c_str());
+            } else {
 
-                const char *configure_args[] = { "/bin/sh", "-c", buf, NULL };
+                snprintf(buf, BUFSIZ, "%s/autogen.sh", path);
 
-                strncpy(flags[0], build_cflags(config, "CPPFLAGS").c_str(), BUFSIZ);
-                strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
-                strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
-                strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
-
-                char *const envp[] = {
-                    flags[0], flags[1], flags[2], flags[3], NULL
-                };
-
-                if (fork_command(configure_args, path, envp))
-                {
-                    log_error("unable to execute configure");
+                if (!file_exists(buf)) {
+                    log_error("Don't know how to build %s... no autotools configuration found.", config.name());
                     return EXIT_FAILURE;
                 }
+
+                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s", repo_path_.c_str());
             }
 
-            const char *make_args[] = { "/bin/sh", "-c", "make install", NULL };
+            const char *configure_args[] = { "/bin/sh", "-c", buf, NULL };
 
-            if (fork_command(make_args, path, NULL))
+            strncpy(flags[0], build_cflags(config, "CPPFLAGS").c_str(), BUFSIZ);
+            strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
+            strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
+            strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
+            snprintf(flags[4], BUFSIZ, "PATH=%s", getenv("PATH"));
+
+            char *const envp[] = {
+                flags[0], flags[1], flags[2], flags[3], flags[4], NULL
+            };
+
+            if (fork_command(configure_args, path, envp))
             {
-                log_error("unable to execute make");
+                log_error("unable to execute configure");
                 return EXIT_FAILURE;
             }
 
-            return EXIT_SUCCESS;
+            return build_make(config, path);
         }
 
-        int package_builder::build_from_folder(const options &opts, const char *path)
+        int package_builder::build_from_folder(options &opts, const char *path)
         {
             package_config config;
 

@@ -6,20 +6,20 @@
 
 void print_help(char *exe)
 {
-    printf("Syntax: %s [-g] install <package>\n", exe);
+    printf("Syntax: %s [-g] install <package url, git url, archive or directory>\n", exe);
     printf("      : %s [-g] remove <package>\n", exe);
     printf("      : %s [-g] update <package>\n", exe);
     printf("      : %s check\n", exe);
 }
 
-int main(int argc, char *const argv[], char *const envp[])
+int main(int argc, char *const argv[])
 {
     arg3::prep::package_builder prep;
     arg3::prep::options options;
     const char *command;
     int option;
 
-    while ((option = getopt(argc, argv, "gf:")) != EOF)
+    while ((option = getopt(argc, argv, "gf:l:")) != EOF)
     {
         switch (option)
         {
@@ -28,6 +28,9 @@ int main(int argc, char *const argv[], char *const envp[])
             break;
         case 'f':
             options.package_file = optarg;
+            break;
+        case 'l':
+            arg3::prep::set_log_level(optarg);
             break;
         }
     }
@@ -42,14 +45,9 @@ int main(int argc, char *const argv[], char *const envp[])
         return EXIT_FAILURE;
     }
 
-    if (optind == 1)
+    if (optind >= argc)
     {
         command = "install";
-    }
-    else  if (optind >= argc)
-    {
-        print_help(argv[0]);
-        return EXIT_FAILURE;
     }
     else
     {
@@ -83,6 +81,8 @@ int main(int argc, char *const argv[], char *const envp[])
     {
     }
 
+    printf("Unknown command '%s'\n", command ? command : "null");
 
-    return EXIT_SUCCESS;
+    print_help(argv[0]);
+    return EXIT_FAILURE;
 }

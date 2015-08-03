@@ -15,10 +15,24 @@ namespace arg3
 	{
 		const char *LOG_LEVEL_NAMES[] =
 		{
-			"UNKNOWN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"
+			"UNKNOWN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", NULL
 		};
 
 		LogLevel __current_log_level = LogInfo;
+
+		void set_log_level(const char *name) {
+			int i = 0;
+
+			if (name == NULL || *name == 0) {
+				return;
+			}
+
+			for ( ; LOG_LEVEL_NAMES[i] != NULL; i++) {
+				if (!strcmp(name, LOG_LEVEL_NAMES[i])) {
+					__current_log_level = (LogLevel) i;
+				}
+			}
+		}
 
 		static void log_vargs(LogLevel level, const char *const format, va_list args)
 		{

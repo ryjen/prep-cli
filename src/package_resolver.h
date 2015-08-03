@@ -21,9 +21,9 @@ namespace arg3
 
             std::string working_dir() const;
         private:
-            int resolve_package_git(package &config, const options &opts);
+            int resolve_package_git(package &config, const options &opts, const char *url);
             int resolve_package_directory(package &config, const options &opts, const char *path);
-            int resolve_package_download(package &config, const options &opts);
+            int resolve_package_download(package &config, const options &opts, const char *url);
             int resolve_package_archive(package &config, const options &opts, const char *path);
             string workingDir_;
             bool isTemp_;

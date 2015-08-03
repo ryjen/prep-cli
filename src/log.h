@@ -27,6 +27,8 @@ namespace arg3
 			LogTrace = 5
 		} LogLevel;
 
+		void set_log_level(const char *name);
+
 		void log_error(const char *const format, ...) __attribute__((format(printf, 1, 2)));
 
 		void log_warn(const char *const format, ...) __attribute__((format(printf, 1, 2)));

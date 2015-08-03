@@ -7,9 +7,13 @@ namespace arg3
 {
     namespace prep
     {
-        package_dependency::package_dependency(json_object *obj) : values_(obj)
+        package_dependency::package_dependency(json_object *obj) : package(obj)
         {
+
         }
+
+        package_dependency::package_dependency(const package_dependency &other) : package(other)
+        {}
 
         package_dependency::~package_dependency()
         {
@@ -20,39 +24,10 @@ namespace arg3
             }
         }
 
-        const char *package_dependency::name() const
+        int package_dependency::load(const std::string &path, const options &opts)
         {
-            json_object *obj;
-
-            if (json_object_object_get_ex(values_, "name", &obj))
-                return json_object_get_string(obj);
-
-            return NULL;
+            return EXIT_SUCCESS;
         }
 
-        const char *package_dependency::build_system() const
-        {
-            json_object *obj;
-
-            if (json_object_object_get_ex(values_, "build_system", &obj))
-                return json_object_get_string(obj);
-
-            return NULL;
-        }
-
-        const char *package_dependency::git() const
-        {
-            json_object *obj;
-
-            if (json_object_object_get_ex(values_, "git", &obj))
-                return json_object_get_string(obj);
-
-            return NULL;
-        }
-
-        std::string package_dependency::to_string() const
-        {
-            return json_object_to_json_string(values_);
-        }
     }
 }

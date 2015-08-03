@@ -8,9 +8,31 @@
 	"build_system": "autotools",
 	"dependencies": [
 		{
-			"name": "cparse",
-			"location": "http://github.com/c0der78/cparse.git",
+			"name": "libcurl",
+			"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
 			"build_system": "autotools"
+		},
+		{
+			"name": "json-c",
+			"location": "https://github.com/json-c/json-c.git",
+			"build_system": "autotools"
+		},
+		{
+			"name": "libarchive",
+			"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
+			"build_system": "autotools",
+			"dependencies": [
+				{
+					"name": "libxml2",
+					"location": "ftp://xmlsoft.org/libxml2/libxml2-git-snapshot.tar.gz",
+					"build_system": "autotools"
+				}
+			]
+		},
+		{
+			"name": "libgit2",
+			"location": "https://github.com/libgit2/libgit2/archive/v0.23.0.tar.gz",
+			"build_system": "cmake"
 		}
 	]
 

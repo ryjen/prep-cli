@@ -10,9 +10,9 @@ namespace arg3
         class package_builder
         {
         public:
-            void initialize(const options &opts);
-            int build(const package_config &config, const options &opts, const std::string &path);
-            int build_from_folder(const options &opts, const char *path);
+            int initialize(const options &opts);
+            int build(const package &config, options &opts, const std::string &path);
+            int build_from_folder(options &opts, const char *path);
             string repo_path() const;
         private:
             int build_package(const package &p, const char *path);
@@ -20,6 +20,7 @@ namespace arg3
             string build_ldflags(const package &config, const std::string &varName) const;
             int build_autotools(const package &config, const char *path);
             int build_cmake(const package &config, const char *path);
+            int build_make(const package &config, const char *path);
             const char *const get_home_dir() const;
             std::string exists_in_history(const std::string &) const;
             void save_history(const std::string &, const std::string &) const;

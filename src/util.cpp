@@ -1,4 +1,4 @@
-
+#include "config.h"
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -10,13 +10,24 @@
 #include <cerrno>
 #include <sys/param.h>
 #include <libgen.h>
-
-extern char *const environ[];
+#ifdef HAVE_LIBCURL
+#include <curl/curl.h>
+#include <curl/easy.h>
+#endif
+#include <string>
+#include "log.h"
 
 namespace arg3
 {
     namespace prep
     {
+        bool str_cmp(const char *astr, const char *bstr) {
+            if (astr == NULL || bstr == NULL) {
+                return true;
+            }
+
+            return strcasecmp(astr, bstr);
+        }
 
         int make_temp_file(char *buffer, size_t size)
         {
@@ -40,13 +51,15 @@ namespace arg3
 
             if (pid == -1)
             {
-                perror("unable to fork command");
+                log_errno(errno);
+                return EXIT_FAILURE;
             }
-            else if (pid == 0)
-            {
 
+            if (pid == 0)
+            {
                 if (chdir(directory))
                 {
+                    log_error("unable to change directory [%s]", directory);
                     return EXIT_FAILURE;
                 }
 
@@ -70,6 +83,10 @@ namespace arg3
                 {
                     rval = WEXITSTATUS(status);
                 }
+                else
+                {
+                    log_error("child process did not exit cleanly");
+                }
             }
 
             return rval;
@@ -77,7 +94,6 @@ namespace arg3
 
         int pipe_command(const char *buf, const char *directory)
         {
-
             char cur_dir[MAXPATHLEN + 1] = {0};
 
             if (directory)
@@ -191,7 +207,7 @@ namespace arg3
                 }
                 else
                 {
-                    perror("stat");
+                    log_error("%s [%s]", strerror(errno), path);
                     exit(1);
                 }
             }
@@ -205,6 +221,37 @@ namespace arg3
                 else
                 {
                     return 2;
+                }
+            }
+        }
+
+        int file_exists(const char *path)
+        {
+            struct stat s;
+            int err = stat(path, &s);
+            if (-1 == err)
+            {
+                if (ENOENT == errno)
+                {
+                    /* does not exist */
+                    return 0;
+                }
+                else
+                {
+                    perror("stat");
+                    exit(1);
+                }
+            }
+            else
+            {
+                if (S_ISREG(s.st_mode))
+                {
+                    /* it's a dir */
+                    return 1;
+                }
+                else
+                {
+                    return 0;
                 }
             }
         }
@@ -230,6 +277,63 @@ namespace arg3
             }
 
             return mkdir(dir, mode);
+        }
+
+#ifdef HAVE_LIBCURL
+        size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+        {
+            size_t written = fwrite(ptr, size, nmemb, stream);
+            return written;
+        }
+#endif
+
+        int download_to_temp_file(const char *url, std::string &filename)
+        {
+#ifdef HAVE_LIBCURL
+            char temp [BUFSIZ + 1] = {0};
+            FILE *fp = NULL;
+            int fd = -1, httpCode = 0;
+            CURLcode res;
+            CURL *curl = curl_easy_init();
+
+            if (curl == NULL || url == NULL || *url == '\0') {
+                return EXIT_FAILURE;
+            }
+
+            log_debug("Downloading %s", url);
+
+            strncpy(temp, "/tmp/prep-XXXXXX", BUFSIZ);
+
+            if ((fd = mkstemp (temp)) < 0 || (fp = fdopen(fd, "wb")) == NULL) {
+                return EXIT_FAILURE;
+            }
+
+            filename = temp;
+
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            res = curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
+            fclose(fp);
+
+            if (res != CURLE_OK) {
+                log_error("%s", curl_easy_strerror(res));
+                return EXIT_FAILURE;
+            }
+
+            res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+
+            if (res != CURLE_OK || httpCode != 200) {
+                log_error("%d code from server", httpCode);
+                return EXIT_FAILURE;
+            }
+
+            return EXIT_SUCCESS;
+#else
+            log_error("libcurl not installed or configured");
+            return EXIT_FAILURE;
+#endif
         }
 
     }

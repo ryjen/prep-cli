@@ -1,6 +1,8 @@
 
 #include "decompressor.h"
 #include "log.h"
+#include <libgen.h>
+#include <limits.h>
 
 #ifdef HAVE_LIBARCHIVE
 #include <archive_entry.h>
@@ -48,6 +50,11 @@ namespace arg3
             , in_(NULL), out_(NULL)
 #endif
         {
+            char buf[PATH_MAX + 1] = {0};
+
+            strncpy(buf, path, PATH_MAX);
+
+            outPath_ = dirname(buf);
         }
 
         decompressor::~decompressor()
@@ -89,6 +96,8 @@ namespace arg3
 #ifdef HAVE_LIBARCHIVE
             int r;
             struct archive_entry *entry;
+            char folderName[PATH_MAX + 1] = {0};
+            char buf[PATH_MAX + 1] = {0};
 
             if (in_ != NULL || out_ != NULL)
             {
@@ -122,17 +131,16 @@ namespace arg3
                 return EXIT_SUCCESS;
             }
 
-            const char *temp = archive_entry_pathname( entry );
+            strncpy(folderName, archive_entry_pathname( entry ), PATH_MAX);
 
-            if (temp[strlen(temp) - 1] == '/') {
-                outPath_ .assign(temp, strlen(temp) - 1);
-            }
-            else {
-                outPath_ = ".";
-            }
+            snprintf(buf, PATH_MAX, "%s/%s", outPath_.c_str(), folderName);
+
+            archive_entry_set_pathname(entry, buf);
 
             while (r == ARCHIVE_OK)
             {
+                const char *entryName = NULL;
+
                 if (archive_write_header(out_, entry) != ARCHIVE_OK) {
                     log_error("unable to write header from decompression %d:%s", r, archive_error_string(in_));
                 }
@@ -148,7 +156,18 @@ namespace arg3
                 }
 
                 r = archive_read_next_header(in_, &entry);
+
+                entryName = archive_entry_pathname( entry );
+
+                snprintf(buf, PATH_MAX, "%s/%s", outPath_.c_str(), entryName);
+
+                archive_entry_set_pathname(entry, buf);
+
+                log_debug("extracting %s", buf);
             }
+
+            outPath_ += "/";
+            outPath_ += folderName;
 
             if (r < ARCHIVE_OK)
             {
@@ -160,6 +179,7 @@ namespace arg3
             cleanup();
             return EXIT_SUCCESS;
 #else
+            log_error("libarchive not configured or installed");
             return EXIT_FAILURE;
 #endif
         }

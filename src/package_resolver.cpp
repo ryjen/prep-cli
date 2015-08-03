@@ -8,15 +8,12 @@
 #ifdef HAVE_LIBGIT2
 #include <git2.h>
 #endif
-#ifdef HAVE_LIBCURL
-#include <curl/curl.h>
-#include <curl/easy.h>
-#endif
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif
 #include <cassert>
 #include <decompressor.h>
+#include <libgen.h>
 
 namespace arg3
 {
@@ -50,7 +47,7 @@ namespace arg3
         }
 #endif
 
-        int package_resolver::resolve_package_git(package &config, const options &opts)
+        int package_resolver::resolve_package_git(package &config, const options &opts, const char *url)
         {
 #ifdef HAVE_LIBGIT2
             char buffer [BUFSIZ + 1] = {0};
@@ -70,7 +67,7 @@ namespace arg3
             clone_opts.remote_callbacks.payload = NULL;
 
             git_repository *repo = NULL;
-            int error = git_clone(&repo, opts.location.c_str(), buffer, &clone_opts);
+            int error = git_clone(&repo, url, buffer, &clone_opts);
             if (error < 0)
             {
                 const git_error *e = giterr_last();
@@ -88,57 +85,30 @@ namespace arg3
 #endif
         }
 
-#ifdef HAVE_LIBCURL
-        size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+        int package_resolver::resolve_package_download(package &config, const options &opts, const char *url)
         {
-            size_t written = fwrite(ptr, size, nmemb, stream);
-            return written;
-        }
-#endif
+            string buffer;
 
-        int package_resolver::resolve_package_download(package &config, const options &opts)
-        {
-#ifdef HAVE_LIBCURL
-            char buffer [BUFSIZ + 1] = {0};
-            FILE *fp;
-            int fd = -1;
-            CURL *curl = curl_easy_init();
-
-            if (curl == NULL) {
+            if (download_to_temp_file(url, buffer)) {
+                log_error("unable to download %s", opts.location.c_str());
                 return EXIT_FAILURE;
             }
 
-            strncpy(buffer, "/tmp/prep-XXXXXX", BUFSIZ);
+            int rval = resolve_package_archive(config, opts, buffer.c_str());
 
-            if ((fd = mkstemp (buffer)) < 0 || (fp = fdopen(fd, "wb")) == NULL) {
-                return EXIT_FAILURE;
-            }
-
-            curl_easy_setopt(curl, CURLOPT_URL, opts.location.c_str());
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-            CURLcode res = curl_easy_perform(curl);
-            curl_easy_cleanup(curl);
-            fclose(fp);
-
-            int rval = resolve_package_archive(config, opts, buffer);
-
-            unlink(buffer);
+            unlink(buffer.c_str());
 
             return rval;
-#else
-            log_error("libcurl not installed or configured");
-            return EXIT_FAILURE;
-#endif
         }
 
         int package_resolver::resolve_package_archive(package &config, const options &opts, const char *path)
         {
-            log_debug("resolving archive %s...\n", path);
+            log_debug("resolving archive %s...", path);
 
             decompressor d(path);
 
             if (d.decompress()) {
+                log_error("unable to decompress %s", path);
                 return EXIT_FAILURE;
             }
 
@@ -163,29 +133,29 @@ namespace arg3
 
             int fileType = directory_exists(path.c_str());
 
+            int status = EXIT_FAILURE;
+
             if (fileType == 1)
             {
-                return resolve_package_directory(config, opts, path.c_str());
+                status = resolve_package_directory(config, opts, path.c_str());
             }
             else if (fileType == 2)
             {
-                return resolve_package_archive(config, opts, path.c_str());
+                status = resolve_package_archive(config, opts, path.c_str());
             }
             else if (path.find("://") != std::string::npos)
             {
                 if (path.rfind(".git") != std::string::npos || path.find("git://") != std::string::npos)
                 {
-                    return resolve_package_git(config, opts);
+                    status = resolve_package_git(config, opts, path.c_str());
                 }
                 else
                 {
-                    return resolve_package_download(config, opts);
+                    status = resolve_package_download(config, opts, path.c_str());
                 }
             }
-            else
-            {
-                return EXIT_FAILURE;
-            }
+
+            return status;
         }
     }
 }
