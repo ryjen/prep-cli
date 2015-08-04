@@ -21,10 +21,12 @@ namespace arg3
             int build_autotools(const package &config, const char *path);
             int build_cmake(const package &config, const char *path);
             int build_make(const package &config, const char *path);
-            const char *const get_home_dir() const;
+            string build_path(const package &config) const;
+            string get_home_dir() const;
             std::string exists_in_history(const std::string &) const;
             void save_history(const std::string &, const std::string &) const;
             int save_meta(const package &config) const;
+            int has_meta(const package &config) const;
 
             string repo_path_;
 

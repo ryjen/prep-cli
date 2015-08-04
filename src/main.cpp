@@ -37,7 +37,9 @@ int main(int argc, char *const argv[])
 
     try
     {
-        prep.initialize(options);
+        if (prep.initialize(options) ) {
+            return EXIT_FAILURE;
+        }
     }
     catch (const std::exception &e)
     {

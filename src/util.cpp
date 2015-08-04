@@ -313,6 +313,7 @@ namespace arg3
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
             res = curl_easy_perform(curl);
             curl_easy_cleanup(curl);
             fclose(fp);

@@ -48,7 +48,7 @@ namespace arg3
             }
             else
             {
-                repo_path_ = string(get_home_dir()) + "/" + LOCAL_REPO;
+                repo_path_ = get_home_dir();
             }
 
 
@@ -87,8 +87,43 @@ namespace arg3
             return EXIT_SUCCESS;
         }
 
+        string package_builder::get_home_dir() const
+        {
+            static string home_dir_path;
+
+            if (home_dir_path.empty())
+            {
+                char * homedir = getenv("HOME");
+
+                if (homedir == NULL)
+                {
+                    uid_t uid = getuid();
+                    struct passwd *pw = getpwuid(uid);
+
+                    if (pw == NULL)
+                    {
+                        log_error("Failed to get user home directory");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    homedir = pw->pw_dir;
+                }
+
+                home_dir_path = homedir;
+
+                home_dir_path += "/";
+                home_dir_path += LOCAL_REPO;
+            }
+
+            return home_dir_path;
+        }
+
         int package_builder::build_package(const package &config, const char *path)
         {
+            if (has_meta(config) == EXIT_SUCCESS) {
+                return EXIT_SUCCESS;
+            }
+
             if (!str_cmp(config.build_system(), "autotools"))
             {
                 if ( build_autotools(config, path) ) {
@@ -123,10 +158,6 @@ namespace arg3
 
         int package_builder::save_meta(const package &config) const
         {
-            if (config.version() == NULL) {
-                return EXIT_SUCCESS;
-            }
-
             string metaDir = repo_path_ + "/" + META_FOLDER;
 
             if (!directory_exists(metaDir.c_str())) {
@@ -138,11 +169,47 @@ namespace arg3
 
             ofstream out(metaDir + "/" + config.name());
 
-            out << config.version() << endl;
+            if (config.version()) {
+                out << config.version() << endl;
+            } else if (config.location()) {
+                out << config.location() << endl;
+            }
 
             out.close();
 
             return EXIT_SUCCESS;
+        }
+
+        int package_builder::has_meta(const package &config) const
+        {
+            string metaDir = repo_path_ + "/" + META_FOLDER;
+
+            if (!directory_exists(metaDir.c_str())) {
+                return EXIT_FAILURE;
+            }
+
+            ifstream in(metaDir + "/" + config.name());
+
+            string info;
+
+            in >> info;
+
+            in.close();
+
+            if (config.version()) {
+                if (strcmp(info.c_str(), config.version()) >= 0) {
+                    log_info("Already have %s version %s", config.name(), info.c_str());
+                    return EXIT_SUCCESS;
+                }
+            }
+            else if (config.location()) {
+                if (!strcmp(info.c_str(), config.location())) {
+                    log_info("Already have %s from %s", config.name(), info.c_str());
+                    return EXIT_SUCCESS;
+                }
+            }
+
+            return EXIT_FAILURE;
         }
 
         int package_builder::build(const package &config, options &opts, const std::string &path)
@@ -169,7 +236,6 @@ namespace arg3
                     }
 
                     working_dir = resolver.working_dir();
-
                 }
 
                 if (build(p, opts, working_dir)) {
@@ -224,38 +290,17 @@ namespace arg3
             os.close();
         }
 
-        const char *const package_builder::get_home_dir() const
-        {
-            char *homedir = getenv("HOME");
-
-            if (homedir == NULL)
-            {
-                uid_t uid = getuid();
-                struct passwd *pw = getpwuid(uid);
-
-                if (pw == NULL)
-                {
-                    log_error("Failed to get user home directory");
-                    exit(EXIT_FAILURE);
-                }
-
-                homedir = pw->pw_dir;
-            }
-
-            return homedir;
-        }
-
         string package_builder::build_ldflags(const package &config, const string &varName) const
         {
             ostringstream buf;
             char *temp;
 
-            if (directory_exists(LOCAL_REPO)) {
-                buf << "-L " << LOCAL_REPO << "/lib ";
+            if (directory_exists(get_home_dir().c_str())) {
+                buf << "-L" << get_home_dir() << "/lib ";
             }
 
             if (directory_exists(GLOBAL_REPO)) {
-                buf << "-L " << GLOBAL_REPO << "/lib ";
+                buf << "-L" << GLOBAL_REPO << "/lib ";
             }
 
             temp = getenv(varName.c_str());
@@ -270,7 +315,7 @@ namespace arg3
                 return flags;
             }
 
-            return varName + "=\"" + flags + "\"";
+            return varName + "=" + flags;
         }
 
         string package_builder::build_cflags(const package &config, const string &varName) const
@@ -278,8 +323,8 @@ namespace arg3
             ostringstream buf;
             char *temp;
 
-            if (directory_exists(LOCAL_REPO)) {
-                buf << "-I " << LOCAL_REPO << "/include ";
+            if (directory_exists(get_home_dir().c_str())) {
+                buf << "-I " << get_home_dir() << "/include ";
             }
 
             if (directory_exists(GLOBAL_REPO)) {
@@ -298,7 +343,35 @@ namespace arg3
                 return flags;
             }
 
-            return varName + "=\"" + flags + "\"";
+            return varName + "=" + flags;
+        }
+
+        string package_builder::build_path(const package &config) const
+        {
+            ostringstream buf;
+            char *temp;
+
+            if (directory_exists(get_home_dir().c_str())) {
+                buf << get_home_dir() << "/bin:";
+            }
+
+            if (directory_exists(GLOBAL_REPO)) {
+                buf << GLOBAL_REPO << "/bin:";
+            }
+
+            temp = getenv("PATH");
+
+            if (temp) {
+                buf << temp;
+            }
+
+            string flags = buf.str();
+
+            if (flags.empty()) {
+                return flags;
+            }
+
+            return "PATH=" + flags;
         }
 
         int package_builder::build_cmake(const package &config, const char *path)
@@ -316,7 +389,7 @@ namespace arg3
             strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
             strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
             strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
-            snprintf(flags[4], BUFSIZ, "PATH=%s", getenv("PATH"));
+            strncpy(flags[4], build_path(config).c_str(), BUFSIZ);
 
             char *const envp[] = {
                 flags[0], flags[1], flags[2], flags[3], flags[4], NULL
@@ -347,7 +420,6 @@ namespace arg3
         int package_builder::build_autotools(const package &config, const char *path)
         {
             char buf[BUFSIZ + 1] = {0};
-
             char flags[5][BUFSIZ];
 
             log_debug("building autotools [%s]", path);
@@ -374,7 +446,7 @@ namespace arg3
             strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
             strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
             strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
-            snprintf(flags[4], BUFSIZ, "PATH=%s", getenv("PATH"));
+            strncpy(flags[4], build_path(config).c_str(), BUFSIZ);
 
             char *const envp[] = {
                 flags[0], flags[1], flags[2], flags[3], flags[4], NULL
