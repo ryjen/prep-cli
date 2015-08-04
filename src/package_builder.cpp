@@ -378,10 +378,17 @@ namespace arg3
         {
             char buf[BUFSIZ + 1] = {0};
             char flags[5][BUFSIZ];
+            const char *buildopts = NULL;
 
             log_debug("building cmake [%s]", path);
 
-            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", repo_path_.c_str());
+            buildopts = config.build_options();
+
+            if (buildopts == NULL) {
+                buildopts = "";
+            }
+
+            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s .", repo_path_.c_str(), buildopts);
 
             const char *cmake_args[] = { "/bin/sh", "-c", buf, NULL };
 
@@ -421,13 +428,20 @@ namespace arg3
         {
             char buf[BUFSIZ + 1] = {0};
             char flags[5][BUFSIZ];
+            const char *buildopts = NULL;
 
             log_debug("building autotools [%s]", path);
+
+            buildopts = config.build_options();
+
+            if (buildopts == NULL) {
+                buildopts = "";
+            }
 
             snprintf(buf, BUFSIZ, "%s/configure", path);
 
             if (file_exists(buf)) {
-                snprintf(buf, BUFSIZ, "./configure --prefix=%s", repo_path_.c_str());
+                snprintf(buf, BUFSIZ, "./configure --prefix=%s %s", repo_path_.c_str(), buildopts);
             } else {
 
                 snprintf(buf, BUFSIZ, "%s/autogen.sh", path);
@@ -437,7 +451,7 @@ namespace arg3
                     return EXIT_FAILURE;
                 }
 
-                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s", repo_path_.c_str());
+                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s %s", repo_path_.c_str(), buildopts);
             }
 
             const char *configure_args[] = { "/bin/sh", "-c", buf, NULL };

@@ -212,18 +212,17 @@ namespace arg3
 
         const char *package::build_system() const
         {
-            json_object *obj;
-
-            if (json_object_object_get_ex(values_, "build_system", &obj)) {
-                return json_object_get_string(obj);
-            }
-
-            return NULL;
+            return get_str("build_system");
         }
 
         const char *package::location() const
         {
             return get_str( "location");
+        }
+
+        const char *package::build_options() const
+        {
+            return get_str("build_options");
         }
 
         void package::set_str(const std::string &key, const std::string &value)

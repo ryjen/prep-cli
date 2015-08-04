@@ -36,6 +36,7 @@ namespace arg3
             const char *name() const;
             const char *version() const;
             const char *build_system() const;
+            const char *build_options() const;
             virtual int load(const std::string &path, const options &opts) = 0;
             virtual const char *location() const;
             bool is_loaded() const;
