@@ -18,7 +18,7 @@ namespace arg3
 
         static const char *const PACKAGE_FILE = "package.json";
 
-        options::options_s() : global(false), package_file(PACKAGE_FILE), location(DEFAULT_LOCATION)
+        options::options_s() : global(false), package_file(PACKAGE_FILE), location(DEFAULT_LOCATION), force_build(false)
         {}
 
         package::package() : values_(NULL)

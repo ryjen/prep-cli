@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cassert>
 #include <pwd.h>
+#include <fts.h>
 #include <uuid/uuid.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -38,6 +39,8 @@ namespace arg3
 
         const char *const package_builder::META_FOLDER = ".meta";
 
+        const char *const package_builder::INSTALL_FOLDER = ".install";
+
         int package_builder::initialize(const options &opts)
         {
             char path[BUFSIZ + 1] = {0};
@@ -51,6 +54,8 @@ namespace arg3
                 repo_path_ = get_home_dir();
             }
 
+
+            force_build_ = opts.force_build;
 
             if (!directory_exists(repo_path_.c_str())) {
                 int ch;
@@ -118,9 +123,18 @@ namespace arg3
             return home_dir_path;
         }
 
+        string package_builder::get_install_dir(const package &config) const
+        {
+            if (config.name() == NULL) {
+                return "/tmp/unknown";
+            }
+
+            return repo_path_ + "/" + INSTALL_FOLDER + "/" + config.name();
+        }
+
         int package_builder::build_package(const package &config, const char *path)
         {
-            if (has_meta(config) == EXIT_SUCCESS) {
+            if (!force_build_ && has_meta(config) == EXIT_SUCCESS) {
                 return EXIT_SUCCESS;
             }
 
@@ -191,9 +205,7 @@ namespace arg3
             ifstream in(metaDir + "/" + config.name());
 
             string info;
-
             in >> info;
-
             in.close();
 
             if (config.version()) {
@@ -214,10 +226,21 @@ namespace arg3
 
         int package_builder::build(const package &config, options &opts, const std::string &path)
         {
+            string installDir;
+
             assert(config.is_loaded());
 
             if (config.location() != NULL) {
                 save_history(config.location(), path);
+            }
+            
+            installDir = get_install_dir(config);
+
+            if (!directory_exists(installDir.c_str())) {
+                if (mkpath(installDir.c_str(), 0777)) {
+                    log_error("could not create [%s] (%s)", installDir.c_str(), strerror(errno));
+                    return EXIT_FAILURE;
+                }
             }
 
             for (package_dependency &p : config.dependencies())
@@ -247,7 +270,131 @@ namespace arg3
                 return EXIT_FAILURE;
             }
 
+            if ( link_package(config) ) {
+                log_error("Unable to link package");
+                return EXIT_FAILURE;
+            }
+
             return EXIT_SUCCESS;
+        }
+
+        int package_builder::link_package(const package &config) const
+        {
+            FTS *file_system = NULL;
+            FTSENT *child = NULL;
+            FTSENT *parent = NULL;
+            int rval = EXIT_SUCCESS;
+            char buf[PATH_MAX+1] = {0};
+            struct stat st;
+
+            char *const paths[] = {
+                (char *const) get_install_dir(config).c_str(),
+                NULL
+            };
+
+            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
+
+            if (file_system == NULL) {
+                log_error("unable to open file system [%s]", strerror(errno));
+                return EXIT_FAILURE;
+            }
+
+            size_t plength = get_install_dir(config).length();
+
+            while ( (parent = fts_read(file_system)) != NULL) 
+            {
+                if (strlen(parent->fts_path) <= plength) {
+                    continue;
+                }
+
+                // get the repo path
+                snprintf(buf, PATH_MAX, "%s%s", repo_path_.c_str(), parent->fts_path + plength);
+
+                // and check if it already exists
+                if (stat(buf, &st) == 0) {
+                    log_debug("%s exists, skipping", buf, strerror(errno));
+                    continue;
+                }
+
+                // check the install file is a directory
+                if (stat(parent->fts_path, &st) == 0 && S_ISDIR(st.st_mode)) {
+                    // create the repo path directory
+                    if (mkdir(buf, 0777)) {
+                        log_error("Could not create %s [%s]", buf, strerror(errno));
+                        rval = EXIT_FAILURE;
+                        break;
+                    }
+                    continue;
+                }
+
+                log_debug("linking [%s] to [%s]", parent->fts_path, buf);
+
+                if ( symlink(parent->fts_path, buf) ) {
+                    log_error("unable to link [%s]", strerror(errno));
+                    rval = EXIT_FAILURE;
+                    break;
+                }
+            }
+        
+            fts_close(file_system);
+
+            return rval;
+        }
+
+        int package_builder::unlink_package(const package &config) const
+        {
+            FTS *file_system = NULL;
+            FTSENT *child = NULL;
+            FTSENT *parent = NULL;
+            int rval = EXIT_SUCCESS;
+            char buf[PATH_MAX+1] = {0};
+            struct stat st;
+
+            char *const paths[] = {
+                (char *const) get_install_dir(config).c_str(),
+                NULL
+            };
+
+            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
+
+            if (file_system == NULL) {
+                log_error("unable to open file system [%s]", strerror(errno));
+                return EXIT_FAILURE;
+            }
+
+            size_t plength = get_install_dir(config).length();
+
+            while ( (parent = fts_read(file_system)) != NULL) 
+            {
+                if (strlen(parent->fts_path) <= plength) {
+                    continue;
+                }
+
+                // get the repo path
+                snprintf(buf, PATH_MAX, "%s%s", repo_path_.c_str(), parent->fts_path + plength);
+
+                if (stat(buf, &st)) {
+                    log_debug("%s not found, skipping", buf, strerror(errno));
+                    continue;
+                }
+
+                if (!S_ISLNK(st.st_mode)) {
+                    log_debug("%s is not a link, skipping", buf);
+                    continue;
+                }
+
+                log_debug("unlinking [%s]", buf);
+
+                if ( unlink(buf) ) {
+                    log_error("unable to unlink [%s]", strerror(errno));
+                    rval = EXIT_FAILURE;
+                    break;
+                }
+            }
+        
+            fts_close(file_system);
+
+            return rval;
         }
 
         std::string package_builder::exists_in_history(const std::string &location) const
@@ -388,13 +535,12 @@ namespace arg3
                 buildopts = "";
             }
 
-            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s .", repo_path_.c_str(), buildopts);
+            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s .", get_install_dir(config).c_str(), buildopts);
 
             const char *cmake_args[] = { "/bin/sh", "-c", buf, NULL };
 
             strncpy(flags[0], build_cflags(config, "CPPFLAGS").c_str(), BUFSIZ);
             strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
-            strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
             strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
             strncpy(flags[4], build_path(config).c_str(), BUFSIZ);
 
@@ -441,7 +587,7 @@ namespace arg3
             snprintf(buf, BUFSIZ, "%s/configure", path);
 
             if (file_exists(buf)) {
-                snprintf(buf, BUFSIZ, "./configure --prefix=%s %s", repo_path_.c_str(), buildopts);
+                snprintf(buf, BUFSIZ, "./configure --prefix=%s %s", get_install_dir(config).c_str(), buildopts);
             } else {
 
                 snprintf(buf, BUFSIZ, "%s/autogen.sh", path);
@@ -451,14 +597,13 @@ namespace arg3
                     return EXIT_FAILURE;
                 }
 
-                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s %s", repo_path_.c_str(), buildopts);
+                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s %s", get_install_dir(config).c_str(), buildopts);
             }
 
             const char *configure_args[] = { "/bin/sh", "-c", buf, NULL };
 
             strncpy(flags[0], build_cflags(config, "CPPFLAGS").c_str(), BUFSIZ);
             strncpy(flags[1], build_cflags(config, "CXXFLAGS").c_str(), BUFSIZ);
-            strncpy(flags[2], build_cflags(config, "CFLAGS").c_str(), BUFSIZ);
             strncpy(flags[3], build_ldflags(config, "LDFLAGS").c_str(), BUFSIZ);
             strncpy(flags[4], build_path(config).c_str(), BUFSIZ);
 

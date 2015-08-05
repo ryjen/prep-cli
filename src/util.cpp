@@ -258,25 +258,42 @@ namespace arg3
 
         int mkpath(const char *dir, mode_t mode)
         {
+            struct stat sb;
+            char buf[PATH_MAX] = {0};
+            char *slash = NULL;
+            int done = 0;
+
             if (!dir) {
                 errno = EINVAL;
                 return 1;
             }
 
-            if (strlen(dir) == 1 && dir[0] == '/') {
-                return 0;
+            strncpy(buf, dir, PATH_MAX);
+
+            slash = buf;
+
+            while (!done) {
+                slash += strspn(slash, "/");
+                slash += strcspn(slash, "/");
+
+                done = (*slash == '\0');
+                *slash = '\0';
+
+                if (stat(buf, &sb)) {
+                    if (errno != ENOENT || (mkdir(buf, mode) &&
+                        errno != EEXIST)) {
+                        log_warn("%s", buf);
+                        return (-1);
+                    }
+                } else if (!S_ISDIR(sb.st_mode)) {
+                    log_warn("%s: %s", buf, strerror(ENOTDIR));
+                    return (-1);
+                }
+
+                *slash = '/';
             }
 
-            if (*dir) {
-
-                char buf[PATH_MAX] = {0};
-
-                strncpy(buf, dir, PATH_MAX);
-
-                mkpath(dirname(buf), mode);
-            }
-
-            return mkdir(dir, mode);
+            return (0);
         }
 
 #ifdef HAVE_LIBCURL

@@ -25,6 +25,7 @@ namespace arg3
             bool global;
             string package_file;
             string location;
+            bool force_build;
         } options;
 
         class package_dependency;

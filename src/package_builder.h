@@ -27,8 +27,13 @@ namespace arg3
             void save_history(const std::string &, const std::string &) const;
             int save_meta(const package &config) const;
             int has_meta(const package &config) const;
+            string get_install_dir(const package &config) const;
+            int link_package(const package &config) const;
+            int unlink_package(const package &config) const;
 
             string repo_path_;
+
+            bool force_build_;
 
             static const char *const LOCAL_REPO;
 
@@ -37,6 +42,8 @@ namespace arg3
             static const char *const HISTORY_FILE;
 
             static const char *const META_FOLDER;
+
+            static const char *const INSTALL_FOLDER;
         };
     }
 }
