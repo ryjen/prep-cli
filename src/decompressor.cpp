@@ -76,16 +76,21 @@ namespace arg3
 #ifdef HAVE_LIBARCHIVE
             if (in_ != NULL)
             {
+#if ARCHIVE_VERSION_NUMBER < 3000000
                 archive_read_close(in_);
+#else
                 archive_read_free(in_);
+#endif
                 in_ = NULL;
             }
 
             if (out_ != NULL)
             {
-
+#if ARCHIVE_VERSION_NUMBER < 3000000
                 archive_write_close(out_);
+#else
                 archive_write_free(out_);
+#endif
                 out_ = NULL;
             }
 #endif
@@ -108,7 +113,11 @@ namespace arg3
             in_ = archive_read_new();
 
             archive_read_support_format_all(in_);
+#if ARCHIVE_VERSION_NUMBER >= 3000000
             archive_read_support_filter_all(in_);
+#else
+            archive_read_support_compression_all(in_);
+#endif
 
             if ((r = archive_read_open_filename(in_, path_.c_str(), 10240)))
             {
