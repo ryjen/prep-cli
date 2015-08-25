@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cassert>
 #include <pwd.h>
+#include <dirent.h>
 #include <uuid/uuid.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -37,6 +38,8 @@ namespace arg3
         const char *const package_builder::GLOBAL_REPO = "/usr/local/share/prep";
 
         const char *const package_builder::META_FOLDER = ".meta";
+
+        const char *const package_builder::INSTALL_FOLDER = ".install";
 
         int package_builder::initialize(const options &opts)
         {
@@ -118,27 +121,40 @@ namespace arg3
             return home_dir_path;
         }
 
+        string package_builder::get_install_path(const package &config) const
+        {
+            return repo_path_ + "/" + INSTALL_FOLDER + "/" + config.name();
+        }
+
         int package_builder::build_package(const package &config, const char *path)
         {
+            string installPath;
+
             if (has_meta(config) == EXIT_SUCCESS) {
                 return EXIT_SUCCESS;
             }
 
+            installPath = get_install_path(config);
+
+            log_trace("Installing to %s...", installPath.c_str());
+
+            if (!directory_exists(installPath.c_str())) {
+                log_trace("Creating %s...", installPath.c_str());
+                if (mkpath(installPath.c_str(), 0777)) {
+                    log_errno(errno);
+                    return EXIT_FAILURE;
+                }
+            }
+
             if (!str_cmp(config.build_system(), "autotools"))
             {
-                if ( build_autotools(config, path) ) {
+                if ( build_autotools(config, path, installPath.c_str()) ) {
                     return EXIT_FAILURE;
                 }
             }
             else if (!str_cmp(config.build_system(), "cmake"))
             {
-                if ( build_cmake(config, path) ) {
-                    return EXIT_FAILURE;
-                }
-            }
-            else if (!str_cmp(config.build_system(), "make"))
-            {
-                if ( build_make(config, path)) {
+                if ( build_cmake(config, path, installPath.c_str()) ) {
                     return EXIT_FAILURE;
                 }
             }
@@ -150,6 +166,11 @@ namespace arg3
 
             if (save_meta(config)) {
                 log_error("unable to save meta data");
+                return EXIT_FAILURE;
+            }
+
+            if (link(config, installPath, repo_path_.c_str())) {
+                log_error("unable to link %s to %s", installPath.c_str(), repo_path_.c_str());
                 return EXIT_FAILURE;
             }
 
@@ -212,9 +233,70 @@ namespace arg3
             return EXIT_FAILURE;
         }
 
+        int package_builder::link(const package &config, const string &fromPath, const string &toPath)
+        {
+            string nextPath;
+            struct dirent *d_ent = NULL;
+
+            DIR *dir = opendir(fromPath.c_str());
+
+            if (dir == NULL) {
+                log_errno(errno);
+                return EXIT_FAILURE;
+            }
+
+            while ((d_ent = readdir(dir))) {
+                struct stat st;
+                string fullFromPath;
+                string fullToPath;
+
+                if (*d_ent->d_name == '.') {
+                    continue;
+                }
+
+                fullFromPath = fromPath + "/" + d_ent->d_name;
+
+                fullToPath = toPath + "/" + d_ent->d_name;
+
+                if (stat(fullFromPath.c_str(), &st)) {
+                    log_errno(errno);
+                    continue;
+                }
+
+                if (S_ISDIR(st.st_mode)) {
+
+                    if (mkpath(fullToPath.c_str(), 0777)) {
+                        log_errno(errno);
+                        closedir(dir);
+                        return EXIT_FAILURE;
+                    }
+
+                    if (link(config, fullFromPath, fullToPath)) {
+                        log_error("unable to link directory contents %s to %s", fullFromPath.c_str(), fullToPath.c_str());
+                        closedir(dir);
+                        return EXIT_FAILURE;
+                    }
+                }
+
+                else if (S_ISREG(st.st_mode)) {
+                    if (symlink(fullFromPath.c_str(), fullToPath.c_str())) {
+                        log_error("unable to link %s to %s", fullFromPath.c_str(), fullToPath.c_str());
+                        closedir(dir);
+                        return EXIT_FAILURE;
+                    }
+
+                    log_trace("Linked %s to %s", fullFromPath.c_str(), fullToPath.c_str());
+                }
+            }
+
+            return EXIT_SUCCESS;
+        }
+
         int package_builder::build(const package &config, options &opts, const std::string &path)
         {
             assert(config.is_loaded());
+
+            log_trace("Building from %s...", path.c_str());
 
             if (config.location() != NULL) {
                 save_history(config.location(), path);
@@ -224,6 +306,10 @@ namespace arg3
             {
                 package_resolver resolver;
                 string working_dir;
+
+                if (has_meta(p) == EXIT_SUCCESS) {
+                    continue;
+                }
 
                 log_info("Building dependency %s...", p.name());
 
@@ -236,6 +322,7 @@ namespace arg3
                     }
 
                     working_dir = resolver.working_dir();
+
                 }
 
                 if (build(p, opts, working_dir)) {
@@ -374,14 +461,14 @@ namespace arg3
             return "PATH=" + flags;
         }
 
-        int package_builder::build_cmake(const package &config, const char *path)
+        int package_builder::build_cmake(const package &config, const char *path, const char *toPath)
         {
             char buf[BUFSIZ + 1] = {0};
             char flags[5][BUFSIZ];
 
             log_debug("building cmake [%s]", path);
 
-            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", repo_path_.c_str());
+            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s .", toPath);
 
             const char *cmake_args[] = { "/bin/sh", "-c", buf, NULL };
 
@@ -417,7 +504,7 @@ namespace arg3
             return EXIT_SUCCESS;
         }
 
-        int package_builder::build_autotools(const package &config, const char *path)
+        int package_builder::build_autotools(const package &config, const char *path, const char *toPath)
         {
             char buf[BUFSIZ + 1] = {0};
             char flags[5][BUFSIZ];
@@ -427,7 +514,7 @@ namespace arg3
             snprintf(buf, BUFSIZ, "%s/configure", path);
 
             if (file_exists(buf)) {
-                snprintf(buf, BUFSIZ, "./configure --prefix=%s", repo_path_.c_str());
+                snprintf(buf, BUFSIZ, "./configure --prefix=%s", toPath);
             } else {
 
                 snprintf(buf, BUFSIZ, "%s/autogen.sh", path);
@@ -437,7 +524,7 @@ namespace arg3
                     return EXIT_FAILURE;
                 }
 
-                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s", repo_path_.c_str());
+                snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s", toPath);
             }
 
             const char *configure_args[] = { "/bin/sh", "-c", buf, NULL };

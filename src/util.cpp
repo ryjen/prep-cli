@@ -256,27 +256,24 @@ namespace arg3
             }
         }
 
-        int mkpath(const char *dir, mode_t mode)
-        {
-            if (!dir) {
-                errno = EINVAL;
+        int mkpath(const char* file_path, mode_t mode) {
+            char* p;
+            if (!file_path || !*file_path) {
                 return 1;
             }
-
-            if (strlen(dir) == 1 && dir[0] == '/') {
-                return 0;
+            for (p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
+                *p = '\0';
+                if (mkdir(file_path, mode) == -1) {
+                    if (errno != EEXIST) { *p = '/'; return -1; }
+                }
+                *p = '/';
             }
-
-            if (*dir) {
-
-                char buf[PATH_MAX] = {0};
-
-                strncpy(buf, dir, PATH_MAX);
-
-                mkpath(dirname(buf), mode);
+            if (mkdir(file_path, mode) == -1) {
+                if (errno != EEXIST) {
+                    return -1;
+                }
             }
-
-            return mkdir(dir, mode);
+            return 0;
         }
 
 #ifdef HAVE_LIBCURL
