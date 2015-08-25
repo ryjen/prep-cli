@@ -19,16 +19,18 @@ int main(int argc, char *const argv[])
     const char *command;
     int option;
 
-    while ((option = getopt(argc, argv, "gf:l:")) != EOF)
+    while ((option = getopt(argc, argv, "gfp:l:")) != EOF)
     {
         switch (option)
         {
         case 'g':
             options.global = true;
             break;
-        case 'f':
+        case 'p':
             options.package_file = optarg;
             break;
+        case 'f':
+            options.force_build = true;
         case 'l':
             arg3::prep::set_log_level(optarg);
             break;

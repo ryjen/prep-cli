@@ -23,14 +23,17 @@ namespace arg3
             int build_make(const package &config, const char *path);
             string build_path(const package &config) const;
             string get_home_dir() const;
-            string get_install_path(const package &config) const;
             std::string exists_in_history(const std::string &) const;
             void save_history(const std::string &, const std::string &) const;
             int save_meta(const package &config) const;
             int has_meta(const package &config) const;
-            int link(const package &config, const string &fromPath, const string &toPath);
+            string get_install_dir(const package &config) const;
+            int link_package(const package &config) const;
+            int unlink_package(const package &config) const;
 
             string repo_path_;
+
+            bool force_build_;
 
             static const char *const LOCAL_REPO;
 

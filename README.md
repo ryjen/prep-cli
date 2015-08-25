@@ -34,7 +34,8 @@ Examples explain best.  This is prep's configuration:
 				{
 					"name": "libxml2",
 					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
-					"build_system": "autotools"
+					"build_system": "autotools",
+					"build_options": "--without-python"
 				}
 			]
 		},
@@ -44,7 +45,6 @@ Examples explain best.  This is prep's configuration:
 			"build_system": "cmake"
 		}
 	]
-
 }
 ```
 
@@ -56,15 +56,6 @@ prep -f http://remote.host.com/package.json
 
 ```
 
-or you can define a remote package file for a dependency like so:
-
-```JSON
-{
-	"name": "somelib",
-	"location": "http://some.download.url/file.archive",
-	"package_file": "http://some.package.repo/package.json"
-}
-```
 
 How It Works
 ============
@@ -75,7 +66,7 @@ You can specify a global repository (/usr/local/prep) with the '-g' option.
 
 When prep builds a package, it will set environment variables to prefer the repository locations first.
 
-If a build fails, a .history file is kept to resume appropriately.
+A .history file is kept to resume appropriately if a build fails.
 
 When build succeeds, a record is kept in .meta/package_name which contains either the version or the download url.
 

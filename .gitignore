@@ -1,9 +1,3 @@
-COPYING
-INSTALL
-compile
-depcomp
-install-sh
-missing
 aclocal.m4
 *.cache
 *.o

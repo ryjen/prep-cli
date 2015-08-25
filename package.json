@@ -25,7 +25,8 @@
 				{
 					"name": "libxml2",
 					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
-					"build_system": "autotools"
+					"build_system": "autotools",
+					"build_options": "--without-python"
 				}
 			]
 		},

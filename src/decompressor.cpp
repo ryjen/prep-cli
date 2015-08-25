@@ -139,8 +139,6 @@ namespace arg3
 
             while (r == ARCHIVE_OK)
             {
-                const char *entryName = NULL;
-
                 if (archive_write_header(out_, entry) != ARCHIVE_OK) {
                     log_error("unable to write header from decompression %d:%s", r, archive_error_string(in_));
                 }
@@ -157,13 +155,16 @@ namespace arg3
 
                 r = archive_read_next_header(in_, &entry);
 
-                entryName = archive_entry_pathname( entry );
+                if (r == ARCHIVE_OK)
+                {
+                    const char *entryName = archive_entry_pathname( entry );
 
-                snprintf(buf, PATH_MAX, "%s/%s", outPath_.c_str(), entryName);
+                    snprintf(buf, PATH_MAX, "%s/%s", outPath_.c_str(), entryName);
 
-                archive_entry_set_pathname(entry, buf);
+                    archive_entry_set_pathname(entry, buf);
 
-                log_debug("extracting %s", buf);
+                    log_debug("extracting %s", buf);
+                }
             }
 
             outPath_ += "/";

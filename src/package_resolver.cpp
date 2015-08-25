@@ -57,6 +57,7 @@ namespace arg3
 
             git_libgit2_init();
             git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+
 #if (LIBGIT2_SOVERSION >= 23)
             checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
 #else
@@ -67,6 +68,7 @@ namespace arg3
 
             git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
             clone_opts.checkout_opts = checkout_opts;
+
 #if (LIBGIT2_SOVERSION >= 23)
             clone_opts.fetch_opts.callbacks.transfer_progress = &fetch_progress;
             clone_opts.fetch_opts.callbacks.payload = NULL;
