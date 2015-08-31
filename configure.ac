@@ -13,30 +13,21 @@ AC_PROG_CXX
 AC_PROG_CC
 
 # Checks for libraries.
-AC_CHECK_LIB(json-c, json_tokener_parse)
-AC_CHECK_LIB(git2, git_libgit2_version)
-AC_CHECK_LIB(curl, curl_easy_init)
-AC_CHECK_LIB(archive, archive_read_new)
+AC_CHECK_LIB(json-c, json_tokener_parse, [], [AC_MSG_ERROR([libjson-c is required])])
+AC_CHECK_LIB(git2, git_libgit2_version, [], [AC_MSG_ERROR([libgit2 is required])])
+AC_CHECK_LIB(curl, curl_easy_init, [], [AC_MSG_ERROR([libcurl is required])])
+AC_CHECK_LIB(archive, archive_read_new, [], [AC_MSG_ERROR([libarchive is required])])
 
-if test "$ac_cv_lib_json_c_json_tokener_parse" = "no"; then
-	AC_MSG_ERROR([libjson-c is required])
-else
-	AC_CHECK_HEADER([json-c/json.h], AC_DEFINE(HAVE_JSON_C_H, 1, [Lib json-c has json-c header folder]))
-fi
+AC_CHECK_HEADER([json-c/json.h], AC_DEFINE(HAVE_JSON_C_H, 1, [Lib json-c has json-c header folder]))
 
-if test "$ac_cv_lib_archive_archive_read_new" = "yes"; then
-	AC_CHECK_HEADER([archive.h], [AC_DEFINE(HAVE_ARCHIVE_H, 1, [Lib archive has headers])], [AC_MSG_ERROR([archive.h is required])])
-else
-	AC_MSG_ERROR([libarchive is required])
-fi
-
-if test "$ac_cv_lib_git2_git_libgit2_version" = "no"; then
-	AC_MSG_ERROR([libgit2 is required])
-fi
+AC_CHECK_HEADER([archive.h], [AC_DEFINE(HAVE_ARCHIVE_H, 1, [Lib archive has headers])], [AC_MSG_ERROR([archive.h is required])])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
 
+AC_CHECK_HEADERS([libgen.h archive_entry.h curl/curl.h])
+
 # Checks for library functions.
+AC_CHECK_FUNCS([dladdr])
 
 AC_OUTPUT

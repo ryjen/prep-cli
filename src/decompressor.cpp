@@ -1,14 +1,23 @@
 
 #include "decompressor.h"
 #include "log.h"
+#include "common.h"
+#include "util.h"
+#ifdef HAVE_LIBGEN_H
 #include <libgen.h>
+#endif
 #include <limits.h>
 
-#ifdef HAVE_LIBARCHIVE
+#ifdef HAVE_ARCHIVE_ENTRY_H
 #include <archive_entry.h>
 #endif
 #include <cerrno>
 #include <cstdlib>
+
+
+#define windowBits 15
+
+#define ENABLE_ZLIB_GZIP 32
 
 namespace arg3
 {
@@ -107,7 +116,7 @@ namespace arg3
             if (in_ != NULL || out_ != NULL)
             {
                 log_errno(EINVAL);
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             in_ = archive_read_new();
@@ -123,7 +132,7 @@ namespace arg3
             {
                 log_error("unable to open %s %d: %s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             out_ = archive_write_disk_new();
@@ -137,12 +146,12 @@ namespace arg3
             {
                 log_error("error extracting %s - %d:%s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
-                return EXIT_SUCCESS;
+                return PREP_SUCCESS;
             }
 
             strncpy(folderName, archive_entry_pathname( entry ), PATH_MAX);
 
-            snprintf(buf, PATH_MAX, "%s/%s", outPath_.c_str(), folderName);
+            strncpy(buf, build_sys_path(outPath_.c_str(), folderName, NULL), PATH_MAX);
 
             archive_entry_set_pathname(entry, buf);
 
@@ -158,7 +167,7 @@ namespace arg3
                     {
                         log_error("unable finish archive write %d:%s\n", r, archive_error_string(out_));
                         cleanup();
-                        return EXIT_FAILURE;
+                        return PREP_FAILURE;
                     }
                 }
 
@@ -168,7 +177,7 @@ namespace arg3
                 {
                     const char *entryName = archive_entry_pathname( entry );
 
-                    snprintf(buf, PATH_MAX, "%s/%s", outPath_.c_str(), entryName);
+                    strncpy(buf, build_sys_path(outPath_.c_str(), entryName, NULL), PATH_MAX);
 
                     archive_entry_set_pathname(entry, buf);
 
@@ -176,21 +185,20 @@ namespace arg3
                 }
             }
 
-            outPath_ += "/";
-            outPath_ += folderName;
+            outPath_ = build_sys_path(outPath_.c_str(), folderName, NULL);
 
             if (r < ARCHIVE_OK)
             {
                 log_error("unable to extract %s - %d: %s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             cleanup();
-            return EXIT_SUCCESS;
+            return PREP_SUCCESS;
 #else
             log_error("libarchive not configured or installed");
-            return EXIT_FAILURE;
+            return PREP_FAILURE;
 #endif
         }
     }

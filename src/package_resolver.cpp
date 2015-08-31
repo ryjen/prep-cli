@@ -1,7 +1,9 @@
 #include "config.h"
 #include "package_resolver.h"
 #include "util.h"
+#include "repository.h"
 #include "log.h"
+#include "common.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -35,7 +37,7 @@ namespace arg3
 #ifdef HAVE_LIBGIT2
         int fetch_progress(const git_transfer_progress *stats, void *payload)
         {
-            printf("\033[Afetching %d/%d %.0f%%\n\r", stats->indexed_objects, stats->total_objects,
+            printf("\x1b[Afetching %d/%d %.0f%%\n\r", stats->indexed_objects, stats->total_objects,
                    (float) stats->indexed_objects / (float) stats->total_objects * 100.f);
 
             return 0;
@@ -43,7 +45,7 @@ namespace arg3
 
         void checkout_progress(const char *path, size_t cur, size_t tot, void *payload)
         {
-            printf("\033[Acheckout %ld/%ld %.0f%%\n\r", cur, tot, (float) cur / (float) tot * 100.f);
+            printf("\x1b[Acheckout %ld/%ld %.0f%%\n\r", cur, tot, (float) cur / (float) tot * 100.f);
         }
 #endif
 
@@ -83,7 +85,7 @@ namespace arg3
             {
                 const git_error *e = giterr_last();
                 log_error("%d/%d: %s\n", error, e->klass, e->message);
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
             git_repository_free(repo);
 
@@ -92,7 +94,7 @@ namespace arg3
             return resolve_package_directory(config, opts, buffer);
 #else
             log_error("libgit2 is not installed or configured.");
-            return EXIT_FAILURE;
+            return PREP_FAILURE;
 #endif
         }
 
@@ -102,7 +104,7 @@ namespace arg3
 
             if (download_to_temp_file(url, buffer)) {
                 log_error("unable to download %s", opts.location.c_str());
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             int rval = resolve_package_archive(config, opts, buffer.c_str());
@@ -114,13 +116,13 @@ namespace arg3
 
         int package_resolver::resolve_package_archive(package &config, const options &opts, const char *path)
         {
-            log_debug("resolving archive %s...", path);
+            log_trace("resolving archive [%s]...", path);
 
             decompressor d(path);
 
             if (d.decompress()) {
                 log_error("unable to decompress %s", path);
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             isTemp_ = true;
@@ -131,20 +133,34 @@ namespace arg3
 
         int package_resolver::resolve_package_directory(package &config, const options &opts, const char *path)
         {
-            log_debug("resolving directory %s...", path);
+            log_trace("resolving package directory [%s]...", path);
 
             workingDir_ = path;
 
             return config.load(path, opts);
         }
 
+        int package_resolver::resolve_existing_package(package &config, const options &opts, const std::string &name)
+        {
+            repository repo;
+
+            if (repo.initialize(opts)) {
+                log_error("unable to intialize repository");
+                return PREP_FAILURE;
+            }
+
+            workingDir_ = repo.get_meta_path(name);
+
+            log_trace("resolving package %s...", workingDir_.c_str());
+
+            return config.load(workingDir_, opts);
+        }
+
         int package_resolver::resolve_package(package &config, const options &opts, const std::string &path)
         {
-            log_debug("resolving package %s...", path.c_str());
-
             int fileType = directory_exists(path.c_str());
 
-            int status = EXIT_FAILURE;
+            int status = PREP_FAILURE;
 
             if (fileType == 1)
             {

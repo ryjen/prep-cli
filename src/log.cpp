@@ -15,7 +15,12 @@ namespace arg3
 	{
 		const char *LOG_LEVEL_NAMES[] =
 		{
-			"UNKNOWN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", NULL
+			"UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", NULL
+		};
+
+		const char *LOG_LEVEL_COLOR[] =
+		{
+			"", "\x1b[1;31m", "\x1b[1;33m", "\x1b[1;32m", "\x1b[1;36m", "\x1b[1;37m", NULL
 		};
 
 		LogLevel __current_log_level = LogInfo;
@@ -36,7 +41,7 @@ namespace arg3
 
 		static void log_vargs(LogLevel level, const char *const format, va_list args)
 		{
-			fprintf(stdout, "%s: ", LOG_LEVEL_NAMES[level]);
+			fprintf(stdout, "%s%5s\x1b[0m: ", LOG_LEVEL_COLOR[level], LOG_LEVEL_NAMES[level]);
 			vfprintf(stdout, format, args);
 			fputs("\n", stdout);
 			fflush(stdout);

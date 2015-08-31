@@ -2,13 +2,16 @@
 #include "package_config.h"
 #include "log.h"
 #include "util.h"
+#include "common.h"
 #include <fstream>
 #include <sstream>
-#ifdef HAVE_LIBCURL
+#ifdef HAVE_CURL_CURL_H
 #include <curl/curl.h>
 #include <curl/easy.h>
 #endif
+#ifdef HAVE_LIBGEN_H
 #include <libgen.h>
+#endif
 
 namespace arg3
 {
@@ -107,7 +110,7 @@ namespace arg3
 
                 file.open(buf);
 
-                return EXIT_SUCCESS;
+                return PREP_SUCCESS;
             }
 
             if (filename.find("://") != string::npos)
@@ -115,7 +118,7 @@ namespace arg3
                 return download_package_file(path, filename, file);
             }
 
-            return EXIT_FAILURE;
+            return PREP_FAILURE;
         }
 
         int package_config::download_package_file(const string &path, const string &url, ifstream &file)
@@ -129,7 +132,7 @@ namespace arg3
 
             if (download_to_temp_file(url.c_str(), buffer)) {
                 log_error("unable to download %s", url.c_str());
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             strncpy(filename, url.c_str(), BUFSIZ);
@@ -140,12 +143,12 @@ namespace arg3
 
             if (rename(buffer.c_str(), filename)) {
                 log_error("unable to rename %s to %s", buffer.c_str(), filename);
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             file.open(filename);
 
-            return EXIT_SUCCESS;
+            return PREP_SUCCESS;
         }
 
         int package_config::load(const std::string &path, const options &opts)
@@ -155,7 +158,7 @@ namespace arg3
             std::ostringstream os;
 
             if (path.empty()) {
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             if (values_ != NULL)
@@ -165,14 +168,14 @@ namespace arg3
             }
 
             if (resolve_package_file(path, opts.package_file, file)) {
-                log_error("unable to resolve %s", opts.package_file.c_str());
-                return EXIT_FAILURE;
+                log_debug("unable to resolve %s/%s", path.c_str(), opts.package_file.c_str());
+                return PREP_FAILURE;
             }
 
             if (!file.is_open())
             {
                 log_error("unable to open %s", opts.package_file.c_str());
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             file >> os.rdbuf();
@@ -182,7 +185,7 @@ namespace arg3
             if (values_ == NULL)
             {
                 printf("invalid configuration for %s\n", os.str().c_str());
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             if (json_object_object_get_ex(values_, "dependencies", &depjson))
@@ -197,7 +200,11 @@ namespace arg3
                 }
             }
 
-            return EXIT_SUCCESS;
+            path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
+
+            log_info("Loaded config [%s] from [%s]", name(), path.c_str());
+
+            return PREP_SUCCESS;
         }
 
         const char *package::name() const
@@ -223,6 +230,21 @@ namespace arg3
         const char *package::build_options() const
         {
             return get_str("build_options");
+        }
+
+        const char *package::path() const
+        {
+            return path_.c_str();
+        }
+
+        bool package::has_path() const
+        {
+            return !path_.empty();
+        }
+
+        bool package::has_name() const
+        {
+            return json_object_object_get_ex(values_, "name", NULL);
         }
 
         void package::set_str(const std::string &key, const std::string &value)

@@ -1824,6 +1824,73 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_type
+
+# ac_fn_c_check_func LINENO FUNC VAR
+# ----------------------------------
+# Tests whether FUNC exists, setting the cache variable VAR accordingly
+ac_fn_c_check_func ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
+$as_echo_n "checking for $2... " >&6; }
+if eval \${$3+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+/* Define $2 to an innocuous variant, in case <limits.h> declares $2.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $2 innocuous_$2
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $2 (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef $2
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $2 ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_$2 || defined __stub___$2
+choke me
+#endif
+
+int
+main ()
+{
+return $2 ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  eval "$3=yes"
+else
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_func
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -4261,6 +4328,8 @@ _ACEOF
 
   LIBS="-ljson-c $LIBS"
 
+else
+  as_fn_error $? "libjson-c is required" "$LINENO" 5
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for git_libgit2_version in -lgit2" >&5
@@ -4306,6 +4375,8 @@ _ACEOF
 
   LIBS="-lgit2 $LIBS"
 
+else
+  as_fn_error $? "libgit2 is required" "$LINENO" 5
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
@@ -4351,6 +4422,8 @@ _ACEOF
 
   LIBS="-lcurl $LIBS"
 
+else
+  as_fn_error $? "libcurl is required" "$LINENO" 5
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for archive_read_new in -larchive" >&5
@@ -4396,13 +4469,12 @@ _ACEOF
 
   LIBS="-larchive $LIBS"
 
+else
+  as_fn_error $? "libarchive is required" "$LINENO" 5
 fi
 
 
-if test "$ac_cv_lib_json_c_json_tokener_parse" = "no"; then
-	as_fn_error $? "libjson-c is required" "$LINENO" 5
-else
-	ac_ext=c
+ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -4807,10 +4879,8 @@ $as_echo "#define HAVE_JSON_C_H 1" >>confdefs.h
 fi
 
 
-fi
 
-if test "$ac_cv_lib_archive_archive_read_new" = "yes"; then
-	ac_fn_c_check_header_mongrel "$LINENO" "archive.h" "ac_cv_header_archive_h" "$ac_includes_default"
+ac_fn_c_check_header_mongrel "$LINENO" "archive.h" "ac_cv_header_archive_h" "$ac_includes_default"
 if test "x$ac_cv_header_archive_h" = xyes; then :
 
 $as_echo "#define HAVE_ARCHIVE_H 1" >>confdefs.h
@@ -4820,13 +4890,6 @@ else
 fi
 
 
-else
-	as_fn_error $? "libarchive is required" "$LINENO" 5
-fi
-
-if test "$ac_cv_lib_git2_git_libgit2_version" = "no"; then
-	as_fn_error $? "libgit2 is required" "$LINENO" 5
-fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for stdbool.h that conforms to C99" >&5
@@ -4917,7 +4980,32 @@ fi
 
 
 
+for ac_header in libgen.h archive_entry.h curl/curl.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+
 # Checks for library functions.
+for ac_func in dladdr
+do :
+  ac_fn_c_check_func "$LINENO" "dladdr" "ac_cv_func_dladdr"
+if test "x$ac_cv_func_dladdr" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_DLADDR 1
+_ACEOF
+
+fi
+done
+
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure

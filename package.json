@@ -10,7 +10,30 @@
 		{
 			"name": "libcurl",
 			"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
-			"build_system": "autotools"
+			"build_system": "autotools",
+			"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+			"dependencies": [
+				{
+					"name": "libz",
+					"location": "http://zlib.net/zlib-1.2.8.tar.gz",
+					"build_system": "autotools"
+				},
+				/*{
+					"name": "openldap",
+					"location": "http://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.4.9.tgz",
+					"build_system": "autotools"
+				},
+				{
+					"name": "libidn",
+					"location": "http://ftp.gnu.org/gnu/libidn/libidn-1.32.tar.gz",
+					"build_system": "autotools"
+				},
+				{
+					"name": "openssl",
+					"location": "http://www.openssl.org/source/openssl-1.0.2d.tar.gz",
+					"build_system": "make"
+				}*/
+			]
 		},
 		{
 			"name": "json-c",

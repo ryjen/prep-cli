@@ -2,20 +2,24 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cstdio>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
+#include <fstream>
 #include <sys/stat.h>
 #include <cerrno>
 #include <sys/param.h>
 #include <libgen.h>
+#include <fts.h>
 #ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 #include <curl/easy.h>
 #endif
 #include <string>
+#include <pwd.h>
 #include "log.h"
+#include "common.h"
 
 namespace arg3
 {
@@ -63,8 +67,11 @@ namespace arg3
                     return EXIT_FAILURE;
                 }
 
-                for (int i = 0; argv[i] != NULL; i++) {
+                for (int i = 0; argv != NULL && argv[i] != NULL; i++) {
                     printf("%s ", argv[i]);
+                }
+                for (int i = 0; envp != NULL && envp[i] != NULL; i++) {
+                    printf("%s ", envp[i]);
                 }
                 puts(":");
 
@@ -82,6 +89,22 @@ namespace arg3
                 if (WIFEXITED(status))
                 {
                     rval = WEXITSTATUS(status);
+                }
+                else if (WIFSIGNALED(status))
+                {
+                    int sig = WTERMSIG(status);
+
+                    log_error("child process signal %d", sig);
+
+                    if (WCOREDUMP(status)) {
+                        log_error("child produced core dump");
+                    }
+                }
+                else if (WIFSTOPPED(status))
+                {
+                    int sig = WSTOPSIG(status);
+
+                    log_error("child process stopped signal %d", sig);
                 }
                 else
                 {
@@ -131,8 +154,78 @@ namespace arg3
             return rval;
         }
 
+        int remove_directory(const char *dir)
+        {
+            int ret = PREP_SUCCESS;
+            FTS *ftsp = NULL;
+            FTSENT *curr = NULL;
+
+            // Cast needed (in C) because fts_open() takes a "char * const *", instead
+            // of a "const char * const *", which is only allowed in C++. fts_open()
+            // does not modify the argument.
+            char *files[] = { (char *) dir, NULL };
+
+            // FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
+            //                in multithreaded programs
+            // FTS_PHYSICAL - Don't follow symlinks. Prevents deletion of files outside
+            //                of the specified directory
+            // FTS_XDEV     - Don't cross filesystem boundaries
+            ftsp = fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, NULL);
+
+            if (!ftsp) {
+                log_error("failed to open %s [%s]", dir, strerror(errno));
+                return PREP_FAILURE;
+            }
+
+            while ((curr = fts_read(ftsp))) {
+                switch (curr->fts_info) {
+                case FTS_NS:
+                case FTS_DNR:
+                case FTS_ERR:
+                    log_error("%s: fts_read error: %s",
+                              curr->fts_accpath, strerror(curr->fts_errno));
+                    break;
+
+                case FTS_DC:
+                case FTS_DOT:
+                case FTS_NSOK:
+                    // Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
+                    // passed to fts_open()
+                    break;
+
+                case FTS_D:
+                    // Do nothing. Need depth-first search, so directories are deleted
+                    // in FTS_DP
+                    break;
+
+                case FTS_DP:
+                case FTS_F:
+                case FTS_SL:
+                case FTS_SLNONE:
+                case FTS_DEFAULT:
+                    if (remove(curr->fts_accpath) < 0) {
+                        log_error("%s: Failed to remove: %s",
+                                  curr->fts_path, strerror(errno));
+                        ret = PREP_FAILURE;
+                    }
+                    break;
+                }
+            }
+
+            if (ftsp) {
+                fts_close(ftsp);
+            }
+
+            return ret;
+        }
+
+        /*
         int remove_directory(const char *path)
         {
+            if (path == NULL || *path == 0) {
+                return PREP_FAILURE;
+            }
+
             DIR *d = opendir(path);
             size_t path_len = strlen(path);
             int r = -1;
@@ -149,7 +242,6 @@ namespace arg3
                     char *buf;
                     size_t len;
 
-                    /* Skip the names "." and ".." as we don't want to recurse on them. */
                     if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
                     {
                         continue;
@@ -191,7 +283,7 @@ namespace arg3
             }
 
             return r;
-        }
+        }*/
 
 
         int directory_exists(const char *path)
@@ -322,7 +414,7 @@ namespace arg3
 
             res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
 
-            if (res != CURLE_OK || httpCode != 200) {
+            if (res != CURLE_OK || httpCode < 200 || httpCode >= 300) {
                 log_error("%d code from server", httpCode);
                 return EXIT_FAILURE;
             }
@@ -332,6 +424,89 @@ namespace arg3
             log_error("libcurl not installed or configured");
             return EXIT_FAILURE;
 #endif
+        }
+
+        int copy_file(const std::string &from, const std::string &to)
+        {
+            std::ifstream src(from, std::ios::binary);
+
+            if (!src.is_open()) {
+                return PREP_FAILURE;
+            }
+
+            std::ofstream dst(to, std::ios::binary);
+
+            if (!dst.is_open()) {
+                return PREP_FAILURE;
+            }
+
+            dst << src.rdbuf();
+
+            return PREP_SUCCESS;
+        }
+
+        std::string get_user_home_dir()
+        {
+            static std::string home_dir_path;
+
+            if (home_dir_path.empty())
+            {
+                char * homedir = getenv("HOME");
+
+                if (homedir == NULL)
+                {
+                    uid_t uid = getuid();
+                    struct passwd *pw = getpwuid(uid);
+
+                    if (pw == NULL)
+                    {
+                        log_error("Failed to get user home directory");
+                        exit(PREP_FAILURE);
+                    }
+
+                    homedir = pw->pw_dir;
+                }
+
+                home_dir_path = homedir;
+            }
+
+            return home_dir_path;
+        }
+
+        const char* build_sys_path(const char *start, ...)
+        {
+            static char sbuf[3][PATH_MAX + 1];
+            static int i = 0;
+
+            i++, i %= 3;
+
+            va_list args;
+            char *buf = sbuf[i];
+
+            memset(buf, 0, PATH_MAX);
+
+            va_start(args, start);
+
+            if (start != NULL) {
+                strcat(buf, start);
+            }
+
+            const char *next = va_arg(args, const char*);
+
+            while (next != NULL) {
+#ifdef _WIN32
+                strcat(buf, "\\");
+#else
+                strcat(buf, "/");
+#endif
+                strcat(buf, next);
+
+                next = va_arg(args, const char*);
+            }
+
+            va_end(args);
+
+            return buf;
         }
 
     }

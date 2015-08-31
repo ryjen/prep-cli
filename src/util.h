@@ -1,3 +1,7 @@
+#ifndef INCLUDE_UTIL_H
+#define INCLUDE_UTIL_H
+
+#include <string>
 
 namespace arg3
 {
@@ -15,7 +19,7 @@ namespace arg3
 
         int file_exists(const char *path);
 
-        int download_to_temp_file(const char *url, string &filename);
+        int download_to_temp_file(const char *url, std::string &filename);
 
         void checkout_progress(const char *path, size_t cur, size_t tot, void *payload);
 
@@ -24,5 +28,13 @@ namespace arg3
         char *make_temp_dir(char *buffer, size_t size);
 
         int mkpath(const char *dir, mode_t mode);
+
+        int copy_file(const std::string &from, const std::string &to);
+
+        std::string get_user_home_dir();
+
+        const char* build_sys_path(const char *start, ...)  __attribute__((format(printf, 1, 2)));
     }
 }
+
+#endif

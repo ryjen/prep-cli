@@ -99,10 +99,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_prep_OBJECTS = main.$(OBJEXT) package_resolver.$(OBJEXT) \
-	decompressor.$(OBJEXT) package_config.$(OBJEXT) \
+am_prep_OBJECTS = decompressor.$(OBJEXT) environment.$(OBJEXT) \
+	log.$(OBJEXT) main.$(OBJEXT) package_config.$(OBJEXT) \
 	package_dependency.$(OBJEXT) package_builder.$(OBJEXT) \
-	util.$(OBJEXT) log.$(OBJEXT)
+	package_resolver.$(OBJEXT) repository.$(OBJEXT) util.$(OBJEXT)
 prep_OBJECTS = $(am_prep_OBJECTS)
 prep_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -254,7 +254,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -std=c++11 -stdlib=libc++
-prep_SOURCES = main.cpp package_resolver.cpp decompressor.cpp package_config.cpp package_dependency.cpp package_builder.cpp util.cpp log.cpp
+prep_SOURCES = decompressor.cpp environment.cpp log.cpp main.cpp package_config.cpp package_dependency.cpp package_builder.cpp package_resolver.cpp repository.cpp util.cpp
 all: all-am
 
 .SUFFIXES:
@@ -342,12 +342,14 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/decompressor.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/environment.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_builder.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_dependency.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/package_resolver.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/repository.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Po@am__quote@
 
 .cpp.o:

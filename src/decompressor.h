@@ -1,15 +1,16 @@
-#ifndef INCLUDE_DECOMPRESSOR
-#define INCLUDE_DECOMPRESSOR
+/**
+ * @author: Ryan Jennings <c0der78@gmail.com>
+ */
+#ifndef INCLUDE_DECOMPRESSOR_H
+#define INCLUDE_DECOMPRESSOR_H
 
 #include "config.h"
 
-#ifdef HAVE_LIBARCHIVE
+#ifdef HAVE_ARCHIVE_H
 #include <archive.h>
 #endif
 
 #include <string>
-#define windowBits 15
-#define ENABLE_ZLIB_GZIP 32
 
 namespace arg3
 {
@@ -29,7 +30,7 @@ namespace arg3
         private:
             void cleanup();
             decompressor &operator=(const decompressor &other);
-            decompressor(const decompressor &other);
+            decompressor (const decompressor &other);
 
 #ifdef HAVE_LIBARCHIVE
             struct archive *in_;

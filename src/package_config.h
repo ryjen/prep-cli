@@ -1,5 +1,5 @@
-#ifndef INCLUDE_CPPPM_CONFIG
-#define INCLUDE_CPPPM_CONFIG
+#ifndef INCLUDE_PACKAGE_CONFIG_H
+#define INCLUDE_PACKAGE_CONFIG_H
 
 #include "config.h"
 
@@ -38,6 +38,9 @@ namespace arg3
             const char *version() const;
             const char *build_system() const;
             const char *build_options() const;
+            const char *path() const;
+            bool has_path() const;
+            bool has_name() const;
             virtual int load(const std::string &path, const options &opts) = 0;
             virtual const char *location() const;
             bool is_loaded() const;
@@ -52,6 +55,7 @@ namespace arg3
             void set_str(const std::string &key, const std::string &value);
             void set_bool(const std::string &key, bool value);
             json_object *values_;
+            std::string path_;
             vector<package_dependency> dependencies_;
         };
 

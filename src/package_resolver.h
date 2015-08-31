@@ -1,5 +1,5 @@
-#ifndef INCLUDE_ARGUMENT_RESOLVER
-#define INCLUDE_ARGUMENT_RESOLVER
+#ifndef INCLUDE_PACKAGE_RESOLVER_H
+#define INCLUDE_PACKAGE_RESOLVER_H
 
 #include <string>
 
@@ -18,6 +18,8 @@ namespace arg3
             int resolve_package(package &config, const options &opts, const std::string &path);
 
             bool is_temp_path() const;
+
+            int resolve_existing_package(package &config, const options &opts, const std::string &name);
 
             std::string working_dir() const;
         private:

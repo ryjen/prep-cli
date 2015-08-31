@@ -41,6 +41,7 @@ namespace arg3
 	}
 }
 
+// A macro so the correct method name is displayed
 #define log_errno(errnum)  log_error("%d: %s", errnum, strerror(errnum))
 
 #endif

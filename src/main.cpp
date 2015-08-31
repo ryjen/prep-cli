@@ -3,6 +3,7 @@
 #include "package_builder.h"
 #include "package_resolver.h"
 #include "log.h"
+#include "common.h"
 
 void print_help(char *exe)
 {
@@ -40,13 +41,14 @@ int main(int argc, char *const argv[])
     try
     {
         if (prep.initialize(options) ) {
-            return EXIT_FAILURE;
+            return PREP_FAILURE;
         }
+
     }
     catch (const std::exception &e)
     {
         arg3::prep::log_error(e.what());
-        return EXIT_FAILURE;
+        return PREP_FAILURE;
     }
 
     if (optind >= argc)
@@ -75,10 +77,34 @@ int main(int argc, char *const argv[])
         if (resolver.resolve_package(config, options, options.location))
         {
             arg3::prep::log_error("%s is not a valid prep package", options.location.c_str());
-            return EXIT_FAILURE;
+            return PREP_FAILURE;
         }
 
         return prep.build(config, options, resolver.working_dir().c_str());
+    }
+
+    if (!strcmp(command, "remove"))
+    {
+        arg3::prep::package_resolver resolver;
+        arg3::prep::package_config config;
+
+        if (optind < 0 || optind >= argc)
+        {
+            arg3::prep::log_error("Remove which package?");
+            return PREP_FAILURE;
+        }
+
+        if (resolver.resolve_existing_package(config, options, argv[optind]))
+        {
+            if (prep.remove(argv[optind], options)) {
+                arg3::prep::log_error("%s is not an existing package", argv[optind]);
+                return PREP_FAILURE;
+            }
+
+            return PREP_SUCCESS;
+        }
+
+        return prep.remove(config, options);
     }
 
     if (!strcmp(command, "check"))
@@ -88,5 +114,5 @@ int main(int argc, char *const argv[])
     printf("Unknown command '%s'\n", command ? command : "null");
 
     print_help(argv[0]);
-    return EXIT_FAILURE;
+    return PREP_FAILURE;
 }

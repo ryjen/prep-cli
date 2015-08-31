@@ -56,19 +56,31 @@ prep -f http://remote.host.com/package.json
 
 ```
 
+Features
+========
+- local user repository ($HOME/.prep)
+- global repositories (/usr/local/prep)
+- supports cmake, autotools and makefile build systems
 
-How It Works
-============
+TODO
+====
+- plugin architecture for different build systems
+- custom build system
+	- recursive json syntax
+	- create visual studio projects on windows
+	- create make files on nix, or perform compile tasks directly?
+- package repository website/api (github?)
+- move history/meta to sqlite database
+- parse versions from filename
 
-Prep installs to a user repository ($HOME/.prep) by default.
+Repository Structure
+====================
 
-You can specify a global repository (/usr/local/prep) with the '-g' option.
+**.meta** : holds the version and package information
 
-When prep builds a package, it will set environment variables to prefer the repository locations first.
+**.install** : holds a directory for each package installation files
 
-A .history file is kept to resume appropriately if a build fails.
+**.history** : a record of incomplete installations
 
-When build succeeds, a record is kept in .meta/package_name which contains either the version or the download url.
-
-This .meta/package is used to skip dependencies that are already installed.
+Packages in **.install** are symlinked to **bin**, **lib**, **include**, etc.
 

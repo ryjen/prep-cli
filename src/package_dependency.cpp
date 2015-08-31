@@ -1,7 +1,6 @@
 
 #include "package_config.h"
-#include <fstream>
-#include <sstream>
+#include "common.h"
 
 namespace arg3
 {
@@ -26,7 +25,7 @@ namespace arg3
 
         int package_dependency::load(const std::string &path, const options &opts)
         {
-            return EXIT_SUCCESS;
+            return PREP_SUCCESS;
         }
 
     }
