@@ -33,6 +33,10 @@ namespace arg3
             return strcasecmp(astr, bstr);
         }
 
+        bool str_empty(const char *astr) {
+            return astr == NULL || *astr == '\0';
+        }
+
         int make_temp_file(char *buffer, size_t size)
         {
             strncpy(buffer, "/tmp/prep-XXXXXX", size);

@@ -61,10 +61,11 @@ Features
 - local user repository ($HOME/.prep)
 - global repositories (/usr/local/prep)
 - supports cmake, autotools and makefile build systems
+- dependency management
 
 TODO
 ====
-- plugin architecture for different build systems
+- ~plugin architecture for different build systems~ build_system = build_commands []
 - custom build system
 	- recursive json syntax
 	- create visual studio projects on windows
@@ -72,6 +73,7 @@ TODO
 - package repository website/api (github?)
 - move history/meta to sqlite database
 - parse versions from filename
+- store md5 hash of config in meta to detect changes
 
 Repository Structure
 ====================

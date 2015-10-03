@@ -30,8 +30,14 @@
 /* Define to 1 if you have the `git2' library (-lgit2). */
 #undef HAVE_LIBGIT2
 
+/* Define to 1 if you have the `iconv' library (-liconv). */
+#undef HAVE_LIBICONV
+
 /* Define to 1 if you have the `json-c' library (-ljson-c). */
 #undef HAVE_LIBJSON_C
+
+/* Define to 1 if you have the `z' library (-lz). */
+#undef HAVE_LIBZ
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H

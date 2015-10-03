@@ -156,6 +156,11 @@ namespace arg3
             return config.load(workingDir_, opts);
         }
 
+        int package_resolver::resolve_package(package &config, const options &opts)
+        {
+            return resolve_package(config, opts, opts.location);
+        }
+
         int package_resolver::resolve_package(package &config, const options &opts, const std::string &path)
         {
             int fileType = directory_exists(path.c_str());

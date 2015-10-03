@@ -13,6 +13,8 @@ AC_PROG_CXX
 AC_PROG_CC
 
 # Checks for libraries.
+AC_CHECK_LIB(z, zlibVersion)
+AC_CHECK_LIB(iconv, iconv_open)
 AC_CHECK_LIB(json-c, json_tokener_parse, [], [AC_MSG_ERROR([libjson-c is required])])
 AC_CHECK_LIB(git2, git_libgit2_version, [], [AC_MSG_ERROR([libgit2 is required])])
 AC_CHECK_LIB(curl, curl_easy_init, [], [AC_MSG_ERROR([libcurl is required])])

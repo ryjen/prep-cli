@@ -9,6 +9,8 @@ namespace arg3
     {
         bool str_cmp(const char *astr, const char *bstr);
 
+        bool str_empty(const char *str);
+
         int fork_command(const char *argv[], const char *directory, char *const envp[]);
 
         int pipe_command(const char *buf, const char *directory);

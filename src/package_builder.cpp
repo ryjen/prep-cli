@@ -118,6 +118,8 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
+            log_info("%s package removed.", package_name.c_str());
+
             return PREP_SUCCESS;
         }
 
@@ -155,6 +157,11 @@ namespace arg3
                 working_dir = repo_.exists_in_history(p.location());
 
                 if (working_dir.empty() || !directory_exists(working_dir.c_str())) {
+
+                    if (str_empty(p.location())) {
+                        log_error("[%s] dependency [%s] has no location", config.name(), p.name());
+                        continue;
+                    }
 
                     if (resolver.resolve_package(p, opts, p.location())) {
                         return PREP_FAILURE;

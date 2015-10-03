@@ -74,7 +74,7 @@ int main(int argc, char *const argv[])
             options.location = argv[optind++];
         }
 
-        if (resolver.resolve_package(config, options, options.location))
+        if (resolver.resolve_package(config, options))
         {
             arg3::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;

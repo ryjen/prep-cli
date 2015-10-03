@@ -27,11 +27,6 @@
 					"name": "libidn",
 					"location": "http://ftp.gnu.org/gnu/libidn/libidn-1.32.tar.gz",
 					"build_system": "autotools"
-				},
-				{
-					"name": "openssl",
-					"location": "http://www.openssl.org/source/openssl-1.0.2d.tar.gz",
-					"build_system": "make"
 				}*/
 			]
 		},
@@ -50,6 +45,11 @@
 					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
 					"build_system": "autotools",
 					"build_options": "--without-python"
+				},
+				{
+					"name": "iconv",
+					"location": "",
+					"build_system": "autotools"
 				}
 			]
 		},

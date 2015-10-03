@@ -50,7 +50,6 @@ namespace arg3
 
 		int repository::initialize(const options &opts)
 		{
-
 			if (opts.global)
 			{
 				path_ = GLOBAL_REPO;
@@ -343,7 +342,7 @@ namespace arg3
 						continue;
 					}
 
-					// create the repo path directory
+					// doesn't exist, create the repo path directory
 					if (mkdir(buf, 0777)) {
 						log_error("Could not create %s [%s]", buf, strerror(errno));
 						rval = PREP_FAILURE;
@@ -358,7 +357,7 @@ namespace arg3
 					continue;
 				}
 
-				if (stat(buf, &st) == 0) {
+				if (lstat(buf, &st) == 0) {
 					if (!S_ISLNK(st.st_mode)) {
 						log_error("File already exists and is not a link");
 						rval = PREP_FAILURE;
@@ -458,7 +457,7 @@ namespace arg3
 
 		std::string repository::exists_in_history(const std::string & location) const
 		{
-			ifstream is(path_ + "/" + HISTORY_FILE);
+			ifstream is(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
 
 			std::map<std::string, std::string> mps;
 			std::insert_iterator< std::map<std::string, std::string> > mpsi(mps, mps.begin());
@@ -475,7 +474,7 @@ namespace arg3
 
 		void repository::save_history(const std::string & location, const std::string & working_dir) const
 		{
-			ifstream is(path_ + "/" + HISTORY_FILE);
+			ifstream is(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
 
 			std::map<std::string, std::string> mps;
 			std::insert_iterator< std::map<std::string, std::string> > mpsi(mps, mps.begin());
@@ -489,7 +488,7 @@ namespace arg3
 
 			mps[location] = working_dir;
 
-			ofstream os(path_ + "/" + HISTORY_FILE);
+			ofstream os(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
 
 			std::copy(mps.begin(), mps.end(), std::ostream_iterator<std::pair<std::string, std::string> >(os, "\n"));
 

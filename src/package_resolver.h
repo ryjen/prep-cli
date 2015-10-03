@@ -15,6 +15,7 @@ namespace arg3
         public:
             package_resolver();
 
+            int resolve_package(package &config, const options &opts);
             int resolve_package(package &config, const options &opts, const std::string &path);
 
             bool is_temp_path() const;
