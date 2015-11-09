@@ -29,6 +29,8 @@ namespace arg3
 
 			constexpr static const char *const INSTALL_FOLDER = ".install";
 
+			constexpr static const char *const BIN_FOLDER = "bin";
+
 			static const char *const get_local_repo();
 
 			int unlink_directory(const char *path) const;
@@ -49,6 +51,9 @@ namespace arg3
 
 			std::string get_meta_path() const;
 			std::string get_meta_path(const string &package_name) const;
+
+
+			std::string get_bin_path() const;
 
 			int validate() const;
 

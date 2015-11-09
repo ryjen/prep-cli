@@ -74,6 +74,8 @@ TODO
 - move history/meta to sqlite database
 - parse versions from filename
 - store md5 hash of config in meta to detect changes
+- a way to rebuild a dependency or all dependencies
+- a way to rebuild a package
 
 Repository Structure
 ====================

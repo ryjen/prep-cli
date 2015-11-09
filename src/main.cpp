@@ -4,6 +4,9 @@
 #include "package_resolver.h"
 #include "log.h"
 #include "common.h"
+#include "util.h"
+
+using namespace arg3::prep;
 
 void print_help(char *exe)
 {
@@ -105,6 +108,23 @@ int main(int argc, char *const argv[])
         }
 
         return prep.remove(config, options);
+    }
+
+    if (!strcmp(command, "setpath")) {
+        arg3::prep::repository repo;
+
+        if (repo.initialize(options)) {
+          arg3::prep::log_error("unable to initialize repository");
+          return PREP_FAILURE;
+        }
+
+        prompt_to_add_path_to_shell_rc(".zshrc", repo.get_bin_path().c_str());
+        if(prompt_to_add_path_to_shell_rc(".bash_profile", repo.get_bin_path().c_str())) {
+          prompt_to_add_path_to_shell_rc(".bashrc", repo.get_bin_path().c_str());
+        }
+        prompt_to_add_path_to_shell_rc(".kshrc", repo.get_bin_path().c_str());
+
+        return PREP_SUCCESS;
     }
 
     if (!strcmp(command, "check"))

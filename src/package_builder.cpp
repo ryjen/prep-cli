@@ -172,6 +172,7 @@ namespace arg3
 
                 if (build(p, opts, working_dir)) {
                     log_error("unable to build dependency %s", p.name());
+                    remove_directory(working_dir.c_str());
                     return PREP_FAILURE;
                 }
             }
@@ -181,7 +182,7 @@ namespace arg3
             }
 
             if ( build_package(config, path.c_str()) ) {
-                return PREP_FAILURE;
+		              return PREP_FAILURE;
             }
 
             if ( repo_.link_directory(installDir.c_str()) ) {

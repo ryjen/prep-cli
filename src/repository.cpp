@@ -83,6 +83,7 @@ namespace arg3
 			}
 
 			char *temp = getenv("PATH");
+			string binPath = build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
 
 			if (temp != NULL)
 			{
@@ -94,7 +95,7 @@ namespace arg3
 
 				while (temp != NULL)
 				{
-					if (path_ == temp) {
+					if (binPath == temp) {
 						break;
 					}
 
@@ -104,9 +105,15 @@ namespace arg3
 
 			if (temp == NULL)
 			{
-				log_warn("%s is not added to your PATH", path_.c_str());
+				char buf[BUFSIZ] = {0};
+
+				log_warn("%s is not added to your PATH.  Run with the 'setpath' argument to setup your shell environment.", binPath.c_str());
 			}
 			return PREP_SUCCESS;
+		}
+
+		std::string repository::get_bin_path() const {
+			return build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
 		}
 
 		std::string repository::get_install_path() const

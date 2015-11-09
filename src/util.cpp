@@ -513,5 +513,33 @@ namespace arg3
             return buf;
         }
 
+
+        int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path) {
+          char buf[BUFSIZ] = {0};
+
+          char *home = getenv("HOME");
+
+          if (!home) {
+            return PREP_FAILURE;
+          }
+
+          snprintf(buf, BUFSIZ, "%s/%s", home, shellrc);
+
+					if (!file_exists(buf)) {
+            return PREP_FAILURE;
+          }
+
+          printf("Would you like to add prep to your PATH in %s? (y/N) ", shellrc);
+
+					int ch = getchar();
+
+					if (ch != 10 || toupper(ch) == 'Y') {
+							std::ofstream rcfile(buf, std::ios::app);
+
+              rcfile << "export PATH=\"$PATH:" << path << "\"";
+					}
+
+          return PREP_SUCCESS;
+        }
     }
 }
