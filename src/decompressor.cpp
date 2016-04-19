@@ -1,18 +1,20 @@
-
-#include "decompressor.h"
-#include "common.h"
-#include "log.h"
-#include "util.h"
-#ifdef HAVE_LIBGEN_H
-#include <libgen.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
-#include <limits.h>
-
 #ifdef HAVE_ARCHIVE_ENTRY_H
 #include <archive_entry.h>
 #endif
 #include <cerrno>
 #include <cstdlib>
+#ifdef HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
+#include <limits.h>
+#include "common.h"
+#include "decompressor.h"
+#include "log.h"
+#include "util.h"
+
 
 #define windowBits 15
 

@@ -5,7 +5,7 @@
 		"name": "Ryan Jennings",
 		"email": "c0der78@gmail.com"
 	},
-	"build_system": "autotools",
+	"build_system": "cmake",
 	"dependencies": [
 		{
 			"name": "libcurl",

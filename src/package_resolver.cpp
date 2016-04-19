@@ -4,20 +4,19 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef HAVE_LIBGIT2
+#include <git2.h>
+#endif
+#ifdef HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
+#include <cassert>
 #include "common.h"
+#include "decompressor.h"
 #include "log.h"
 #include "package_resolver.h"
 #include "repository.h"
 #include "util.h"
-#ifdef HAVE_LIBGIT2
-#include <git2.h>
-#endif
-#ifdef HAVE_LIBZ
-#include <zlib.h>
-#endif
-#include <decompressor.h>
-#include <libgen.h>
-#include <cassert>
 
 namespace arg3
 {

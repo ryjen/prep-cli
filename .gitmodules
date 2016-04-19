@@ -1,3 +1,6 @@
 [submodule "cmake"]
 	path = cmake
 	url = http://github.com/ryjen/cmake.git
+[submodule "tests/vendor/bandit"]
+	path = tests/vendor/bandit
+	url = https://github.com/joakimkarlsson/bandit.git

@@ -28,7 +28,8 @@
 #include "repository.h"
 #include "util.h"
 
-namespace arg3
+// for std::copy
+namespace std
 {
     istream &operator>>(istream &is, pair<string, string> &ps)
     {
@@ -38,7 +39,10 @@ namespace arg3
     {
         return os << ps.first << " " << ps.second;
     }
+}
 
+namespace arg3
+{
     namespace prep
     {
         const char *const repository::get_local_repo()
@@ -185,12 +189,12 @@ namespace arg3
 
             if (config.version()) {
                 if (strcmp(info.c_str(), config.version()) >= 0) {
-                    log_info("Already have %s version %s", config.name(), info.c_str());
+                    log_warn("Using cached version of %s (%s)", config.name(), info.c_str());
                     return PREP_SUCCESS;
                 }
             } else if (config.location()) {
                 if (!strcmp(info.c_str(), config.location())) {
-                    log_info("Already have %s from %s", config.name(), info.c_str());
+                    log_warn("Using cached version of %s (%s)", config.name(), info.c_str());
                     return PREP_SUCCESS;
                 }
             }

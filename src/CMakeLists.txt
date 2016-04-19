@@ -11,11 +11,13 @@ set(SOURCE_FILES
     util.cpp
 )
 
-add_library(${PROJECT_NAME} ${SOURCE_FILES})
+include_directories(${LibArchive_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME}per main.cpp)
+add_library(${PROJECT_LIBRARY} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME}per ${PROJECT_NAME})
+add_executable(${PROJECT_NAME} main.cpp)
+
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${ZLIB_LIBRARIES} ${JSON_C_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
 
 set(HEADER_FILES
     common.h 
@@ -23,10 +25,16 @@ set(HEADER_FILES
     environment.h 
     log.h 
     package_builder.h 
-    packacge_config.h 
+    package_config.h 
     package_resolver.h 
     repository.h 
     util.h
 )
 
 INSTALL(FILES ${HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
+
+INSTALL(TARGETS ${PROJECT_LIBRARY} ${PROJECT_NAME}
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+

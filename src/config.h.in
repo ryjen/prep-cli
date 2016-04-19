@@ -16,8 +16,30 @@
 #cmakedefine	JSON_C_EXTENDED		1
 #cmakedefine	CURL_FOUND		1
 
+#cmakedefine LibArchive_LIBRARIES 1
+#cmakedefine GIT2_LIBRARIES 1
+#cmakedefine ICONV_LIBRARIES 1
+
+#cmakedefine HAVE_LIBGEN_H 1
+#cmakedefine HAVE_ARCHIVE_H 1
+#cmakedefine HAVE_ARCHIVE_ENTRY_H 1
+#cmakedefine HAVE_CURL_CURL_H 1
+#cmakedefine HAVE_JSON_C_H 1
+
 #ifdef CURL_FOUND
 #define HAVE_LIBCURL			1
+#endif
+
+#ifdef LibArchive_LIBRARIES
+#define HAVE_LIBARCHIVE   1
+#endif
+
+#ifdef ICONV_LIBRARIES
+#define HAVE_LIBICONV 1
+#endif
+
+#ifdef GIT2_LIBRARIES
+#define HAVE_LIBGIT2 1
 #endif
 
 #endif

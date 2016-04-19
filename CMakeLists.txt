@@ -13,24 +13,29 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # create the package config install
 include(CreatePackage)
-create_package("@PROJECT_DESCRIPTION@")
+create_package("a c/c++ package and project manager")
 
-# create config header
-include(CreateConfigHeader)
-create_config_header(src/config.h.in)
+set(PROJECT_LIBRARY "utensil")
 
-find_package(JSONC)
+include(FindJSONC)
+
 find_package(CURL)
+find_package(ZLIB)
 
-find_library(HAVE_LIBZ, z)
-find_library(HAVE_LIBICONV, iconv)
-find_library(HAVE_LIBGIT2, git2)
-find_library(HAVE_LIBARCHIVE archive HINTS /usr/local/opt/libarchive)
+find_file(HAVE_ARCHIVE_H archive.h HINTS "/usr/local/opt/libarchive/include")
+if (HAVE_ARCHIVE_H)
+    set(LibArchive_INCLUDE_DIR "/usr/local/opt/libarchive/include")
+    find_file(HAVE_ARCHIVE_ENTRY_H NAMES archive_entry.h HINTS ${LibArchive_INCLUDE_DIR})
+endif()
+find_library(LibArchive_LIBRARY archive HINTS "/usr/local/opt/libarchive/lib")
+find_package(LibArchive)
+
+find_library(ICONV_LIBRARIES iconv)
+find_library(GIT2_LIBRARIES git2)
 
 find_file(HAVE_LIBGEN_H NAMES libgen.h)
-find_file(HAVE_ARCHIVE_ENTRY_H NAMES archive_entry.h HINTS /usr/local/opt/libarchive)
-find_file(HAVE_CURL_CURL_H NAMES curl/curl.h)
-find_file(HAVE_JSON_C_H NAMES json-c.h json_c.h json.h)
+find_file(HAVE_CURL_CURL_H NAMES ${CURL_INCLUDE_DIRS})
+find_file(HAVE_JSON_C_H NAMES json-c/json.h)
 
 # add target for code coverage
 if(CODE_COVERAGE)
@@ -38,6 +43,10 @@ if(CODE_COVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_COVERAGE}")
 	setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test ${PROJECT_SOURCE_DIR}/coverage)
 endif()
+
+# create config header
+include(CreateConfigHeader)
+create_config_header(src/config.h.in)
 
 # add directories
 add_subdirectory(src)

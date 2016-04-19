@@ -191,7 +191,7 @@ namespace arg3
 
             path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
 
-            log_info("Loaded config [%s] from [%s]", name(), path.c_str());
+            log_info("Preparing package \033[1;35m%s\033[0m", name());
 
             return PREP_SUCCESS;
         }

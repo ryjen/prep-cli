@@ -152,7 +152,7 @@ namespace arg3
                 package_resolver resolver;
                 string working_dir;
 
-                log_info("Building [%s] dependency [%s]...", config.name(), p.name());
+                log_info("    - preparing dependency \033[0;35m%s\033[0m", p.name());
 
                 working_dir = repo_.exists_in_history(p.location());
 
