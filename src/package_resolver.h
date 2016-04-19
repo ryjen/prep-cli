@@ -1,5 +1,5 @@
-#ifndef INCLUDE_PACKAGE_RESOLVER_H
-#define INCLUDE_PACKAGE_RESOLVER_H
+#ifndef ARG3_PREP_PACKAGE_RESOLVER_H
+#define ARG3_PREP_PACKAGE_RESOLVER_H
 
 #include <string>
 
@@ -12,7 +12,7 @@ namespace arg3
         /* resolves a package from a download, git, archive or folder */
         class package_resolver
         {
-        public:
+           public:
             package_resolver();
 
             int resolve_package(package &config, const options &opts);
@@ -23,7 +23,8 @@ namespace arg3
             int resolve_existing_package(package &config, const options &opts, const std::string &name);
 
             std::string working_dir() const;
-        private:
+
+           private:
             int resolve_package_git(package &config, const options &opts, const char *url);
             int resolve_package_directory(package &config, const options &opts, const char *path);
             int resolve_package_download(package &config, const options &opts, const char *url);
@@ -37,4 +38,3 @@ namespace arg3
 }
 
 #endif
-

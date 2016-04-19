@@ -1,7 +1,7 @@
 
 #include "decompressor.h"
-#include "log.h"
 #include "common.h"
+#include "log.h"
 #include "util.h"
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
@@ -13,7 +13,6 @@
 #endif
 #include <cerrno>
 #include <cstdlib>
-
 
 #define windowBits 15
 
@@ -35,8 +34,7 @@ namespace arg3
             off_t offset;
 #endif
 
-            for (;;)
-            {
+            for (;;) {
                 r = archive_read_data_block(ar, &buff, &size, &offset);
                 if (r == ARCHIVE_EOF) {
                     return (ARCHIVE_OK);
@@ -45,8 +43,7 @@ namespace arg3
                     return (r);
                 }
                 r = archive_write_data_block(aw, buff, size, offset);
-                if (r != ARCHIVE_OK)
-                {
+                if (r != ARCHIVE_OK) {
                     printf("unable to write archive data block %d:%s", r, archive_error_string(aw));
                     return (r);
                 }
@@ -54,9 +51,12 @@ namespace arg3
         }
 #endif
 
-        decompressor::decompressor(const char *path) : path_(path)
+        decompressor::decompressor(const char *path)
+            : path_(path)
 #ifdef HAVE_LIBARCHIVE
-            , in_(NULL), out_(NULL)
+              ,
+              in_(NULL),
+              out_(NULL)
 #endif
         {
             char buf[PATH_MAX + 1] = {0};
@@ -83,8 +83,7 @@ namespace arg3
         void decompressor::cleanup()
         {
 #ifdef HAVE_LIBARCHIVE
-            if (in_ != NULL)
-            {
+            if (in_ != NULL) {
 #if ARCHIVE_VERSION_NUMBER < 3000000
                 archive_read_close(in_);
 #else
@@ -93,8 +92,7 @@ namespace arg3
                 in_ = NULL;
             }
 
-            if (out_ != NULL)
-            {
+            if (out_ != NULL) {
 #if ARCHIVE_VERSION_NUMBER < 3000000
                 archive_write_close(out_);
 #else
@@ -106,15 +104,13 @@ namespace arg3
         }
         int decompressor::decompress()
         {
-
 #ifdef HAVE_LIBARCHIVE
             int r;
             struct archive_entry *entry;
             char folderName[PATH_MAX + 1] = {0};
             char buf[PATH_MAX + 1] = {0};
 
-            if (in_ != NULL || out_ != NULL)
-            {
+            if (in_ != NULL || out_ != NULL) {
                 log_errno(EINVAL);
                 return PREP_FAILURE;
             }
@@ -128,8 +124,7 @@ namespace arg3
             archive_read_support_compression_all(in_);
 #endif
 
-            if ((r = archive_read_open_filename(in_, path_.c_str(), 10240)))
-            {
+            if ((r = archive_read_open_filename(in_, path_.c_str(), 10240))) {
                 log_error("unable to open %s %d: %s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
                 return PREP_FAILURE;
@@ -142,29 +137,24 @@ namespace arg3
             // check the first entry for a directory
             r = archive_read_next_header(in_, &entry);
 
-            if (r < ARCHIVE_OK)
-            {
+            if (r < ARCHIVE_OK) {
                 log_error("error extracting %s - %d:%s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
                 return PREP_SUCCESS;
             }
 
-            strncpy(folderName, archive_entry_pathname( entry ), PATH_MAX);
+            strncpy(folderName, archive_entry_pathname(entry), PATH_MAX);
 
             strncpy(buf, build_sys_path(outPath_.c_str(), folderName, NULL), PATH_MAX);
 
             archive_entry_set_pathname(entry, buf);
 
-            while (r == ARCHIVE_OK)
-            {
+            while (r == ARCHIVE_OK) {
                 if (archive_write_header(out_, entry) != ARCHIVE_OK) {
                     log_error("unable to write header from decompression %d:%s", r, archive_error_string(in_));
-                }
-                else
-                {
+                } else {
                     copy_data(in_, out_);
-                    if (archive_write_finish_entry(out_) != ARCHIVE_OK)
-                    {
+                    if (archive_write_finish_entry(out_) != ARCHIVE_OK) {
                         log_error("unable finish archive write %d:%s\n", r, archive_error_string(out_));
                         cleanup();
                         return PREP_FAILURE;
@@ -173,9 +163,8 @@ namespace arg3
 
                 r = archive_read_next_header(in_, &entry);
 
-                if (r == ARCHIVE_OK)
-                {
-                    const char *entryName = archive_entry_pathname( entry );
+                if (r == ARCHIVE_OK) {
+                    const char *entryName = archive_entry_pathname(entry);
 
                     strncpy(buf, build_sys_path(outPath_.c_str(), entryName, NULL), PATH_MAX);
 
@@ -187,8 +176,7 @@ namespace arg3
 
             outPath_ = build_sys_path(outPath_.c_str(), folderName, NULL);
 
-            if (r < ARCHIVE_OK)
-            {
+            if (r < ARCHIVE_OK) {
                 log_error("unable to extract %s - %d: %s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
                 return PREP_FAILURE;

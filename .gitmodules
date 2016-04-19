@@ -1,0 +1,3 @@
+[submodule "cmake"]
+	path = cmake
+	url = http://github.com/ryjen/cmake.git

@@ -1,28 +1,31 @@
+#ifdef HAVE_CONFIG_H
 #include "config.h"
-#include "package_resolver.h"
-#include "util.h"
-#include "repository.h"
-#include "log.h"
-#include "common.h"
-#include <unistd.h>
-#include <sys/types.h>
+#endif
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "common.h"
+#include "log.h"
+#include "package_resolver.h"
+#include "repository.h"
+#include "util.h"
 #ifdef HAVE_LIBGIT2
 #include <git2.h>
 #endif
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif
-#include <cassert>
 #include <decompressor.h>
 #include <libgen.h>
+#include <cassert>
 
 namespace arg3
 {
     namespace prep
     {
-        package_resolver::package_resolver(): isTemp_(false)
-        {}
+        package_resolver::package_resolver() : isTemp_(false)
+        {
+        }
 
         bool package_resolver::is_temp_path() const
         {
@@ -38,24 +41,24 @@ namespace arg3
         int fetch_progress(const git_transfer_progress *stats, void *payload)
         {
             printf("\x1b[Afetching %d/%d %.0f%%\n\r", stats->indexed_objects, stats->total_objects,
-                   (float) stats->indexed_objects / (float) stats->total_objects * 100.f);
+                   (float)stats->indexed_objects / (float)stats->total_objects * 100.f);
 
             return 0;
         }
 
         void checkout_progress(const char *path, size_t cur, size_t tot, void *payload)
         {
-            printf("\x1b[Acheckout %ld/%ld %.0f%%\n\r", cur, tot, (float) cur / (float) tot * 100.f);
+            printf("\x1b[Acheckout %ld/%ld %.0f%%\n\r", cur, tot, (float)cur / (float)tot * 100.f);
         }
 #endif
 
         int package_resolver::resolve_package_git(package &config, const options &opts, const char *url)
         {
 #ifdef HAVE_LIBGIT2
-            char buffer [BUFSIZ + 1] = {0};
+            char buffer[BUFSIZ + 1] = {0};
             strncpy(buffer, "/tmp/prep-XXXXXX", BUFSIZ);
 
-            mkdtemp (buffer);
+            mkdtemp(buffer);
 
             git_libgit2_init();
             git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
@@ -81,8 +84,7 @@ namespace arg3
 
             git_repository *repo = NULL;
             int error = git_clone(&repo, url, buffer, &clone_opts);
-            if (error < 0)
-            {
+            if (error < 0) {
                 const git_error *e = giterr_last();
                 log_error("%d/%d: %s\n", error, e->klass, e->message);
                 return PREP_FAILURE;
@@ -167,22 +169,14 @@ namespace arg3
 
             int status = PREP_FAILURE;
 
-            if (fileType == 1)
-            {
+            if (fileType == 1) {
                 status = resolve_package_directory(config, opts, path.c_str());
-            }
-            else if (fileType == 2)
-            {
+            } else if (fileType == 2) {
                 status = resolve_package_archive(config, opts, path.c_str());
-            }
-            else if (path.find("://") != std::string::npos)
-            {
-                if (path.rfind(".git") != std::string::npos || path.find("git://") != std::string::npos)
-                {
+            } else if (path.find("://") != std::string::npos) {
+                if (path.rfind(".git") != std::string::npos || path.find("git://") != std::string::npos) {
                     status = resolve_package_git(config, opts, path.c_str());
-                }
-                else
-                {
+                } else {
                     status = resolve_package_download(config, opts, path.c_str());
                 }
             }

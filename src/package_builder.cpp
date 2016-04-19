@@ -1,15 +1,14 @@
 #include "package_builder.h"
+#include "common.h"
+#include "log.h"
 #include "package_resolver.h"
 #include "util.h"
-#include "log.h"
-#include "common.h"
 
 
 namespace arg3
 {
     namespace prep
     {
-
         int package_builder::initialize(const options &opts)
         {
             char path[BUFSIZ + 1] = {0};
@@ -23,7 +22,7 @@ namespace arg3
             return repo_.validate();
         }
 
-        int package_builder::build_package(const package & config, const char *path)
+        int package_builder::build_package(const package &config, const char *path)
         {
             string installPath;
 
@@ -48,22 +47,25 @@ namespace arg3
                 }
             }
 
-            if (!str_cmp(config.build_system(), "autotools"))
-            {
-                if ( build_autotools(config, path, installPath.c_str()) ) {
+            if (!str_cmp(config.build_system(), "autotools")) {
+                if (build_autotools(config, path, installPath.c_str())) {
                     return PREP_FAILURE;
                 }
-            }
-            else if (!str_cmp(config.build_system(), "cmake"))
-            {
-                if ( build_cmake(config, path, installPath.c_str()) ) {
+            } else if (!str_cmp(config.build_system(), "cmake")) {
+                if (build_cmake(config, path, installPath.c_str())) {
                     return PREP_FAILURE;
                 }
-            }
-            else
-            {
-                log_error("unknown build system '%s'", config.build_system());
-                return PREP_FAILURE;
+            } else {
+                auto cmds = config.build_commands();
+
+                if (cmds.size() > 0) {
+                    if (build_commands(config, path, cmds)) {
+                        return PREP_FAILURE;
+                    }
+                } else {
+                    log_error("unknown build system '%s'", config.build_system());
+                    return PREP_FAILURE;
+                }
             }
 
             if (repo_.save_meta(config)) {
@@ -74,7 +76,7 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
-        int package_builder::remove(const package & config, options & opts)
+        int package_builder::remove(const package &config, options &opts)
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");
@@ -100,8 +102,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            if (repo_.unlink_directory(installDir.c_str()))
-            {
+            if (repo_.unlink_directory(installDir.c_str())) {
                 log_error("unable to unlink package %s", package_name.c_str());
                 return PREP_FAILURE;
             }
@@ -123,7 +124,7 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
-        int package_builder::build(const package & config, options & opts, const std::string & path)
+        int package_builder::build(const package &config, options &opts, const std::string &path)
         {
             string installDir;
 
@@ -147,8 +148,7 @@ namespace arg3
                 }
             }
 
-            for (package_dependency &p : config.dependencies())
-            {
+            for (package_dependency &p : config.dependencies()) {
                 package_resolver resolver;
                 string working_dir;
 
@@ -157,7 +157,6 @@ namespace arg3
                 working_dir = repo_.exists_in_history(p.location());
 
                 if (working_dir.empty() || !directory_exists(working_dir.c_str())) {
-
                     if (str_empty(p.location())) {
                         log_error("[%s] dependency [%s] has no location", config.name(), p.name());
                         continue;
@@ -180,11 +179,11 @@ namespace arg3
                 return PREP_SUCCESS;
             }
 
-            if ( build_package(config, path.c_str()) ) {
+            if (build_package(config, path.c_str())) {
                 return PREP_FAILURE;
             }
 
-            if ( repo_.link_directory(installDir.c_str()) ) {
+            if (repo_.link_directory(installDir.c_str())) {
                 log_error("Unable to link package");
                 return PREP_FAILURE;
             }
@@ -192,7 +191,7 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
-        int package_builder::link_package(const package & config) const
+        int package_builder::link_package(const package &config) const
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");
@@ -204,7 +203,7 @@ namespace arg3
             return repo_.link_directory(packageInstall.c_str());
         }
 
-        int package_builder::unlink_package(const package & config) const
+        int package_builder::unlink_package(const package &config) const
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");
@@ -216,7 +215,7 @@ namespace arg3
             return repo_.unlink_directory(packageInstall.c_str());
         }
 
-        int package_builder::build_cmake(const package & config, const char *path, const char *toPath)
+        int package_builder::build_cmake(const package &config, const char *path, const char *toPath)
         {
             char buf[BUFSIZ + 1] = {0};
             const char *buildopts = NULL;
@@ -236,8 +235,7 @@ namespace arg3
 
             snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX:PATH=%s %s .", toPath, buildopts);
 
-            if (env_.execute(buf, path))
-            {
+            if (env_.execute(buf, path)) {
                 log_error("unable to execute cmake");
                 return PREP_FAILURE;
             }
@@ -245,10 +243,9 @@ namespace arg3
             return build_make(config, path);
         }
 
-        int package_builder::build_make(const package & config, const char *path)
+        int package_builder::build_make(const package &config, const char *path)
         {
-            if (env_.execute("make -j2 install", path))
-            {
+            if (env_.execute("make -j2 install", path)) {
                 log_error("unable to execute make");
                 return PREP_FAILURE;
             }
@@ -256,7 +253,19 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
-        int package_builder::build_autotools(const package & config, const char *path, const char *toPath)
+        int package_builder::build_commands(const package &config, const char *path, const vector<string> &commands)
+        {
+            for (auto &cmd : commands) {
+                if (env_.execute(cmd.c_str(), path)) {
+                    log_error("unable to execute command [%s]", cmd.c_str());
+                    return PREP_FAILURE;
+                }
+            }
+
+            return PREP_SUCCESS;
+        }
+
+        int package_builder::build_autotools(const package &config, const char *path, const char *toPath)
         {
             char buf[BUFSIZ + 1] = {0};
             const char *buildopts = NULL;
@@ -279,7 +288,6 @@ namespace arg3
             if (file_exists(buf)) {
                 snprintf(buf, BUFSIZ, "./configure --prefix=%s %s", toPath, buildopts);
             } else {
-
                 snprintf(buf, BUFSIZ, "%s/autogen.sh", path);
 
                 if (!file_exists(buf)) {
@@ -290,8 +298,7 @@ namespace arg3
                 snprintf(buf, BUFSIZ, "./autogen.sh --prefix=%s %s", toPath, buildopts);
             }
 
-            if (env_.execute(buf, path))
-            {
+            if (env_.execute(buf, path)) {
                 log_error("unable to execute configure");
                 return PREP_FAILURE;
             }
@@ -299,16 +306,13 @@ namespace arg3
             return build_make(config, path);
         }
 
-        int package_builder::build_from_folder(options & opts, const char *path)
+        int package_builder::build_from_folder(options &opts, const char *path)
         {
             package_config config;
 
-            if (config.load(path, opts))
-            {
+            if (config.load(path, opts)) {
                 return build(config, opts, path);
-            }
-            else
-            {
+            } else {
                 log_error("%s is not a valid prep package\n", path);
                 return 1;
             }

@@ -19,7 +19,15 @@ Examples explain best.  This is prep's configuration:
 		{
 			"name": "libcurl",
 			"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
-			"build_system": "autotools"
+			"build_system": "autotools",
+			"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+			"dependencies": [
+				{
+					"name": "libz",
+					"location": "http://zlib.net/zlib-1.2.8.tar.gz",
+					"build_system": "autotools"
+				}
+			]
 		},
 		{
 			"name": "json-c",
@@ -36,6 +44,11 @@ Examples explain best.  This is prep's configuration:
 					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
 					"build_system": "autotools",
 					"build_options": "--without-python"
+				},
+				{
+					"name": "iconv",
+					"location": "",
+					"build_system": "autotools"
 				}
 			]
 		},
@@ -45,22 +58,15 @@ Examples explain best.  This is prep's configuration:
 			"build_system": "cmake"
 		}
 	]
+
 }
-```
-
-Package files can be used remotely for libraries that do not have one packaged.  For example:
-
-```BASH
-
-prep -f http://remote.host.com/package.json
-
 ```
 
 Features
 ========
 - local user repository ($HOME/.prep)
 - global repositories (/usr/local/prep)
-- supports cmake, autotools and makefile build systems
+- supports cmake, autoconf and makefile build systems
 - dependency management
 
 TODO
@@ -84,5 +90,5 @@ Repository Structure
 
 **.history** : a record of incomplete installations
 
-Packages in **.install** are symlinked to **bin**, **lib**, **include**, etc.
+packages in **.install** are symlinked to **bin**, **lib**, **include**, etc.
 

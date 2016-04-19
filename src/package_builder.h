@@ -1,8 +1,8 @@
-#ifndef INCLUDE_PACKAGE_BUILDER_H
-#define INCLUDE_PACKAGE_BUILDER_H
+#ifndef ARG3_PREP_PACKAGE_BUILDER_H
+#define ARG3_PREP_PACKAGE_BUILDER_H
 
-#include "package_config.h"
 #include "environment.h"
+#include "package_config.h"
 #include "repository.h"
 
 namespace arg3
@@ -11,7 +11,7 @@ namespace arg3
     {
         class package_builder
         {
-        public:
+           public:
             //! initializes this instance
             // @param opts the options to initialize with
             // @returns PREP_SUCESS or PREP_FAILURE if an error occured
@@ -30,12 +30,14 @@ namespace arg3
             int remove(const std::string &package_name, options &opts);
             int link_package(const package &config) const;
             int unlink_package(const package &config) const;
-        private:
+
+           private:
             int build_package(const package &p, const char *path);
 
             int build_autotools(const package &config, const char *path, const char *toPath);
             int build_cmake(const package &config, const char *path, const char *toPath);
             int build_make(const package &config, const char *path);
+            int build_commands(const package &config, const char *path, const vector<string> &commands);
 
             string get_install_dir(const package &config) const;
 

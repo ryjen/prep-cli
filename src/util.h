@@ -1,5 +1,5 @@
-#ifndef INCLUDE_UTIL_H
-#define INCLUDE_UTIL_H
+#ifndef ARG3_PREP_UTIL_H
+#define ARG3_PREP_UTIL_H
 
 #include <string>
 
@@ -35,7 +35,7 @@ namespace arg3
 
         std::string get_user_home_dir();
 
-        const char* build_sys_path(const char *start, ...)  __attribute__((format(printf, 1, 2)));
+        const char *build_sys_path(const char *start, ...) __attribute__((format(printf, 1, 2)));
     }
 }
 

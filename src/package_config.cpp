@@ -1,10 +1,10 @@
 
 #include "package_config.h"
-#include "log.h"
-#include "util.h"
-#include "common.h"
 #include <fstream>
 #include <sstream>
+#include "common.h"
+#include "log.h"
+#include "util.h"
 #ifdef HAVE_CURL_CURL_H
 #include <curl/curl.h>
 #include <curl/easy.h>
@@ -22,7 +22,8 @@ namespace arg3
         static const char *const PACKAGE_FILE = "package.json";
 
         options::options_s() : global(false), package_file(PACKAGE_FILE), location(DEFAULT_LOCATION), force_build(false)
-        {}
+        {
+        }
 
         package::package() : values_(NULL)
         {
@@ -32,18 +33,15 @@ namespace arg3
         {
             json_object *depjson = NULL;
 
-            if (json_object_object_get_ex(values_, "dependencies", &depjson))
-            {
+            if (json_object_object_get_ex(values_, "dependencies", &depjson)) {
                 int len = json_object_array_length(depjson);
 
-                for (int i = 0; i < len; i++)
-                {
+                for (int i = 0; i < len; i++) {
                     json_object *dep = json_object_array_get_idx(depjson, i);
 
                     dependencies_.push_back(package_dependency(json_object_get(dep)));
                 }
             }
-
         }
 
         package::package(const package &other) : values_(json_object_get(other.values_))
@@ -53,7 +51,8 @@ namespace arg3
             }
         }
 
-        package &package::operator=(const package &other) {
+        package &package::operator=(const package &other)
+        {
             values_ = json_object_get(other.values_);
             for (const auto &dep : other.dependencies_) {
                 dependencies_.push_back(dep);
@@ -63,8 +62,7 @@ namespace arg3
 
         package::~package()
         {
-            if (values_ != NULL)
-            {
+            if (values_ != NULL) {
                 json_object_put(values_);
                 values_ = NULL;
             }
@@ -72,19 +70,18 @@ namespace arg3
 
         package_config::package_config()
         {
-
         }
 
         package_config::package_config(const package_config &other) : package(other)
         {
-
         }
 
         package_config::~package_config()
         {
         }
 
-        package_config &package_config::operator=(const package_config &other) {
+        package_config &package_config::operator=(const package_config &other)
+        {
             package::operator=(other);
 
             return *this;
@@ -107,14 +104,12 @@ namespace arg3
             snprintf(buf, PATH_MAX, "%s/%s", path.c_str(), filename.c_str());
 
             if (file_exists(buf)) {
-
                 file.open(buf);
 
                 return PREP_SUCCESS;
             }
 
-            if (filename.find("://") != string::npos)
-            {
+            if (filename.find("://") != string::npos) {
                 return download_package_file(path, filename, file);
             }
 
@@ -123,9 +118,8 @@ namespace arg3
 
         int package_config::download_package_file(const string &path, const string &url, ifstream &file)
         {
-
             string buffer;
-            char filename [PATH_MAX + 1] = {0};
+            char filename[PATH_MAX + 1] = {0};
             char *fname = NULL;
 
             log_debug("attempting download of %s", url.c_str());
@@ -161,8 +155,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            if (values_ != NULL)
-            {
+            if (values_ != NULL) {
                 json_object_put(values_);
                 values_ = NULL;
             }
@@ -172,8 +165,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            if (!file.is_open())
-            {
+            if (!file.is_open()) {
                 log_error("unable to open %s", opts.package_file.c_str());
                 return PREP_FAILURE;
             }
@@ -182,18 +174,15 @@ namespace arg3
 
             values_ = json_tokener_parse(os.str().c_str());
 
-            if (values_ == NULL)
-            {
+            if (values_ == NULL) {
                 printf("invalid configuration for %s\n", os.str().c_str());
                 return PREP_FAILURE;
             }
 
-            if (json_object_object_get_ex(values_, "dependencies", &depjson))
-            {
+            if (json_object_object_get_ex(values_, "dependencies", &depjson)) {
                 int len = json_object_array_length(depjson);
 
-                for (int i = 0; i < len; i++)
-                {
+                for (int i = 0; i < len; i++) {
                     json_object *dep = json_object_array_get_idx(depjson, i);
 
                     dependencies_.push_back(package_dependency(json_object_get(dep)));
@@ -224,12 +213,33 @@ namespace arg3
 
         const char *package::location() const
         {
-            return get_str( "location");
+            return get_str("location");
         }
 
         const char *package::build_options() const
         {
             return get_str("build_options");
+        }
+
+        const vector<string> package::build_commands() const
+        {
+            json_object *obj = NULL;
+
+            vector<string> rval;
+
+            if (json_object_object_get_ex(values_, "build_system", &obj)) {
+                size_t size = json_object_array_length(obj);
+
+                for (size_t i = 0; i < size; i++) {
+                    json_object *item = json_object_array_get_idx(obj, i);
+                    rval.push_back(json_object_get_string(item));
+                    json_object_put(item);
+                }
+
+                json_object_put(obj);
+            }
+
+            return rval;
         }
 
         const char *package::path() const

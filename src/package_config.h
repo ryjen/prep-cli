@@ -1,5 +1,5 @@
-#ifndef INCLUDE_PACKAGE_CONFIG_H
-#define INCLUDE_PACKAGE_CONFIG_H
+#ifndef ARG3_PREP_PACKAGE_CONFIG_H
+#define ARG3_PREP_PACKAGE_CONFIG_H
 
 #include "config.h"
 
@@ -8,9 +8,9 @@
 #else
 #include <json-c/json.h>
 #endif
+#include <fstream>
 #include <string>
 #include <vector>
-#include <fstream>
 
 using namespace std;
 
@@ -18,9 +18,7 @@ namespace arg3
 {
     namespace prep
     {
-
-        typedef struct options_s
-        {
+        typedef struct options_s {
             options_s();
             bool global;
             string package_file;
@@ -32,7 +30,7 @@ namespace arg3
 
         class package
         {
-        public:
+           public:
             virtual ~package();
             const char *name() const;
             const char *version() const;
@@ -45,7 +43,9 @@ namespace arg3
             virtual const char *location() const;
             bool is_loaded() const;
             vector<package_dependency> dependencies() const;
-        protected:
+            const vector<string> build_commands() const;
+
+           protected:
             package();
             package(json_object *obj);
             package(const package &other);
@@ -63,25 +63,28 @@ namespace arg3
         {
             friend class package;
             friend class package_config;
-        public:
+
+           public:
             ~package_dependency();
             package_dependency(const package_dependency &other);
             package_dependency &operator=(const package_dependency &);
             int load(const std::string &path, const options &opts);
-        protected:
+
+           protected:
             package_dependency(json_object *obj);
         };
 
 
         class package_config : public package
         {
-        public:
+           public:
             package_config();
             package_config(const package_config &);
             ~package_config();
             package_config &operator=(const package_config &other);
             int load(const std::string &path, const options &opts);
-        private:
+
+           private:
             int resolve_package_file(const string &path, const string &filename, ifstream &file);
             int download_package_file(const string &path, const string &url, ifstream &file);
         };

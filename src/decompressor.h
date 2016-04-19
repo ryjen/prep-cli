@@ -1,8 +1,8 @@
 /**
  * @author: Ryan Jennings <c0der78@gmail.com>
  */
-#ifndef INCLUDE_DECOMPRESSOR_H
-#define INCLUDE_DECOMPRESSOR_H
+#ifndef ARG3_PREP_DECOMPRESSOR_H
+#define ARG3_PREP_DECOMPRESSOR_H
 
 #include "config.h"
 
@@ -18,7 +18,7 @@ namespace arg3
     {
         class decompressor
         {
-        public:
+           public:
             decompressor(const char *path);
             ~decompressor();
 
@@ -27,10 +27,10 @@ namespace arg3
 
             int decompress();
 
-        private:
+           private:
             void cleanup();
             decompressor &operator=(const decompressor &other);
-            decompressor (const decompressor &other);
+            decompressor(const decompressor &other);
 
 #ifdef HAVE_LIBARCHIVE
             struct archive *in_;
@@ -39,7 +39,6 @@ namespace arg3
             std::string path_;
             std::string outPath_;
         };
-
     }
 }
 

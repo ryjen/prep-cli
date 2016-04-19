@@ -1,15 +1,16 @@
-#include <iostream>
 #include <unistd.h>
+#include <iostream>
+#include "common.h"
+#include "log.h"
 #include "package_builder.h"
 #include "package_resolver.h"
-#include "log.h"
-#include "common.h"
 
 void print_help(char *exe)
 {
-    printf("Syntax: %s [-g] install <package url, git url, archive or directory>\n", exe);
+    printf("Syntax: %s [-g -f] install <package url, git url, archive or directory>\n", exe);
     printf("      : %s [-g] remove <package>\n", exe);
     printf("      : %s [-g] update <package>\n", exe);
+    printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
 }
 
@@ -20,62 +21,52 @@ int main(int argc, char *const argv[])
     const char *command;
     int option;
 
-    while ((option = getopt(argc, argv, "gfp:l:")) != EOF)
-    {
-        switch (option)
-        {
-        case 'g':
-            options.global = true;
-            break;
-        case 'p':
-            options.package_file = optarg;
-            break;
-        case 'f':
-            options.force_build = true;
-        case 'l':
-            arg3::prep::set_log_level(optarg);
-            break;
+    while ((option = getopt(argc, argv, "hgfp:l:")) != EOF) {
+        switch (option) {
+            case 'g':
+                options.global = true;
+                break;
+            case 'p':
+                options.package_file = optarg;
+                break;
+            case 'f':
+                options.force_build = true;
+            case 'l':
+                arg3::prep::set_log_level(optarg);
+                break;
+            case 'h':
+                print_help(argv[0]);
+                return PREP_FAILURE;
         }
     }
 
-    try
-    {
-        if (prep.initialize(options) ) {
+    try {
+        if (prep.initialize(options)) {
             return PREP_FAILURE;
         }
 
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         arg3::prep::log_error(e.what());
         return PREP_FAILURE;
     }
 
-    if (optind >= argc)
-    {
+    if (optind >= argc) {
         command = "install";
-    }
-    else
-    {
+    } else {
         command = argv[optind++];
     }
 
-    if (!strcmp(command, "install"))
-    {
+    if (!strcmp(command, "install")) {
         arg3::prep::package_resolver resolver;
         arg3::prep::package_config config;
 
-        if (optind < 0 || optind >= argc)
-        {
+        if (optind < 0 || optind >= argc) {
             options.location = ".";
-        }
-        else
-        {
+        } else {
             options.location = argv[optind++];
         }
 
-        if (resolver.resolve_package(config, options))
-        {
+        if (resolver.resolve_package(config, options)) {
             arg3::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
@@ -83,19 +74,16 @@ int main(int argc, char *const argv[])
         return prep.build(config, options, resolver.working_dir().c_str());
     }
 
-    if (!strcmp(command, "remove"))
-    {
+    if (!strcmp(command, "remove")) {
         arg3::prep::package_resolver resolver;
         arg3::prep::package_config config;
 
-        if (optind < 0 || optind >= argc)
-        {
+        if (optind < 0 || optind >= argc) {
             arg3::prep::log_error("Remove which package?");
             return PREP_FAILURE;
         }
 
-        if (resolver.resolve_existing_package(config, options, argv[optind]))
-        {
+        if (resolver.resolve_existing_package(config, options, argv[optind])) {
             if (prep.remove(argv[optind], options)) {
                 arg3::prep::log_error("%s is not an existing package", argv[optind]);
                 return PREP_FAILURE;
@@ -107,8 +95,7 @@ int main(int argc, char *const argv[])
         return prep.remove(config, options);
     }
 
-    if (!strcmp(command, "check"))
-    {
+    if (!strcmp(command, "check")) {
     }
 
     printf("Unknown command '%s'\n", command ? command : "null");

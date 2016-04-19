@@ -1,0 +1,24 @@
+/*
+ * Auto-generated header for CMake.  See config.h.in if you need to modify the original
+ */
+
+#ifndef CMAKE_CONFIG_H
+#define CMAKE_CONFIG_H
+
+#cmakedefine	DEBUG			1
+
+#define SYSTEM_NAME 			"@CMAKE_SYSTEM_NAME@"
+#define PACKAGE_NAME			"@PROJECT_NAME@"
+#define PACKAGE_VERSION			"@VERSION@"
+
+#cmakedefine	MEMCHECK_FOUND		1
+#cmakedefine	CODE_COVERAGE_FOUND	1
+#cmakedefine	JSON_C_EXTENDED		1
+#cmakedefine	CURL_FOUND		1
+
+#ifdef CURL_FOUND
+#define HAVE_LIBCURL			1
+#endif
+
+#endif
+
