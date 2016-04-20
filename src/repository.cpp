@@ -106,24 +106,39 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
+        std::string repository::get_bin_path() const
+        {
+            return build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
+        }
+
+        std::string repository::get_build_path() const
+        {
+            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, NULL);
+        }
+
+        std::string repository::get_build_path(const string &package_name) const
+        {
+            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, package_name.c_str(), NULL);
+        }
+
         std::string repository::get_install_path() const
         {
-            return build_sys_path(path_.c_str(), INSTALL_FOLDER, NULL);
+            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, NULL);
         }
 
         std::string repository::get_install_path(const string &package_name) const
         {
-            return build_sys_path(path_.c_str(), INSTALL_FOLDER, package_name.c_str(), NULL);
+            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, package_name.c_str(), NULL);
         }
 
         std::string repository::get_meta_path() const
         {
-            return build_sys_path(path_.c_str(), META_FOLDER, NULL);
+            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, NULL);
         }
 
         std::string repository::get_meta_path(const string &package_name) const
         {
-            return build_sys_path(path_.c_str(), META_FOLDER, package_name.c_str(), NULL);
+            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, package_name.c_str(), NULL);
         }
 
         int repository::save_meta(const package &config) const
@@ -138,7 +153,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            string metaDir = build_sys_path(path_.c_str(), META_FOLDER, config.name(), NULL);
+            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name(), NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 if (mkpath(metaDir.c_str(), 0777)) {
@@ -175,7 +190,7 @@ namespace arg3
 
         int repository::has_meta(const package &config) const
         {
-            string metaDir = build_sys_path(path_.c_str(), META_FOLDER, config.name(), NULL);
+            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name(), NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 return PREP_FAILURE;
@@ -189,12 +204,12 @@ namespace arg3
 
             if (config.version()) {
                 if (strcmp(info.c_str(), config.version()) >= 0) {
-                    log_warn("Using cached version of %s (%s)", config.name(), info.c_str());
+                    log_warn("      using cached version of %s (%s)", config.name(), info.c_str());
                     return PREP_SUCCESS;
                 }
             } else if (config.location()) {
                 if (!strcmp(info.c_str(), config.location())) {
-                    log_warn("Using cached version of %s (%s)", config.name(), info.c_str());
+                    log_warn("      using cached version of %s (%s)", config.name(), info.c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -231,7 +246,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            metaDir = build_sys_path(path_.c_str(), META_FOLDER, NULL);
+            metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 log_error("%s is not a directory", metaDir.c_str());
@@ -439,7 +454,7 @@ namespace arg3
 
         std::string repository::exists_in_history(const std::string &location) const
         {
-            ifstream is(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
+            ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
 
             std::map<std::string, std::string> mps;
             std::insert_iterator<std::map<std::string, std::string> > mpsi(mps, mps.begin());
@@ -456,7 +471,7 @@ namespace arg3
 
         void repository::save_history(const std::string &location, const std::string &working_dir) const
         {
-            ifstream is(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
+            ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
 
             std::map<std::string, std::string> mps;
             std::insert_iterator<std::map<std::string, std::string> > mpsi(mps, mps.begin());

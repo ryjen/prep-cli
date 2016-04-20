@@ -29,7 +29,7 @@ namespace arg3
             }
 
             for (; LOG_LEVEL_NAMES[i] != NULL; i++) {
-                if (!strcmp(name, LOG_LEVEL_NAMES[i])) {
+                if (!strcasecmp(name, LOG_LEVEL_NAMES[i])) {
                     __current_log_level = (LogLevel)i;
                 }
             }

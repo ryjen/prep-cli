@@ -22,14 +22,14 @@ namespace arg3
 
             int resolve_existing_package(package &config, const options &opts, const std::string &name);
 
-            std::string working_dir() const;
+            std::string package_dir() const;
 
            private:
             int resolve_package_git(package &config, const options &opts, const char *url);
             int resolve_package_directory(package &config, const options &opts, const char *path);
             int resolve_package_download(package &config, const options &opts, const char *url);
             int resolve_package_archive(package &config, const options &opts, const char *path);
-            string workingDir_;
+            string directory_;
             bool isTemp_;
 
             static const char *const PACKAGE_FILE;

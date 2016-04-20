@@ -19,13 +19,17 @@ namespace arg3
             constexpr static const char *const GLOBAL_REPO = "/usr/local/share/prep";
 #endif
 
-            constexpr static const char *const HISTORY_FILE = ".history";
+            constexpr static const char *const HISTORY_FILE = "history";
 
             constexpr static const char *const LOCAL_REPO_NAME = ".prep";
 
-            constexpr static const char *const META_FOLDER = ".meta";
+            constexpr static const char *const META_FOLDER = "meta";
 
-            constexpr static const char *const INSTALL_FOLDER = ".install";
+            constexpr static const char *const INSTALL_FOLDER = "install";
+
+            constexpr static const char *const BUILD_FOLDER = "build";
+
+            constexpr static const char *const KITCHEN_FOLDER = "kitchen";
 
             constexpr static const char *const BIN_FOLDER = "bin";
 
@@ -49,6 +53,11 @@ namespace arg3
 
             std::string get_meta_path() const;
             std::string get_meta_path(const string &package_name) const;
+
+            std::string get_bin_path() const;
+
+            std::string get_build_path() const;
+            std::string get_build_path(const string &package_name) const;
 
             int validate() const;
 

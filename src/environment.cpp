@@ -136,6 +136,7 @@ namespace arg3
         int environment::execute(const char *command, const char *path) const
         {
             char flags[4][BUFSIZ];
+
             const char *args[] = {"/bin/sh", "-c", command, NULL};
 
             strncpy(flags[0], build_cflags("CPPFLAGS").c_str(), BUFSIZ);

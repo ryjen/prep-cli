@@ -13,3 +13,5 @@ prep
 Makefile
 config.h
 debug
+*.a
+prep-test

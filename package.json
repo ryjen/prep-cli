@@ -16,7 +16,7 @@
 				{
 					"name": "libz",
 					"location": "http://zlib.net/zlib-1.2.8.tar.gz",
-					"build_system": "autotools"
+					"build_system": "cmake"
 				},
 				/*{
 					"name": "openldap",

@@ -34,8 +34,8 @@ namespace arg3
            private:
             int build_package(const package &p, const char *path);
 
-            int build_autotools(const package &config, const char *path, const char *toPath);
-            int build_cmake(const package &config, const char *path, const char *toPath);
+            int build_autotools(const package &config, const char *path, const char *fromPath, const char *toPath);
+            int build_cmake(const package &config, const char *path, const char *fromPath, const char *toPath);
             int build_make(const package &config, const char *path);
             int build_commands(const package &config, const char *path, const vector<string> &commands);
 

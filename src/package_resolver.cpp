@@ -31,9 +31,9 @@ namespace arg3
             return isTemp_;
         }
 
-        std::string package_resolver::working_dir() const
+        std::string package_resolver::package_dir() const
         {
-            return workingDir_;
+            return directory_;
         }
 
 #ifdef HAVE_LIBGIT2
@@ -136,7 +136,7 @@ namespace arg3
         {
             log_trace("resolving package directory [%s]...", path);
 
-            workingDir_ = path;
+            directory_ = path;
 
             return config.load(path, opts);
         }
@@ -150,11 +150,11 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            workingDir_ = repo.get_meta_path(name);
+            directory_ = repo.get_meta_path(name);
 
-            log_trace("resolving package %s...", workingDir_.c_str());
+            log_trace("resolving package %s...", directory_.c_str());
 
-            return config.load(workingDir_, opts);
+            return config.load(directory_, opts);
         }
 
         int package_resolver::resolve_package(package &config, const options &opts)
