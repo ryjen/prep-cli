@@ -221,6 +221,11 @@ namespace arg3
             return get_str("build_options");
         }
 
+        const char *package::executable() const
+        {
+            return get_str("executable");
+        }
+
         const vector<string> package::build_commands() const
         {
             json_object *obj = NULL;

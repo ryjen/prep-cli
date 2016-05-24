@@ -6,6 +6,7 @@
 		"email": "c0der78@gmail.com"
 	},
 	"build_system": "cmake",
+	"executable": "prep",
 	"dependencies": [
 		{
 			"name": "libcurl",

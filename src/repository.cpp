@@ -47,7 +47,25 @@ namespace arg3
     {
         const char *const repository::get_local_repo()
         {
-            return build_sys_path(get_user_home_dir().c_str(), LOCAL_REPO_NAME, NULL);
+            char buf[BUFSIZ] = {0};
+
+            if (!getcwd(buf, BUFSIZ)) {
+                log_error("no current directory");
+                return nullptr;
+            }
+
+            const char *prefix = buf;
+            const char *current_path = build_sys_path(prefix, LOCAL_REPO_NAME, NULL);
+
+            while(directory_exists(current_path) == 1) {
+                prefix = build_sys_path(prefix, "..", NULL);
+                if (directory_exists(prefix) == 1) {
+                    break;
+                }
+                current_path = build_sys_path(prefix, LOCAL_REPO_NAME, NULL);
+            }
+
+            return current_path;
         }
 
         int repository::initialize(const options &opts)
@@ -447,6 +465,23 @@ namespace arg3
             }
 
             fts_close(file_system);
+
+            return rval;
+        }
+
+        int repository::execute(const char *executable, int argc, char *const *argv) const
+        {
+            const char **args = (const char**) calloc(argc + 2, sizeof(const char*));
+
+            args[0] = build_sys_path(get_bin_path().c_str(), executable, NULL);
+
+            for(int i = 1; i < argc; i++) {
+                args[i] = argv[i-1];
+            }
+
+            int rval = fork_command(args, ".", nullptr);
+
+            free(args);
 
             return rval;
         }

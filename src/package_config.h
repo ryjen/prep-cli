@@ -44,6 +44,7 @@ namespace arg3
             bool is_loaded() const;
             vector<package_dependency> dependencies() const;
             const vector<string> build_commands() const;
+            const char *executable() const;
 
            protected:
             package();

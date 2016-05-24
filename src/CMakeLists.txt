@@ -1,5 +1,5 @@
 
-set(SOURCE_FILES 
+set(SOURCE_FILES
     decompressor.cpp
     environment.cpp
     log.cpp
@@ -20,14 +20,14 @@ add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${ZLIB_LIBRARIES} ${JSON_C_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
 
 set(HEADER_FILES
-    common.h 
-    decompressor.h 
-    environment.h 
-    log.h 
-    package_builder.h 
-    package_config.h 
-    package_resolver.h 
-    repository.h 
+    common.h
+    decompressor.h
+    environment.h
+    log.h
+    package_builder.h
+    package_config.h
+    package_resolver.h
+    repository.h
     util.h
 )
 
@@ -37,4 +37,3 @@ INSTALL(TARGETS ${PROJECT_LIBRARY} ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
 )
-

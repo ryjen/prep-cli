@@ -30,6 +30,7 @@ namespace arg3
             int remove(const std::string &package_name, options &opts);
             int link_package(const package &config) const;
             int unlink_package(const package &config) const;
+            int execute(const package &config, int argc, char * const *argv) const;
 
            private:
             int build_package(const package &p, const char *path);

@@ -60,6 +60,7 @@ namespace arg3
             std::string get_build_path(const string &package_name) const;
 
             int validate() const;
+            int execute(const char *executable, int argc, char *const *argv) const;
 
            private:
             int package_dependency_count(const package &config, const string &package_name, const options &opts) const;

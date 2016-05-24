@@ -228,6 +228,28 @@ namespace arg3
             return repo_.unlink_directory(packageInstall.c_str());
         }
 
+        int package_builder::execute(const package &config, int argc, char * const *argv) const
+        {
+            if (!config.is_loaded()) {
+                log_error("config is not loaded");
+                return PREP_FAILURE;
+            }
+
+            if (config.executable() == nullptr) {
+                log_error("config has no executable defined");
+                return PREP_FAILURE;
+            }
+
+            const char *executable = build_sys_path(repo_.get_bin_path().c_str(), config.executable(), NULL);
+
+            if (!file_executable(executable)) {
+                log_error("%s is not executable", executable);
+                return PREP_FAILURE;
+            }
+
+            return repo_.execute(config.executable(), argc, argv);
+        }
+
         int package_builder::build_cmake(const package &config, const char *path, const char *fromPath, const char *toPath)
         {
             char buf[BUFSIZ + 1] = {0};

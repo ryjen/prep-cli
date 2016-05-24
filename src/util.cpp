@@ -206,72 +206,6 @@ namespace arg3
             return ret;
         }
 
-        /*
-        int remove_directory(const char *path)
-        {
-            if (path == NULL || *path == 0) {
-                return PREP_FAILURE;
-            }
-
-            DIR *d = opendir(path);
-            size_t path_len = strlen(path);
-            int r = -1;
-
-            if (d)
-            {
-                struct dirent *p;
-
-                r = 0;
-
-                while (!r && (p = readdir(d)))
-                {
-                    int r2 = -1;
-                    char *buf;
-                    size_t len;
-
-                    if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
-                    {
-                        continue;
-                    }
-
-                    len = path_len + strlen(p->d_name) + 2;
-                    buf = (char *) calloc(1, len);
-
-                    if (buf)
-                    {
-                        struct stat statbuf;
-
-                        snprintf(buf, len, "%s/%s", path, p->d_name);
-
-                        if (!stat(buf, &statbuf))
-                        {
-                            if (S_ISDIR(statbuf.st_mode))
-                            {
-                                r2 = remove_directory(buf);
-                            }
-                            else
-                            {
-                                r2 = unlink(buf);
-                            }
-                        }
-
-                        free(buf);
-                    }
-
-                    r = r2;
-                }
-
-                closedir(d);
-            }
-
-            if (!r)
-            {
-                r = rmdir(path);
-            }
-
-            return r;
-        }*/
-
         int directory_exists(const char *path)
         {
             struct stat s;
@@ -308,8 +242,30 @@ namespace arg3
                 }
             } else {
                 if (S_ISREG(s.st_mode)) {
-                    /* it's a dir */
+                    /* it's a file */
                     return 1;
+                } else {
+                    return 0;
+                }
+            }
+        }
+
+        int file_executable(const char *path)
+        {
+            struct stat s;
+            int err = stat(path, &s);
+            if (-1 == err) {
+                if (ENOENT == errno) {
+                    /* does not exist */
+                    return 0;
+                } else {
+                    perror("stat");
+                    exit(1);
+                }
+            } else {
+                if (S_ISREG(s.st_mode)) {
+                    /* it's a dir */
+                    return s.st_mode & S_IXUSR;
                 } else {
                     return 0;
                 }

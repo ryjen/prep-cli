@@ -21,6 +21,8 @@ namespace arg3
 
         int file_exists(const char *path);
 
+        int file_executable(const char *path);
+
         int download_to_temp_file(const char *url, std::string &filename);
 
         void checkout_progress(const char *path, size_t cur, size_t tot, void *payload);
