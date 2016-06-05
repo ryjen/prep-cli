@@ -235,8 +235,30 @@ namespace arg3
                 }
             } else {
                 if (S_ISREG(s.st_mode)) {
-                    /* it's a dir */
+                    /* it's a file */
                     return 1;
+                } else {
+                    return 0;
+                }
+            }
+        }
+
+        int file_executable(const char *path)
+        {
+            struct stat s;
+            int err = stat(path, &s);
+            if (-1 == err) {
+                if (ENOENT == errno) {
+                    /* does not exist */
+                    return 0;
+                } else {
+                    perror("stat");
+                    exit(1);
+                }
+            } else {
+                if (S_ISREG(s.st_mode)) {
+                    /* it's a dir */
+                    return s.st_mode & S_IXUSR;
                 } else {
                     return 0;
                 }

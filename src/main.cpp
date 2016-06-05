@@ -13,6 +13,7 @@ void print_help(char *exe)
     printf("Syntax: %s [-g -f] install <package url, git url, archive or directory>\n", exe);
     printf("      : %s [-g] remove <package>\n", exe);
     printf("      : %s [-g] update <package>\n", exe);
+    printf("      : %s run\n", exe);
     printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
 }
@@ -113,6 +114,25 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "check")) {
+    }
+
+    if (!strcmp(command, "run")) {
+        arg3::prep::package_resolver resolver;
+        arg3::prep::package_config config;
+        char cwd[PATH_MAX];
+
+        if (getcwd(cwd, sizeof(cwd))) {
+            options.location = cwd;
+        } else {
+            options.location = ".";
+        }
+
+        if (resolver.resolve_package(config, options)) {
+            arg3::prep::log_error("%s is not a valid prep package", options.location.c_str());
+            return PREP_FAILURE;
+        }
+
+        return prep.execute(config, argc - optind, &argv[optind]);
     }
 
     printf("Unknown command '%s'\n", command ? command : "null");

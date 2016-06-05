@@ -68,6 +68,7 @@ namespace arg3
             std::string get_plugin_path() const;
 
             int validate() const;
+            int execute(const char *executable, int argc, char *const *argv) const;
 
             int plugin_install(const package &config);
 
