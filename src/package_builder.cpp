@@ -88,11 +88,23 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
-        int package_builder::remove(const package &config, options &opts)
+        int package_builder::remove(package &config, options &opts, const char *package)
         {
+            // otherwise were removeing this package
             if (!config.is_loaded()) {
-                log_error("config is not loaded");
-                return PREP_FAILURE;
+                std::string directory = repo_.get_meta_path(package);
+
+                log_trace("resolving package %s...", directory.c_str());
+
+                if (config.load(directory, opts) == PREP_FAILURE) {
+                    log_error("unable to load package configuration");
+                    return PREP_FAILURE;
+                }
+            }
+
+            // TODO: ensure we actually installed via plugin
+            if (repo_.plugin_remove(config) == PREP_SUCCESS) {
+                return PREP_SUCCESS;
             }
 
             return remove(config.name(), opts);
@@ -100,6 +112,7 @@ namespace arg3
 
         int package_builder::remove(const string &package_name, options &opts)
         {
+
             string installDir = repo_.get_install_path(package_name);
 
             if (!directory_exists(installDir.c_str())) {
@@ -136,7 +149,7 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
-        int package_builder::build(const package &config, options &opts, const std::string &path)
+        int package_builder::build(const package &config, options &opts, const char *path)
         {
             string installDir;
 
@@ -145,9 +158,9 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            log_trace("Building from [%s]", path.c_str());
+            log_trace("Building from [%s]", path);
 
-            if (config.location() != NULL) {
+            if (config.location() != nullptr) {
                 repo_.save_history(config.location(), path);
             }
 
@@ -166,9 +179,14 @@ namespace arg3
 
                 log_info("    - preparing dependency \033[0;35m%s\033[0m", p.name());
 
+                if (repo_.plugin_install(p) == PREP_SUCCESS) {
+                    continue;
+                }
+
                 package_dir = repo_.exists_in_history(p.location());
 
                 if (package_dir.empty() || !directory_exists(package_dir.c_str())) {
+
                     if (str_empty(p.location())) {
                         log_error("[%s] dependency [%s] has no location", config.name(), p.name());
                         continue;
@@ -181,7 +199,7 @@ namespace arg3
                     package_dir = resolver.package_dir();
                 }
 
-                if (build(p, opts, package_dir)) {
+                if (build(p, opts, package_dir.c_str())) {
                     log_error("unable to build dependency %s", p.name());
                     remove_directory(package_dir.c_str());
                     return PREP_FAILURE;
@@ -192,7 +210,7 @@ namespace arg3
                 return PREP_SUCCESS;
             }
 
-            if (build_package(config, path.c_str())) {
+            if (build_package(config, path)) {
                 return PREP_FAILURE;
             }
 

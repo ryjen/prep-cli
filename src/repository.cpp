@@ -58,6 +58,11 @@ namespace arg3
                 path_ = get_local_repo();
             }
 
+            if (load_plugins() == PREP_FAILURE) {
+                log_error("unable to load plugins");
+                return PREP_FAILURE;
+            }
+
             return PREP_SUCCESS;
         }
 
@@ -109,6 +114,11 @@ namespace arg3
         std::string repository::get_bin_path() const
         {
             return build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
+        }
+
+        std::string repository::get_plugin_path() const
+        {
+            return build_sys_path(path_.c_str(), PLUGIN_FOLDER, NULL);
         }
 
         std::string repository::get_build_path() const
@@ -490,6 +500,69 @@ namespace arg3
             std::copy(mps.begin(), mps.end(), std::ostream_iterator<std::pair<std::string, std::string> >(os, "\n"));
 
             os.close();
+        }
+
+        int repository::load_plugins()
+        {
+            std::string path = get_plugin_path();
+
+            if (!directory_exists(path.c_str())) {
+                log_warn("No plugin directory");
+                return PREP_SUCCESS;
+            }
+
+            DIR *dir = opendir(path.c_str());
+
+            if (dir == NULL) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
+
+            for(struct dirent *d = readdir(dir); d != nullptr; d = readdir(dir)) {
+                if (d->d_name[0] == '.') {
+                    continue;
+                }
+
+                auto plugin = std::make_shared<arg3::prep::plugin>(basename(d->d_name));
+
+                if (plugin->load(build_sys_path(path.c_str(), d->d_name, NULL)) == PREP_SUCCESS) {
+                    plugins_.push_back(plugin);
+                } else {
+                    log_warn("unable to load plugin [%s]", d->d_name);
+                }
+            }
+
+            for(auto &plugin : plugins_) {
+                plugin->on_load();
+            }
+
+            return PREP_SUCCESS;
+        }
+
+        int repository::plugin_install(const package &config)
+        {
+            log_trace("checking plugins for [%s]...", config.name());
+
+            for(auto plugin : plugins_) {
+                if (plugin->on_install(config) == PREP_SUCCESS) {
+                    log_info("installed [%s] from plugin", config.name());
+                    return PREP_SUCCESS;
+                }
+            }
+            return PREP_FAILURE;
+        }
+
+        int repository::plugin_remove(const package &config)
+        {
+            log_trace("checking plugins for [%s]...", config.name());
+
+            for (auto plugin : plugins_) {
+                if (plugin->on_remove(config) == PREP_SUCCESS) {
+                    log_info("removed [%s] from plugin", config.name());
+                    return PREP_SUCCESS;
+                }
+            }
+            return PREP_FAILURE;
         }
     }
 }

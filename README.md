@@ -62,6 +62,11 @@ Examples explain best.  This is prep's configuration:
 }
 ```
 
+Plugins
+=======
+
+Plugins are available for package managers.  If you install a plugin it will override the prep source configuration and install the system package.
+
 Features
 ========
 - local user repository ($HOME/.prep)
@@ -93,4 +98,3 @@ Repository Structure
 **.history** : a record of incomplete installations
 
 packages in **.install** are symlinked to **bin**, **lib**, **include**, etc.
-

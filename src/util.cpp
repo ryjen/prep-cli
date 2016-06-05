@@ -70,13 +70,6 @@ namespace arg3
                     return EXIT_FAILURE;
                 }
 
-                for (int i = 0; argv != NULL && argv[i] != NULL; i++) {
-                    printf("%s ", argv[i]);
-                }
-                for (int i = 0; envp != NULL && envp[i] != NULL; i++) {
-                    printf("%s ", envp[i]);
-                }
-
                 // we are the child
                 execve(argv[0], (char *const *)&argv[0], envp);
 
@@ -205,72 +198,6 @@ namespace arg3
 
             return ret;
         }
-
-        /*
-        int remove_directory(const char *path)
-        {
-            if (path == NULL || *path == 0) {
-                return PREP_FAILURE;
-            }
-
-            DIR *d = opendir(path);
-            size_t path_len = strlen(path);
-            int r = -1;
-
-            if (d)
-            {
-                struct dirent *p;
-
-                r = 0;
-
-                while (!r && (p = readdir(d)))
-                {
-                    int r2 = -1;
-                    char *buf;
-                    size_t len;
-
-                    if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
-                    {
-                        continue;
-                    }
-
-                    len = path_len + strlen(p->d_name) + 2;
-                    buf = (char *) calloc(1, len);
-
-                    if (buf)
-                    {
-                        struct stat statbuf;
-
-                        snprintf(buf, len, "%s/%s", path, p->d_name);
-
-                        if (!stat(buf, &statbuf))
-                        {
-                            if (S_ISDIR(statbuf.st_mode))
-                            {
-                                r2 = remove_directory(buf);
-                            }
-                            else
-                            {
-                                r2 = unlink(buf);
-                            }
-                        }
-
-                        free(buf);
-                    }
-
-                    r = r2;
-                }
-
-                closedir(d);
-            }
-
-            if (!r)
-            {
-                r = rmdir(path);
-            }
-
-            return r;
-        }*/
 
         int directory_exists(const char *path)
         {
@@ -505,6 +432,17 @@ namespace arg3
             }
 
             return PREP_SUCCESS;
+        }
+
+        bool can_exec_file(const std::string &file)
+        {
+            struct stat  st;
+
+            if (stat(file.c_str(), &st) < 0)
+                return false;
+            if ((st.st_mode & S_IEXEC) != 0)
+                return true;
+            return false;
         }
     }
 }

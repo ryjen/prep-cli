@@ -1,10 +1,8 @@
 #include <unistd.h>
 #include <iostream>
 #include "common.h"
-#include "common.h"
-#include "log.h"
-#include "log.h"
 #include "package_builder.h"
+#include "log.h"
 #include "package_resolver.h"
 #include "util.h"
 
@@ -72,6 +70,7 @@ int main(int argc, char *const argv[])
             } else {
                 options.location = ".";
             }
+
         } else {
             options.location = argv[optind++];
         }
@@ -93,16 +92,7 @@ int main(int argc, char *const argv[])
             return PREP_FAILURE;
         }
 
-        if (resolver.resolve_existing_package(config, options, argv[optind])) {
-            if (prep.remove(argv[optind], options)) {
-                arg3::prep::log_error("%s is not an existing package", argv[optind]);
-                return PREP_FAILURE;
-            }
-
-            return PREP_SUCCESS;
-        }
-
-        return prep.remove(config, options);
+        return prep.remove(config, options, argv[optind]);
     }
 
     if (!strcmp(command, "setpath")) {
