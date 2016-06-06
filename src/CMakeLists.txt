@@ -7,6 +7,7 @@ set(SOURCE_FILES
     package_config.cpp
     package_dependency.cpp
     package_resolver.cpp
+    plugin.cpp
     repository.cpp
     util.cpp
 )
@@ -27,6 +28,7 @@ set(HEADER_FILES
     package_builder.h
     package_config.h
     package_resolver.h
+    plugin.h
     repository.h
     util.h
 )
@@ -37,3 +39,5 @@ INSTALL(TARGETS ${PROJECT_LIBRARY} ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
 )
+
+INSTALL(DIRECTORY plugins/homebrew DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/plugins)

@@ -20,8 +20,6 @@ namespace arg3
 
             bool is_temp_path() const;
 
-            int resolve_existing_package(package &config, const options &opts, const std::string &name);
-
             std::string package_dir() const;
 
            private:

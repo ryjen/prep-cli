@@ -70,13 +70,6 @@ namespace arg3
                     return EXIT_FAILURE;
                 }
 
-                for (int i = 0; argv != NULL && argv[i] != NULL; i++) {
-                    printf("%s ", argv[i]);
-                }
-                for (int i = 0; envp != NULL && envp[i] != NULL; i++) {
-                    printf("%s ", envp[i]);
-                }
-
                 // we are the child
                 execve(argv[0], (char *const *)&argv[0], envp);
 
@@ -461,6 +454,17 @@ namespace arg3
             }
 
             return PREP_SUCCESS;
+        }
+
+        bool can_exec_file(const std::string &file)
+        {
+            struct stat  st;
+
+            if (stat(file.c_str(), &st) < 0)
+                return false;
+            if ((st.st_mode & S_IEXEC) != 0)
+                return true;
+            return false;
         }
     }
 }

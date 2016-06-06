@@ -12,10 +12,10 @@
 #endif
 #include <cassert>
 #include "common.h"
+#include "repository.h"
 #include "decompressor.h"
 #include "log.h"
 #include "package_resolver.h"
-#include "repository.h"
 #include "util.h"
 
 namespace arg3
@@ -195,22 +195,6 @@ namespace arg3
             directory_ = path;
 
             return config.load(path, opts);
-        }
-
-        int package_resolver::resolve_existing_package(package &config, const options &opts, const std::string &name)
-        {
-            repository repo;
-
-            if (repo.initialize(opts)) {
-                log_error("unable to intialize repository");
-                return PREP_FAILURE;
-            }
-
-            directory_ = repo.get_meta_path(name);
-
-            log_trace("resolving package %s...", directory_.c_str());
-
-            return config.load(directory_, opts);
         }
 
         int package_resolver::resolve_package(package &config, const options &opts)

@@ -40,6 +40,8 @@ namespace arg3
         const char *build_sys_path(const char *start, ...) __attribute__((format(printf, 1, 2)));
 
         int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path);
+
+        bool can_exec_file(const std::string &path);
     }
 }
 

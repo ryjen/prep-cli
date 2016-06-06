@@ -22,11 +22,11 @@ namespace arg3
             // @param opts the session options
             // @param path the path the source is in
             // @returns PREP_SUCCESS or PREP_FAILURE if an error occured
-            int build(const package &config, options &opts, const std::string &path);
+            int build(const package &config, options &opts, const char* path);
 
             int build_from_folder(options &opts, const char *path);
             string repo_path() const;
-            int remove(const package &config, options &opts);
+            int remove(package &config, options &opts, const char *package);
             int remove(const std::string &package_name, options &opts);
             int link_package(const package &config) const;
             int unlink_package(const package &config) const;

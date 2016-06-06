@@ -1,0 +1,58 @@
+#!/usr/bin/env perl
+
+
+sub on_load
+{
+    exec "brew", "tap", "homebrew/versions"
+}
+
+sub on_install
+{
+    my $package = <STDIN>;
+    my $version = <STDIN>;
+
+    chomp($package);
+    chomp($version);
+
+    #todo version support
+    #my $result = `brew versions $package`
+    #my $commit = cut -d ' ' -f 4
+    #my $formula = cut -d ' ' -f 5
+    #brew unlink $package
+
+    exec "brew", "install", $package
+}
+
+sub on_remove
+{
+    my $package = <STDIN>;
+    my $version = <STDIN>;
+
+    chomp($package);
+    chomp($version);
+
+    exec "brew", "remove", $package
+}
+
+sub main
+{
+    my $command = <STDIN>;
+
+    chomp($command);
+
+    if ($command eq "load") {
+        return on_load;
+    }
+
+    if ($command eq "install") {
+        return on_install;
+    }
+
+    if ($command eq "remove") {
+        return on_remove;
+    }
+
+    return 1;
+}
+
+exit(&main);

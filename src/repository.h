@@ -2,7 +2,11 @@
 #define ARG3_PREP_REPOSITORY_H
 
 #include <string>
+#include <memory>
+#include <vector>
 #include "package_config.h"
+#include "package_resolver.h"
+#include "plugin.h"
 
 namespace arg3
 {
@@ -33,6 +37,8 @@ namespace arg3
 
             constexpr static const char *const BIN_FOLDER = "bin";
 
+            constexpr static const char *const PLUGIN_FOLDER = "plugins";
+
             static const char *const get_local_repo();
 
             int unlink_directory(const char *path) const;
@@ -59,11 +65,21 @@ namespace arg3
             std::string get_build_path() const;
             std::string get_build_path(const string &package_name) const;
 
+            std::string get_plugin_path() const;
+
             int validate() const;
             int execute(const char *executable, int argc, char *const *argv) const;
 
+            int plugin_install(const package &config);
+
+            int plugin_remove(const package &config);
+
            private:
             int package_dependency_count(const package &config, const string &package_name, const options &opts) const;
+
+            int load_plugins();
+
+            std::vector<std::shared_ptr<plugin>> plugins_;
 
             std::string path_;
         };
