@@ -22,6 +22,70 @@ namespace arg3
 {
     namespace prep
     {
+        namespace helper
+        {
+#ifdef HAVE_LIBGIT2
+            int fetch_progress(const git_transfer_progress *stats, void *payload)
+            {
+                printf("\x1b[Afetching %d/%d %.0f%% \n\r", stats->indexed_objects, stats->total_objects,
+                       (float)stats->indexed_objects / (float)stats->total_objects * 100.f);
+
+                return 0;
+            }
+
+            void checkout_progress(const char *path, size_t cur, size_t tot, void *payload)
+            {
+                printf("\x1b[Acheckout %ld/%ld %.0f%% \n\r", cur, tot, (float)cur / (float)tot * 100.f);
+            }
+
+            void build_checkout_opts(git_checkout_options *opts)
+            {
+                if (opts == NULL) {
+                    return;
+                }
+                #if (LIBGIT2_SOVERSION >= 23)
+                    opts->checkout_strategy = GIT_CHECKOUT_SAFE;
+                #else
+                    opts->checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+                #endif
+                opts->progress_cb = checkout_progress;
+                opts->progress_payload = NULL;
+            }
+
+            void build_fetch_opts(git_fetch_options *opts)
+            {
+                if (opts == NULL) {
+                    return;
+                }
+
+                #if (LIBGIT2_SOVERSION >= 23)
+                    opts->callbacks.transfer_progress = &fetch_progress;
+                    opts->callbacks.payload = NULL;
+                #endif
+            }
+
+            int init_package_submodule(git_submodule *submodule, const char *name, void *payload)
+            {
+                git_submodule_update_options opts = GIT_SUBMODULE_UPDATE_OPTIONS_INIT;
+
+                opts.checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+                opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
+
+                build_checkout_opts(&opts.checkout_opts);
+
+                build_fetch_opts(&opts.fetch_opts);
+                #if (LIBGIT2_SOVERSION >= 23)
+                    opts.clone_checkout_strategy = GIT_CHECKOUT_SAFE;
+                #else
+                    opts.clone_checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+                #endif
+
+                int error = git_submodule_update(submodule, 1,  &opts);
+
+                return error;
+            }
+#endif
+        }
         package_resolver::package_resolver() : isTemp_(false)
         {
         }
@@ -36,21 +100,6 @@ namespace arg3
             return directory_;
         }
 
-#ifdef HAVE_LIBGIT2
-        int fetch_progress(const git_transfer_progress *stats, void *payload)
-        {
-            printf("\x1b[Afetching %d/%d %.0f%%\n\r", stats->indexed_objects, stats->total_objects,
-                   (float)stats->indexed_objects / (float)stats->total_objects * 100.f);
-
-            return 0;
-        }
-
-        void checkout_progress(const char *path, size_t cur, size_t tot, void *payload)
-        {
-            printf("\x1b[Acheckout %ld/%ld %.0f%%\n\r", cur, tot, (float)cur / (float)tot * 100.f);
-        }
-#endif
-
         int package_resolver::resolve_package_git(package &config, const options &opts, const char *url)
         {
 #ifdef HAVE_LIBGIT2
@@ -62,35 +111,42 @@ namespace arg3
             git_libgit2_init();
             git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
 
-#if (LIBGIT2_SOVERSION >= 23)
-            checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
-#else
-            checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
-#endif
-            checkout_opts.progress_cb = checkout_progress;
-            checkout_opts.progress_payload = NULL;
+            helper::build_checkout_opts(&checkout_opts);
 
             git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
             clone_opts.checkout_opts = checkout_opts;
 
 #if (LIBGIT2_SOVERSION >= 23)
-            clone_opts.fetch_opts.callbacks.transfer_progress = &fetch_progress;
-            clone_opts.fetch_opts.callbacks.payload = NULL;
+            helper::build_fetch_opts(&clone_opts.fetch_opts);
 #else
             clone_opts.remote_callbacks.transfer_progress = &fetch_progress;
             clone_opts.remote_callbacks.payload = NULL;
 #endif
 
             git_repository *repo = NULL;
+
+            printf("\n");
+
             int error = git_clone(&repo, url, buffer, &clone_opts);
             if (error < 0) {
                 const git_error *e = giterr_last();
                 log_error("%d/%d: %s\n", error, e->klass, e->message);
                 return PREP_FAILURE;
             }
-            git_repository_free(repo);
 
             isTemp_ = true;
+
+            printf("\n");
+
+            error = git_submodule_foreach(repo, helper::init_package_submodule, this);
+
+            git_repository_free(repo);
+
+            if (error < 0) {
+                const git_error *e = giterr_last();
+                log_error("%d/%d: %s\n", error, e->klass, e->message);
+                return PREP_FAILURE;
+            }
 
             return resolve_package_directory(config, opts, buffer);
 #else
