@@ -181,7 +181,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name(), NULL);
+            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 if (mkpath(metaDir.c_str(), 0777)) {
@@ -193,23 +193,23 @@ namespace arg3
             ofstream out(build_sys_path(metaDir.c_str(), "version", NULL));
 
             if (!out.is_open()) {
-                log_error("unable to save version for %s", config.name());
+                log_error("unable to save version for %s", config.name().c_str());
                 return PREP_FAILURE;
             }
 
-            if (config.version()) {
+            if (!config.version().empty()) {
                 out << config.version() << endl;
-            } else if (config.location()) {
+            } else if (!config.location().empty()) {
                 out << config.location() << endl;
             }
 
             out.close();
 
             if (config.has_path()) {
-                log_trace("copying %s to %s...", config.path(), metaDir.c_str());
+                log_trace("copying %s to %s...", config.path().c_str(), metaDir.c_str());
 
                 if (copy_file(config.path(), build_sys_path(metaDir.c_str(), "package.json", NULL))) {
-                    log_error("no unable to copy package file %s", config.path());
+                    log_error("no unable to copy package file %s", config.path().c_str());
                 }
             }
 
@@ -218,7 +218,7 @@ namespace arg3
 
         int repository::has_meta(const package &config) const
         {
-            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name(), NULL);
+            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 return PREP_FAILURE;
@@ -230,14 +230,14 @@ namespace arg3
             in >> info;
             in.close();
 
-            if (config.version()) {
-                if (strcmp(info.c_str(), config.version()) >= 0) {
-                    log_warn("      using cached version of %s (%s)", config.name(), info.c_str());
+            if (!config.version().empty()) {
+                if (strcmp(info.c_str(), config.version().c_str()) >= 0) {
+                    log_warn("      using cached version of %s (%s)", config.name().c_str(), info.c_str());
                     return PREP_SUCCESS;
                 }
-            } else if (config.location()) {
-                if (!strcmp(info.c_str(), config.location())) {
-                    log_warn("      using cached version of %s (%s)", config.name(), info.c_str());
+            } else if (!config.location().empty()) {
+                if (!strcmp(info.c_str(), config.location().c_str())) {
+                    log_warn("      using cached version of %s (%s)", config.name().c_str(), info.c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -250,7 +250,7 @@ namespace arg3
             int count = 0;
 
             for (const package_dependency &dep : config.dependencies()) {
-                if (!strcmp(dep.name(), package_name.c_str())) {
+                if (!strcmp(dep.name().c_str(), package_name.c_str())) {
                     count++;
                 }
                 count += package_dependency_count(dep, package_name, opts);
@@ -332,19 +332,20 @@ namespace arg3
         }
 
 
-        int repository::link_directory(const char *path) const
+        int repository::link_directory(const std::string &path) const
         {
             FTS *file_system = NULL;
             FTSENT *child = NULL;
             FTSENT *parent = NULL;
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
-            char *const paths[] = {(char *const)path, NULL};
 
-            if (!directory_exists(path)) {
-                log_error("%s is not a directory", path);
+            if (!directory_exists(path.c_str())) {
+                log_error("%s is not a directory", path.c_str());
                 return PREP_FAILURE;
             }
+
+            char *const paths[] = {(char *const)path.c_str(), NULL};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -357,7 +358,7 @@ namespace arg3
                 struct stat st;
 
                 // get the repo path
-                snprintf(buf, PATH_MAX, "%s%s", path_.c_str(), parent->fts_path + strlen(path));
+                snprintf(buf, PATH_MAX, "%s%s", path_.c_str(), parent->fts_path + path.length());
 
                 // check the install file is a directory
                 if (parent->fts_info == FTS_D) {
@@ -414,7 +415,7 @@ namespace arg3
         }
 
 
-        int repository::unlink_directory(const char *path) const
+        int repository::unlink_directory(const std::string &path) const
         {
             FTS *file_system = NULL;
             FTSENT *child = NULL;
@@ -422,12 +423,13 @@ namespace arg3
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
             string installDir;
-            char *const paths[] = {(char *const)path, NULL};
 
-            if (!directory_exists(path)) {
-                log_error("%s does not exist.", path);
+            if (!directory_exists(path.c_str())) {
+                log_error("%s does not exist.", path.c_str());
                 return PREP_FAILURE;
             }
+
+            char *const paths[] = {(char *const)path.c_str(), NULL};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -436,7 +438,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            size_t plength = strlen(path);
+            size_t plength = path.length();
 
             while ((parent = fts_read(file_system)) != NULL) {
                 struct stat st;
@@ -479,11 +481,15 @@ namespace arg3
             return rval;
         }
 
-        int repository::execute(const char *executable, int argc, char *const *argv) const
+        int repository::execute(const std::string &executable, int argc, char *const *argv) const
         {
+            if (executable.empty()) {
+                return PREP_FAILURE;
+            }
+
             const char **args = (const char**) calloc(argc + 2, sizeof(const char*));
 
-            args[0] = build_sys_path(get_bin_path().c_str(), executable, NULL);
+            args[0] = build_sys_path(get_bin_path().c_str(), executable.c_str(), NULL);
 
             for(int i = 1; i < argc; i++) {
                 args[i] = argv[i-1];
@@ -499,6 +505,10 @@ namespace arg3
 
         std::string repository::exists_in_history(const std::string &location) const
         {
+            if (location.empty()) {
+                return location;
+            }
+
             ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
 
             std::map<std::string, std::string> mps;
@@ -516,6 +526,10 @@ namespace arg3
 
         void repository::save_history(const std::string &location, const std::string &working_dir) const
         {
+            if (location.empty()) {
+                return;
+            }
+
             ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
 
             std::map<std::string, std::string> mps;
@@ -540,12 +554,14 @@ namespace arg3
         int repository::load_plugins()
         {
             std::string path = get_plugin_path();
+            struct stat st;
 
             if (!directory_exists(path.c_str())) {
                 log_warn("No plugin directory");
                 return PREP_SUCCESS;
             }
 
+            struct dirent *d = NULL;
             DIR *dir = opendir(path.c_str());
 
             if (dir == NULL) {
@@ -553,19 +569,32 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            for(struct dirent *d = readdir(dir); d != nullptr; d = readdir(dir)) {
+            while((d = readdir(dir)) != NULL) {
+
                 if (d->d_name[0] == '.') {
                     continue;
                 }
 
-                auto plugin = std::make_shared<arg3::prep::plugin>(basename(d->d_name));
+                auto pluginPath = build_sys_path(path.c_str(), d->d_name, NULL);
 
-                if (plugin->load(build_sys_path(path.c_str(), d->d_name, NULL)) == PREP_SUCCESS) {
-                    plugins_.push_back(plugin);
-                } else {
-                    log_warn("unable to load plugin [%s]", d->d_name);
+                if (!directory_exists(pluginPath)) {
+                    continue;
+                }
+
+                auto plugin = std::make_shared<arg3::prep::plugin>(d->d_name);
+
+                try {
+                    if (plugin->load(pluginPath) == PREP_SUCCESS) {
+                        plugins_.push_back(plugin);
+                    } else {
+                        log_warn("unable to load plugin [%s]", d->d_name);
+                    }
+                } catch (const std::string &not_a_plugin) {
+                    log_trace("skipping non-plugin [%s]", not_a_plugin.c_str());
                 }
             }
+
+            closedir(dir);
 
             for(auto &plugin : plugins_) {
                 plugin->on_load();
@@ -576,11 +605,11 @@ namespace arg3
 
         int repository::plugin_install(const package &config)
         {
-            log_trace("checking plugins for [%s]...", config.name());
+            log_trace("checking plugins for install of [%s]...", config.name().c_str());
 
             for(auto plugin : plugins_) {
                 if (plugin->on_install(config) == PREP_SUCCESS) {
-                    log_info("installed [%s] from plugin", config.name());
+                    log_info("installed [%s] from plugin", config.name().c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -589,15 +618,44 @@ namespace arg3
 
         int repository::plugin_remove(const package &config)
         {
-            log_trace("checking plugins for [%s]...", config.name());
+            log_trace("checking plugins for removal of [%s]...", config.name().c_str());
 
             for (auto plugin : plugins_) {
                 if (plugin->on_remove(config) == PREP_SUCCESS) {
-                    log_info("removed [%s] from plugin", config.name());
+                    log_info("removed [%s] from plugin", config.name().c_str());
                     return PREP_SUCCESS;
                 }
             }
             return PREP_FAILURE;
+        }
+
+        std::shared_ptr<plugin> repository::get_plugin_by_name(const std::string &name) const {
+            for(auto &plugin : plugins_) {
+                if (plugin->name() == name) {
+                    return plugin;
+                }
+            }
+            return nullptr;
+        }
+
+
+        int repository::plugin_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath)
+        {
+            for (auto &name : config.build_system()) {
+                auto plugin = get_plugin_by_name(name);
+
+                if (!plugin) {
+                    log_error("No plugin [%s] found", name.c_str());
+                    return PREP_FAILURE;
+                }
+
+                log_debug("Running [%s] for \x1b[1;35m%s\x1b[0m", plugin->name().c_str(), config.name().c_str());
+
+                if(plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
+                    return PREP_FAILURE;
+                }
+            }
+            return PREP_SUCCESS;
         }
     }
 }

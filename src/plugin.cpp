@@ -6,6 +6,7 @@
 #include "plugin.h"
 #include "common.h"
 #include "log.h"
+#include "environment.h"
 #include "util.h"
 
 namespace arg3
@@ -16,10 +17,6 @@ namespace arg3
 
         plugin::~plugin() {
             on_unload();
-
-            if (rw_thread_.joinable()) {
-                rw_thread_.join();
-            }
         }
 
         int plugin::load(const std::string &path) {
@@ -27,9 +24,9 @@ namespace arg3
 
             std::string manifest = build_sys_path(path.c_str(), "manifest.json", NULL);
 
+            // skip folders with no manifest
             if (!file_exists(manifest.c_str())) {
-                log_error("plugin [%s] has no manifest file", name_.c_str());
-                return PREP_FAILURE;
+                throw path;
             }
 
             std::ifstream file;
@@ -96,18 +93,19 @@ namespace arg3
             return is_enabled() && can_exec_file(executablePath_);
         }
 
+        std::string plugin::name() const {
+            return name_;
+        }
+
         int plugin::on_install(const package &config)
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info;
-
-            info.push_back(config.name());
-
-            auto version = config.version();
-            info.push_back(version ? version : "unknown");
+            std::vector<std::string> info = {
+                config.get_plugin_name(this), config.version()
+            };
 
             return execute("install", info);
         }
@@ -118,18 +116,35 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info;
-
-            info.push_back(config.name());
-            auto version = config.version();
-            info.push_back(version ? version : "unknown");
+            std::vector<std::string> info = {
+                config.get_plugin_name(this), config.version()
+            };
 
             return execute("remove", info);
+        }
+
+        int plugin::on_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath)
+        {
+            if (!is_valid()) {
+                return PREP_FAILURE;
+            }
+
+            auto envVars = environment::build_cpp_variables();
+
+            std::vector<std::string> info({
+                config.get_plugin_name(this), config.version(), sourcePath, buildPath, installPath, config.build_options()
+            });
+
+            info.insert(std::end(info), std::begin(envVars), std::end(envVars));
+
+            return execute("build", info);
         }
 
         int plugin::execute(const std::string &method, const std::vector<std::string> &info)
         {
             int master = 0;
+
+            log_trace("executing [%s] on plugin [%s]", method.c_str(), name_.c_str());
 
             pid_t pid = forkpty(&master, NULL, NULL, NULL);
 
@@ -180,67 +195,74 @@ namespace arg3
                     }
                 }
 
-                // rw_thread_ = std::thread([&master]() {
-                    for (;;) {
-                        fd_set read_fd;
-                        fd_set write_fd;
-                        fd_set except_fd;
-                        char input = 0;
-                        char output = 0;
+                if (write(master, "END", 3) < 0 ||
+                    write(master, "\n", 1) < 0) {
 
-                        FD_ZERO(&read_fd);
-                        FD_ZERO(&write_fd);
-                        FD_ZERO(&except_fd);
+                    log_errno(errno);
+                    if (kill(pid, SIGKILL) < 0) {
+                        log_errno(errno);
+                    }
+                    return PREP_FAILURE;
+                }
 
-                        FD_SET(master, &read_fd);
-                        FD_SET(STDIN_FILENO, &read_fd);
+                for (;;) {
+                    fd_set read_fd;
+                    fd_set write_fd;
+                    fd_set except_fd;
+                    char input = 0;
+                    char output = 0;
 
-                        if (select(master+1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
-                            log_errno(errno);
+                    FD_ZERO(&read_fd);
+                    FD_ZERO(&write_fd);
+                    FD_ZERO(&except_fd);
+
+                    FD_SET(master, &read_fd);
+                    FD_SET(STDIN_FILENO, &read_fd);
+
+                    if (select(master+1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
+                        log_errno(errno);
+                        break;
+                    }
+
+                    if (FD_ISSET(master, &read_fd))
+                    {
+                        int n = read(master, &output, 1);
+
+                        if (n <= 0) {
+                            if (n < 0) {
+                                log_errno(errno);
+                            }
                             break;
                         }
 
-                        if (FD_ISSET(master, &read_fd))
-                        {
-                            int n = read(master, &output, 1);
-
-                            if (n <= 0) {
-                                if (n < 0) {
-                                    log_errno(errno);
-                                }
-                                break;
-                            }
-
-                            if (write(STDOUT_FILENO, &output, 1) < 0) {
-                                log_errno(errno);
-                                break;
-                            }
-                        }
-
-                        if (FD_ISSET(STDIN_FILENO, &read_fd))
-                        {
-                            int n = read(STDIN_FILENO, &input, 1);
-
-                            if (n <= 0) {
-                                if (n < 0) {
-                                    log_errno(errno);
-                                }
-                                break;
-                            }
-                            if (write(master, &input, 1) < 0) {
-                                log_errno(errno);
-                                break;
-                            }
+                        if (write(STDOUT_FILENO, &output, 1) < 0) {
+                            log_errno(errno);
+                            break;
                         }
                     }
-                // });
+
+                    if (FD_ISSET(STDIN_FILENO, &read_fd))
+                    {
+                        int n = read(STDIN_FILENO, &input, 1);
+
+                        if (n <= 0) {
+                            if (n < 0) {
+                                log_errno(errno);
+                            }
+                            break;
+                        }
+                        if (write(master, &input, 1) < 0) {
+                            log_errno(errno);
+                            break;
+                        }
+                    }
+                }
 
                 waitpid(pid, &status, 0);
 
-                log_info("executed [%s] on plugin [%s]", method.c_str(), name_.c_str());
-
                 if (WIFEXITED(status)) {
-                    return WEXITSTATUS(status);
+                    int rval = WEXITSTATUS(status);
+                    return rval == 0 ? PREP_SUCCESS : PREP_FAILURE;
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 

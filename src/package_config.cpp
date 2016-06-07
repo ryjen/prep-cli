@@ -12,6 +12,7 @@
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
+#include "plugin.h"
 
 namespace arg3
 {
@@ -189,67 +190,58 @@ namespace arg3
                 }
             }
 
+            if (json_object_object_get_ex(values_, "build_system", &depjson)) {
+                int len = json_object_array_length(depjson);
+
+                for (int i = 0; i < len; i++) {
+                    json_object *obj = json_object_array_get_idx(depjson, i);
+
+                    auto command = json_object_get_string(obj);
+
+                    build_system_.push_back(command);
+                }
+            }
+
             path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
 
-            log_info("Preparing package \033[1;35m%s\033[0m", name());
+            log_info("Preparing package \033[1;35m%s\033[0m", name().c_str());
 
             return PREP_SUCCESS;
         }
 
-        const char *package::name() const
+        std::string package::name() const
         {
             return get_str("name");
         }
 
-        const char *package::version() const
+        std::string package::version() const
         {
             return get_str("version");
         }
 
-        const char *package::build_system() const
+        vector<string> package::build_system() const
         {
-            return get_str("build_system");
+            return build_system_;
         }
 
-        const char *package::location() const
+        std::string package::location() const
         {
             return get_str("location");
         }
 
-        const char *package::build_options() const
+        std::string package::build_options() const
         {
             return get_str("build_options");
         }
 
-        const char *package::executable() const
+        std::string package::executable() const
         {
             return get_str("executable");
         }
 
-        const vector<string> package::build_commands() const
+        std::string package::path() const
         {
-            json_object *obj = NULL;
-
-            vector<string> rval;
-
-            if (json_object_object_get_ex(values_, "build_system", &obj)) {
-                size_t size = json_object_array_length(obj);
-
-                for (size_t i = 0; i < size; i++) {
-                    json_object *item = json_object_array_get_idx(obj, i);
-                    rval.push_back(json_object_get_string(item));
-                    json_object_put(item);
-                }
-
-                json_object_put(obj);
-            }
-
-            return rval;
-        }
-
-        const char *package::path() const
-        {
-            return path_.c_str();
+            return path_;
         }
 
         bool package::has_path() const
@@ -282,15 +274,19 @@ namespace arg3
             json_object_object_add(values_, key.c_str(), json_object_new_boolean(value));
         }
 
-        const char *package::get_str(const std::string &key) const
+        std::string package::get_str(const std::string &key) const
         {
             json_object *obj = NULL;
 
             if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
-                return json_object_get_string(obj);
+                const char *temp = json_object_get_string(obj);
+
+                if (temp) {
+                    return temp;
+                }
             }
 
-            return NULL;
+            return std::string();
         }
 
         bool package::get_bool(const std::string &key) const
@@ -302,6 +298,30 @@ namespace arg3
             }
 
             return false;
+        }
+
+        std::string package::get_plugin_name(plugin *plugin) const
+        {
+            json_object *obj = NULL;
+
+            if (plugin == NULL) {
+                return name();
+            }
+
+            if (json_object_object_get_ex(values_, plugin->name().c_str(), &obj)) {
+
+                json_object *name = NULL;
+
+                if (json_object_object_get_ex(obj, "name", &name)) {
+                    auto temp = json_object_get_string(name);
+
+                    if (temp) {
+                        return temp;
+                    }
+                }
+            }
+
+            return name();
         }
     }
 }

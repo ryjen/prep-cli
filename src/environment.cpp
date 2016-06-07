@@ -14,7 +14,7 @@ namespace arg3
 {
     namespace prep
     {
-        string environment::build_ldflags(const string &varName) const
+        string environment::build_ldflags(const string &varName)
         {
             ostringstream buf;
             const char *temp = repository::get_local_repo();
@@ -42,7 +42,7 @@ namespace arg3
             return varName + "=" + flags;
         }
 
-        string environment::build_cflags(const string &varName) const
+        string environment::build_cflags(const string &varName)
         {
             ostringstream buf;
             const char *temp = repository::get_local_repo();
@@ -70,7 +70,7 @@ namespace arg3
             return varName + "=" + flags;
         }
 
-        string environment::build_path() const
+        string environment::build_path()
         {
             ostringstream buf;
             const char *temp = repository::get_local_repo();
@@ -98,7 +98,7 @@ namespace arg3
             return "PATH=" + flags;
         }
 
-        string environment::build_ldpath() const
+        string environment::build_ldpath()
         {
             ostringstream buf;
             const char *temp = repository::get_local_repo();
@@ -133,7 +133,17 @@ namespace arg3
 #endif
         }
 
-        int environment::execute(const char *command, const char *path) const
+        std::vector<std::string> environment::build_cpp_variables()
+        {
+            return {
+                build_cflags("CPPFLAGS"),
+                build_ldflags("LDFLAGS"),
+                build_path(),
+                build_ldpath()
+            };
+        }
+
+        int environment::execute(const char *command, const char *path)
         {
             char flags[4][BUFSIZ];
 

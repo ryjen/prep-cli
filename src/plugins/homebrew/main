@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+use lib '..';
+use arg3::prep::plugin qw(get_param get_package_params);
 
 sub on_load
 {
@@ -8,11 +10,7 @@ sub on_load
 
 sub on_install
 {
-    my $package = <STDIN>;
-    my $version = <STDIN>;
-
-    chomp($package);
-    chomp($version);
+    my ($package, $version) = get_package_params;
 
     #todo version support
     #my $result = `brew versions $package`
@@ -25,20 +23,14 @@ sub on_install
 
 sub on_remove
 {
-    my $package = <STDIN>;
-    my $version = <STDIN>;
-
-    chomp($package);
-    chomp($version);
+    my ($package, $version) = get_package_params;
 
     exec "brew", "remove", $package
 }
 
 sub main
 {
-    my $command = <STDIN>;
-
-    chomp($command);
+    my $command = get_param;
 
     if ($command eq "load") {
         return on_load;

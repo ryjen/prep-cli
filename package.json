@@ -5,59 +5,55 @@
 		"name": "Ryan Jennings",
 		"email": "c0der78@gmail.com"
 	},
-	"build_system": "cmake",
+	"build_system": ["cmake", "make"],
 	"executable": "prep",
 	"dependencies": [
 		{
 			"name": "libcurl",
-			"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
-			"build_system": "autotools",
-			"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+			"homebrew": {
+				"name": "curl"
+			},
+			"archive": {
+				"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
+				"build_system": ["autotools", "make"],
+				"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+			},
 			"dependencies": [
 				{
 					"name": "libz",
 					"location": "http://zlib.net/zlib-1.2.8.tar.gz",
-					"build_system": "cmake"
-				},
-				/*{
-					"name": "openldap",
-					"location": "http://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.4.9.tgz",
-					"build_system": "autotools"
-				},
-				{
-					"name": "libidn",
-					"location": "http://ftp.gnu.org/gnu/libidn/libidn-1.32.tar.gz",
-					"build_system": "autotools"
-				}*/
+					"build_system": ["cmake", "make"]
+				}
 			]
 		},
 		{
 			"name": "json-c",
-			"location": "https://github.com/json-c/json-c.git",
-			"build_system": "autotools"
+			"git": {
+				"location": "https://github.com/json-c/json-c.git",
+				"build_system": ["autotools", "make"]
+			}
 		},
 		{
 			"name": "libarchive",
-			"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
-			"build_system": "autotools",
+			"archive": {
+				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
+				"build_system": ["autotools", "make"]
+			},
 			"dependencies": [
 				{
 					"name": "libxml2",
 					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
-					"build_system": "autotools",
+					"build_system": ["autotools", "make"],
 					"build_options": "--without-python"
-				},
-				{
-					"name": "iconv",
-					"location": "",
-					"build_system": "autotools"
 				}
 			]
 		},
 		{
 			"name": "libgit2",
-			"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz",
-			"build_system": "cmake"
+			"archive": {
+				"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz",
+				"build_system": ["cmake", "make"]
+			}
 		}
 	]
 

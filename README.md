@@ -2,9 +2,74 @@
 prep
 ====
 
-prep is a package manager for c/c++.  Being unsatisfied with the available tools for packages in this language.
+Prep is a modular package manager for c/c++ (think npm for c++).  Plugins are used for dependency management and builds.
 
-Examples explain best.  This is prep's configuration:
+Plugins
+=======
+
+There are the following plugin hooks:
+
+### load
+
+occurs when a plugin is loaded for custom initialization
+
+### unload
+
+occurs when a plugin is unloaded for custom cleanup
+
+### install
+
+occurs when a dependency is installed
+
+parameters: [**package, version**]
+
+### remove
+
+occurs when a dependency is removed
+
+parameters: [**package, version**]
+
+### build
+
+occurs when a package is built.
+
+parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value... END**]
+
+Features
+========
+- npm style repositories (.prep in current directory or global /usr/local/prep)
+- cmake, autoconf and make build plugins included
+- archive and homebrew package manager plugins included
+- simple json configuration
+
+TODO
+====
+- package repository website/api (ipfs?)
+- parse archive versions from filename
+- store md5 hash of config in meta to detect changes
+- a way to rebuild a dependency or all dependencies
+- a way to rebuild a package
+
+Repository Structure
+====================
+
+**/plugins** : holds all plugins
+
+**/kitchen** : holds all file related to builds
+
+**/kitchen/meta** : holds the version and package information
+
+**/kitchen/install** : holds a directory for each package installation files
+
+**/kitchen/build** : a separate directory for compiling
+
+packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include**, etc.
+
+
+Example Configuration
+=====================
+
+Examples explain best.  This is prep's configuration to build itself:
 
 ```JSON
 {
@@ -14,87 +79,61 @@ Examples explain best.  This is prep's configuration:
 		"name": "Ryan Jennings",
 		"email": "c0der78@gmail.com"
 	},
-	"build_system": "autotools",
+	"build_system": ["cmake", "make"],
+	"executable": "prep",
 	"dependencies": [
 		{
 			"name": "libcurl",
-			"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
-			"build_system": "autotools",
-			"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+			"homebrew": {
+				"name": "curl"
+			},
+			"archive": {
+				"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
+				"build_system": ["autotools", "make"],
+				"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+			},
 			"dependencies": [
 				{
 					"name": "libz",
-					"location": "http://zlib.net/zlib-1.2.8.tar.gz",
-					"build_system": "autotools"
+					"archive": {
+						"location": "http://zlib.net/zlib-1.2.8.tar.gz",
+						"build_system": ["cmake", "make"]
+					}
 				}
 			]
 		},
 		{
 			"name": "json-c",
-			"location": "https://github.com/json-c/json-c.git",
-			"build_system": "autotools"
+			"git": {
+				"location": "https://github.com/json-c/json-c.git",
+				"build_system": ["autotools", "make"]
+			}
 		},
 		{
 			"name": "libarchive",
-			"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
-			"build_system": "autotools",
+			"archive": {
+				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
+				"build_system": ["autotools", "make"]
+			},
 			"dependencies": [
 				{
 					"name": "libxml2",
-					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
-					"build_system": "autotools",
-					"build_options": "--without-python"
-				},
-				{
-					"name": "iconv",
-					"location": "",
-					"build_system": "autotools"
+					"archive": {
+						"location": 				    "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
+						"build_system": ["autotools", "make"],
+						"build_options": "--without-python"
+					}
 				}
 			]
 		},
 		{
 			"name": "libgit2",
-			"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz",
-			"build_system": "cmake"
+			"archive": {
+				"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz",
+				"build_system": ["cmake", "make"]
+			}
 		}
 	]
-
 }
+
 ```
-
-Plugins
-=======
-
-Plugins are available for package managers.  If you install a plugin it will override the prep source configuration and install the system package.
-
-Features
-========
-- local user repository ($HOME/.prep)
-- global repositories (/usr/local/prep)
-- supports cmake, autoconf and makefile build systems
-- dependency management
-
-TODO
-====
-- ~plugin architecture for different build systems~ build_system = build_commands []
-- custom build system
-	- recursive json syntax
-	- create visual studio projects on windows
-	- create make files on nix, or perform compile tasks directly?
-- package repository website/api (github?)
-- move history/meta to sqlite database
-- parse versions from filename
-- store md5 hash of config in meta to detect changes
-- a way to rebuild a dependency or all dependencies
-- a way to rebuild a package
-
-Repository Structure
-====================
-
-**.meta** : holds the version and package information
-
-**.install** : holds a directory for each package installation files
-
-**.history** : a record of incomplete installations
-
-packages in **.install** are symlinked to **bin**, **lib**, **include**, etc.

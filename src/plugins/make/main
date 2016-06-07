@@ -1,0 +1,25 @@
+#!/usr/bin/env perl
+
+use lib '..';
+use arg3::prep::plugin qw(get_param get_build_params);
+
+sub make
+{
+    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = get_build_params;
+
+    chdir($buildPath);
+
+    exec "make", "-j2", "install"
+}
+sub main
+{
+    my $command = get_param;
+
+    if ($command eq "build") {
+        return make;
+    }
+
+    return 1;
+}
+
+exit(&main);

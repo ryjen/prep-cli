@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+
+use lib '..';
+use arg3::prep::plugin qw(get_param get_build_params);
+
+sub autoconf
+{
+    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = get_build_params;
+
+    my $configure = $sourcePath . "/configure";
+
+    if ( ! -e $configure ) {
+        my $autogen = $sourcePath . "/autogen.sh";
+
+        if ( ! -e $autogen ) {
+            print("Don't know how to build $package... no autotools configuration found.");
+            return PREP_FAILURE;
+        }
+
+        system($autogen);
+
+        if ( $? != 0) {
+            return 1;
+        }
+
+        if (! -e $configure) {
+            print("Could not generate a configure script for $package");
+            return PREP_FAILURE;
+        }
+    }
+
+    exec $configure, "--prefix=$installPath", $buildOpts
+}
+
+sub main
+{
+    my $command = get_param;
+
+    if ($command eq "build") {
+        return autoconf;
+    }
+
+    return 1;
+}
+
+exit(&main);

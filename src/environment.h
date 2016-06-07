@@ -2,23 +2,23 @@
 #define ARG3_PREP_ENVIRONMENT_H
 
 #include <string>
+#include <vector>
 
 namespace arg3
 {
     namespace prep
     {
-        class environment
+        namespace environment
         {
-           public:
-            std::string build_cflags(const std::string &varName) const;
-            std::string build_ldflags(const std::string &varName) const;
-            std::string build_path() const;
-            std::string build_ldpath() const;
+            std::string build_cflags(const std::string &varName);
+            std::string build_ldflags(const std::string &varName);
+            std::string build_path();
+            std::string build_ldpath();
 
-            int execute(const char *command, const char *path) const;
+            std::vector<std::string> build_cpp_variables();
 
-           private:
-        };
+            int execute(const char *command, const char *path);
+        }
     }
 }
 

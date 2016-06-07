@@ -1,0 +1,28 @@
+#!/usr/bin/env perl
+
+use lib '..';
+use arg3::prep::plugin qw(get_param get_build_params);
+use strict;
+use warnings;
+
+sub cmake
+{
+    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = get_build_params;
+
+    chdir($buildPath);
+
+    exec "cmake", "-DCMAKE_INSTALL_PREFIX=$installPath", $buildOpts, $sourcePath
+}
+
+sub main
+{
+    my $command = get_param;
+
+    if ($command eq "build") {
+        return cmake;
+    }
+
+    return 1;
+}
+
+exit(&main);

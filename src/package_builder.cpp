@@ -59,23 +59,15 @@ namespace arg3
 
             log_trace("Installing to [%s]", installPath.c_str());
 
-            if (!str_cmp(config.build_system(), "cmake")) {
-                if (build_cmake(config, path, buildPath.c_str(), installPath.c_str())) {
-                    return PREP_FAILURE;
-                }
-            } else if (!str_cmp(config.build_system(), "autotools")) {
-                if (build_autotools(config, path, buildPath.c_str(), installPath.c_str())) {
-                    return PREP_FAILURE;
-                }
-            } else {
-                auto cmds = config.build_commands();
+            if (repo_.plugin_build(config, path, buildPath, installPath) == PREP_FAILURE)
+            {
+                auto cmds = config.build_system();
 
                 if (cmds.size() > 0) {
                     if (build_commands(config, path, cmds)) {
                         return PREP_FAILURE;
                     }
                 } else {
-                    log_error("unknown build system '%s'", config.build_system());
                     return PREP_FAILURE;
                 }
             }
@@ -160,9 +152,7 @@ namespace arg3
 
             log_trace("Building from [%s]", path);
 
-            if (config.location() != nullptr) {
-                repo_.save_history(config.location(), path);
-            }
+            repo_.save_history(config.location(), path);
 
             installDir = repo_.get_install_path(config.name());
 
@@ -177,7 +167,7 @@ namespace arg3
                 package_resolver resolver;
                 string package_dir;
 
-                log_info("    - preparing dependency \033[0;35m%s\033[0m", p.name());
+                log_info("    - preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
 
                 if (repo_.plugin_install(p) == PREP_SUCCESS) {
                     continue;
@@ -187,9 +177,9 @@ namespace arg3
 
                 if (package_dir.empty() || !directory_exists(package_dir.c_str())) {
 
-                    if (str_empty(p.location())) {
-                        log_error("[%s] dependency [%s] has no location", config.name(), p.name());
-                        continue;
+                    if (p.location().empty()) {
+                        log_error("[%s] dependency [%s] has no plugin or location", config.name().c_str(), p.name().c_str());
+                        return PREP_FAILURE;
                     }
 
                     if (resolver.resolve_package(p, opts, p.location())) {
@@ -200,7 +190,7 @@ namespace arg3
                 }
 
                 if (build(p, opts, package_dir.c_str())) {
-                    log_error("unable to build dependency %s", p.name());
+                    log_error("unable to build dependency %s", p.name().c_str());
                     remove_directory(package_dir.c_str());
                     return PREP_FAILURE;
                 }
@@ -253,128 +243,31 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            if (config.executable() == nullptr) {
+            if (config.executable().empty()) {
                 log_error("config has no executable defined");
                 return PREP_FAILURE;
             }
 
-            const char *executable = build_sys_path(repo_.get_bin_path().c_str(), config.executable(), NULL);
+            auto executable = build_sys_path(repo_.get_bin_path().c_str(), config.executable().c_str(), NULL);
 
             if (!file_executable(executable)) {
                 log_error("%s is not executable", executable);
                 return PREP_FAILURE;
             }
 
-            return repo_.execute(config.executable(), argc, argv);
-        }
-
-        int package_builder::build_cmake(const package &config, const char *path, const char *fromPath, const char *toPath)
-        {
-            char buf[BUFSIZ + 1] = {0};
-            const char *buildopts = NULL;
-
-            if (!config.is_loaded()) {
-                log_error("config is not loaded");
-                return PREP_FAILURE;
-            }
-
-            log_debug("Running cmake for \x1b[1;35m%s\x1b[0m", config.name());
-
-            buildopts = config.build_options();
-
-            if (buildopts == NULL) {
-                buildopts = "";
-            }
-
-            snprintf(buf, BUFSIZ, "cmake -DCMAKE_INSTALL_PREFIX=%s %s %s", toPath, buildopts, path);
-
-            if (env_.execute(buf, fromPath)) {
-                log_error("unable to execute cmake");
-                return PREP_FAILURE;
-            }
-
-            return build_make(config, fromPath);
-        }
-
-        int package_builder::build_make(const package &config, const char *path)
-        {
-            if (env_.execute("make -j2 install", path)) {
-                log_error("unable to execute make");
-                return PREP_FAILURE;
-            }
-
-            return PREP_SUCCESS;
+            return repo_.execute(config.executable().c_str(), argc, argv);
         }
 
         int package_builder::build_commands(const package &config, const char *path, const vector<string> &commands)
         {
             for (auto &cmd : commands) {
-                if (env_.execute(cmd.c_str(), path)) {
+                if (environment::execute(cmd.c_str(), path)) {
                     log_error("unable to execute command [%s]", cmd.c_str());
                     return PREP_FAILURE;
                 }
             }
 
             return PREP_SUCCESS;
-        }
-
-        int package_builder::build_autotools(const package &config, const char *path, const char *fromPath, const char *toPath)
-        {
-            char buf[BUFSIZ + 1] = {0};
-            const char *configure = NULL;
-            const char *buildopts = NULL;
-
-            if (!config.is_loaded()) {
-                log_error("config is not loaded");
-                return PREP_FAILURE;
-            }
-
-            log_debug("Running autotools for \x1b[1;35m%s\x1b[0m", config.name());
-
-            buildopts = config.build_options();
-
-            if (buildopts == NULL) {
-                buildopts = "";
-            }
-
-            configure = build_sys_path(path, "configure", NULL);
-
-            if (!file_exists(configure)) {
-                const char *autogen = build_sys_path(path, "autogen.sh", NULL);
-
-                if (!file_exists(autogen)) {
-                    log_error("Don't know how to build %s... no autotools configuration found.", config.name());
-                    return PREP_FAILURE;
-                }
-
-                log_debug("Executing %s in %s", autogen, path);
-
-                // for fork, autogen points to a static variable
-                strcpy(buf, autogen);
-
-                if (env_.execute(buf, path)) {
-                    log_error("unable to execute configure");
-                    return PREP_FAILURE;
-                }
-
-                configure = build_sys_path(path, "configure", NULL);
-
-                if (!file_exists(configure)) {
-                    log_error("Could not generate a configure script for %s", config.name());
-                    return PREP_FAILURE;
-                }
-            }
-
-            snprintf(buf, BUFSIZ, "%s --prefix=%s %s", configure, toPath, buildopts);
-
-            log_debug("Executing %s in %s", buf, fromPath);
-
-            if (env_.execute(buf, fromPath)) {
-                log_error("unable to execute configure");
-                return PREP_FAILURE;
-            }
-
-            return build_make(config, fromPath);
         }
 
         int package_builder::build_from_folder(options &opts, const char *path)

@@ -18,6 +18,7 @@ namespace arg3
 {
     namespace prep
     {
+
         typedef struct options_s {
             options_s();
             bool global;
@@ -27,37 +28,40 @@ namespace arg3
         } options;
 
         class package_dependency;
+        class plugin;
 
         class package
         {
            public:
             virtual ~package();
-            const char *name() const;
-            const char *version() const;
-            const char *build_system() const;
-            const char *build_options() const;
-            const char *path() const;
+            std::string name() const;
+            std::string version() const;
+            vector<string> build_system() const;
+            std::string build_options() const;
+            std::string path() const;
             bool has_path() const;
             bool has_name() const;
             virtual int load(const std::string &path, const options &opts) = 0;
-            virtual const char *location() const;
+            virtual std::string location() const;
             bool is_loaded() const;
             vector<package_dependency> dependencies() const;
-            const vector<string> build_commands() const;
-            const char *executable() const;
+            std::string executable() const;
 
            protected:
             package();
             package(json_object *obj);
             package(const package &other);
             package &operator=(const package &other);
-            const char *get_str(const std::string &key) const;
+            std::string get_str(const std::string &key) const;
             bool get_bool(const std::string &key) const;
             void set_str(const std::string &key, const std::string &value);
             void set_bool(const std::string &key, bool value);
+            std::string get_plugin_name(plugin *plugin) const;
             json_object *values_;
             std::string path_;
             vector<package_dependency> dependencies_;
+            vector<string> build_system_;
+            friend class plugin;
         };
 
         class package_dependency : public package

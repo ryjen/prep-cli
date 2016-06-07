@@ -41,8 +41,8 @@ namespace arg3
 
             static const char *const get_local_repo();
 
-            int unlink_directory(const char *path) const;
-            int link_directory(const char *path) const;
+            int unlink_directory(const std::string &path) const;
+            int link_directory(const std::string &path) const;
 
             std::string exists_in_history(const std::string &) const;
             void save_history(const std::string &, const std::string &) const;
@@ -68,11 +68,15 @@ namespace arg3
             std::string get_plugin_path() const;
 
             int validate() const;
-            int execute(const char *executable, int argc, char *const *argv) const;
+            int execute(const std::string &executable, int argc, char *const *argv) const;
 
             int plugin_install(const package &config);
 
             int plugin_remove(const package &config);
+
+            int plugin_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath);
+
+            std::shared_ptr<plugin> get_plugin_by_name(const std::string &name) const;
 
            private:
             int package_dependency_count(const package &config, const string &package_name, const options &opts) const;
