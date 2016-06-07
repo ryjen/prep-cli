@@ -19,6 +19,8 @@ namespace arg3
 
         int directory_exists(const char *path);
 
+        int copy_directory(const std::string &from, const std::string &to);
+
         int file_exists(const char *path);
 
         int file_executable(const char *path);

@@ -27,6 +27,7 @@
 #include "log.h"
 #include "repository.h"
 #include "util.h"
+#include "exception.h"
 
 // for std::copy
 namespace std
@@ -45,6 +46,10 @@ namespace arg3
 {
     namespace prep
     {
+        namespace helper {
+            extern bool is_valid_plugin_path(const std::string &path);
+        }
+
         const char *const repository::get_local_repo()
         {
             char buf[BUFSIZ] = {0};
@@ -129,6 +134,63 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
+        int repository::validate_plugins() const
+        {
+            const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, NULL);
+            struct dirent *d = NULL;
+            DIR *dir = opendir(globalPath.c_str());
+
+            if (dir == NULL) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
+
+            bool added = false;
+
+            const std::string pluginPath = get_plugin_path();
+
+            while((d = readdir(dir)) != NULL) {
+
+                if (d->d_name[0] == '.') {
+                    continue;
+                }
+
+                const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, NULL);
+
+                if (!helper::is_valid_plugin_path(globalPlugin)) {
+                    continue;
+                }
+
+                const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, NULL);
+
+                if (helper::is_valid_plugin_path(localPath)) {
+                    continue;
+                }
+
+                printf("OK to add plugin %s? (Y/n) ", d->d_name);
+
+                int ch = getchar();
+
+                if (ch != 10 && toupper(ch) != 'Y') {
+                    continue;
+                }
+
+                if (copy_directory(globalPlugin, localPath)) {
+                    log_error("unable to copy [%s] to [%s]", globalPlugin.c_str(), localPath.c_str());
+                }
+
+                added = true;
+            }
+
+            closedir(dir);
+
+            if (added) {
+                throw revalidate_repository();
+            }
+
+            return PREP_SUCCESS;
+        }
+
         std::string repository::get_bin_path() const
         {
             return build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
@@ -190,7 +252,7 @@ namespace arg3
                 }
             }
 
-            ofstream out(build_sys_path(metaDir.c_str(), "version", NULL));
+            ofstream out(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
 
             if (!out.is_open()) {
                 log_error("unable to save version for %s", config.name().c_str());
@@ -208,7 +270,7 @@ namespace arg3
             if (config.has_path()) {
                 log_trace("copying %s to %s...", config.path().c_str(), metaDir.c_str());
 
-                if (copy_file(config.path(), build_sys_path(metaDir.c_str(), "package.json", NULL))) {
+                if (copy_file(config.path(), build_sys_path(metaDir.c_str(), PACKAGE_FILE, NULL))) {
                     log_error("no unable to copy package file %s", config.path().c_str());
                 }
             }
@@ -224,7 +286,7 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            ifstream in(build_sys_path(metaDir.c_str(), "version", NULL));
+            ifstream in(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
 
             string info;
             in >> info;
@@ -557,7 +619,10 @@ namespace arg3
             struct stat st;
 
             if (!directory_exists(path.c_str())) {
-                log_warn("No plugin directory");
+                if (mkdir(path.c_str(), 0777)) {
+                    log_errno(errno);
+                    return PREP_FAILURE;
+                }
                 return PREP_SUCCESS;
             }
 
@@ -577,7 +642,7 @@ namespace arg3
 
                 auto pluginPath = build_sys_path(path.c_str(), d->d_name, NULL);
 
-                if (!directory_exists(pluginPath)) {
+                if (!helper::is_valid_plugin_path(pluginPath)) {
                     continue;
                 }
 
@@ -589,8 +654,8 @@ namespace arg3
                     } else {
                         log_warn("unable to load plugin [%s]", d->d_name);
                     }
-                } catch (const std::string &not_a_plugin) {
-                    log_trace("skipping non-plugin [%s]", not_a_plugin.c_str());
+                } catch (const not_a_plugin &exception) {
+                    log_trace("skipping non-plugin [%s]", d->d_name);
                 }
             }
 

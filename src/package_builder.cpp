@@ -3,7 +3,7 @@
 #include "log.h"
 #include "package_resolver.h"
 #include "util.h"
-
+#include "exception.h"
 
 namespace arg3
 {
@@ -11,15 +11,29 @@ namespace arg3
     {
         int package_builder::initialize(const options &opts)
         {
-            char path[BUFSIZ + 1] = {0};
-
             if (repo_.initialize(opts)) {
+                return PREP_FAILURE;
+            }
+
+            if (!opts.global) {
+                try {
+                    if (repo_.validate_plugins() == PREP_FAILURE) {
+                        return PREP_FAILURE;
+                    }
+                } catch(const revalidate_repository &exception) {
+                    if (repo_.initialize(opts)) {
+                        return PREP_FAILURE;
+                    }
+                }
+            }
+
+            if (repo_.validate() == PREP_FAILURE) {
                 return PREP_FAILURE;
             }
 
             force_build_ = opts.force_build;
 
-            return repo_.validate();
+            return PREP_SUCCESS;
         }
 
         int package_builder::build_package(const package &config, const char *path)

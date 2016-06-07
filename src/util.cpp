@@ -366,6 +366,90 @@ namespace arg3
             return PREP_SUCCESS;
         }
 
+        int copy_directory(const std::string &from, const std::string &to)
+        {
+            FTS *file_system = NULL;
+            FTSENT *child = NULL;
+            FTSENT *parent = NULL;
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
+
+            if (!directory_exists(from.c_str())) {
+                log_error("%s is not a directory", from.c_str());
+                return PREP_FAILURE;
+            }
+
+            if (!directory_exists(to.c_str())) {
+                if (mkdir(to.c_str(), 0777)) {
+                    log_errno(errno);
+                    return PREP_FAILURE;
+                }
+            }
+
+            char *const paths[] = {(char *const)from.c_str(), NULL};
+
+            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
+
+            if (file_system == NULL) {
+                log_error("unable to open file system [%s]", strerror(errno));
+                return PREP_FAILURE;
+            }
+
+            while ((parent = fts_read(file_system)) != NULL) {
+                struct stat st;
+
+                // get the repo path
+                snprintf(buf, PATH_MAX, "%s%s", to.c_str(), parent->fts_path + from.length());
+
+                // check the install file is a directory
+                if (parent->fts_info == FTS_D) {
+                    if (stat(buf, &st) == 0) {
+                        if (S_ISDIR(st.st_mode)) {
+                            log_trace("directory %s already exists", buf);
+                        } else {
+                            log_error("non-directory file already found for %s", buf);
+                            rval = PREP_FAILURE;
+                        }
+                        continue;
+                    }
+
+                    // doesn't exist, create the repo path directory
+                    if (mkdir(buf, 0777)) {
+                        log_error("Could not create %s [%s]", buf, strerror(errno));
+                        rval = PREP_FAILURE;
+                        break;
+                    }
+
+                    continue;
+                }
+
+                if (parent->fts_info != FTS_F) {
+                    log_debug("skipping non-regular file %s", buf);
+                    continue;
+                }
+
+                if (stat(buf, &st) == 0) {
+                    if (S_ISREG(st.st_mode)) {
+                        log_error("File already exists and is not a link");
+                        rval = PREP_FAILURE;
+                        break;
+                    }
+                }
+
+                log_debug("copying [%s] to [%s]", parent->fts_path, buf);
+
+                if (copy_file(parent->fts_path, buf) == PREP_FAILURE) {
+                    log_error("unable to link [%s]", strerror(errno));
+                    rval = PREP_FAILURE;
+                    break;
+                }
+            }
+
+            fts_close(file_system);
+
+            return rval;
+        }
+
         std::string get_user_home_dir()
         {
             static std::string home_dir_path;

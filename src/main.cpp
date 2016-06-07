@@ -48,7 +48,6 @@ int main(int argc, char *const argv[])
         if (prep.initialize(options)) {
             return PREP_FAILURE;
         }
-
     } catch (const std::exception &e) {
         arg3::prep::log_error(e.what());
         return PREP_FAILURE;

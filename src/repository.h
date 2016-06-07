@@ -39,6 +39,10 @@ namespace arg3
 
             constexpr static const char *const PLUGIN_FOLDER = "plugins";
 
+            constexpr static const char *const VERSION_FILE = "version";
+
+            constexpr static const char *const PACKAGE_FILE = "package.json";
+
             static const char *const get_local_repo();
 
             int unlink_directory(const std::string &path) const;
@@ -68,6 +72,7 @@ namespace arg3
             std::string get_plugin_path() const;
 
             int validate() const;
+            int validate_plugins() const;
             int execute(const std::string &executable, int argc, char *const *argv) const;
 
             int plugin_install(const package &config);

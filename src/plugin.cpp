@@ -8,11 +8,20 @@
 #include "log.h"
 #include "environment.h"
 #include "util.h"
+#include "exception.h"
 
 namespace arg3
 {
     namespace prep
     {
+        namespace helper {
+            bool is_valid_plugin_path(const std::string &path) {
+                auto manifest = build_sys_path(path.c_str(), plugin::MANIFEST_FILE, NULL);
+
+                return file_exists(manifest);
+            }
+        }
+
         plugin::plugin(const std::string &name) : name_(name) {}
 
         plugin::~plugin() {
@@ -22,11 +31,11 @@ namespace arg3
         int plugin::load(const std::string &path) {
             basePath_ = path;
 
-            std::string manifest = build_sys_path(path.c_str(), "manifest.json", NULL);
+            std::string manifest = build_sys_path(path.c_str(), MANIFEST_FILE, NULL);
 
             // skip folders with no manifest
             if (!file_exists(manifest.c_str())) {
-                throw path;
+                throw not_a_plugin();
             }
 
             std::ifstream file;

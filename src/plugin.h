@@ -12,6 +12,7 @@ namespace arg3
         class plugin
         {
         public:
+            constexpr static const char *const MANIFEST_FILE = "manifest.json";
             plugin(const std::string &name);
             virtual ~plugin();
             plugin(const plugin &other) = delete;
