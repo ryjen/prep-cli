@@ -4,6 +4,3 @@
 [submodule "tests/vendor/bandit"]
 	path = tests/vendor/bandit
 	url = https://github.com/joakimkarlsson/bandit.git
-[submodule "vendor/arg3db"]
-	path = vendor/arg3db
-	url = https://github.com/ryjen/arg3db.git
