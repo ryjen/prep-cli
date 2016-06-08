@@ -52,8 +52,9 @@ sub get_package_params
 {
     my $package = get_param;
     my $version = get_param;
+    my $repository = get_param;
 
-    return ($package, $version);
+    return ($package, $version, $repository);
 }
 
 1;

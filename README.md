@@ -4,8 +4,10 @@ prep
 
 Prep is a modular package manager for c/c++ (think npm for c++).  Plugins are used for dependency management and builds.
 
-Plugins
+plugins
 =======
+
+Plugins can be written in any language that supports stdin/stdout. Input parameters are read one line at a time on stdin.  All output is forwarded back to prep.  
 
 There are the following plugin hooks:
 
@@ -19,25 +21,25 @@ occurs when a plugin is unloaded for custom cleanup
 
 ### install
 
-occurs when a dependency is installed
+occurs when a dependency is installed.  Only affects plugins of type "dependency".
 
 parameters: [**package, version**]
 
 ### remove
 
-occurs when a dependency is removed
+occurs when a dependency is removed.  Only affects plugins of type "dependency".
 
 parameters: [**package, version**]
 
 ### build
 
-occurs when a package is built.
+occurs when a package is built. Only affects plugins of type "build".
 
 parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value... END**]
 
-Features
+features
 ========
-- npm style repositories (.prep in current directory or global /usr/local/prep)
+- npm style repositories (current directory or global)
 - cmake, autoconf and make build plugins included
 - archive and homebrew package manager plugins included
 - simple json configuration
@@ -49,9 +51,14 @@ TODO
 - store md5 hash of config in meta to detect changes
 - a way to rebuild a dependency or all dependencies
 - a way to rebuild a package
+- secure plugins (enforce digital signature?, chroot?)
 
-Repository Structure
+repository structure
 ====================
+
+A repository by default is a **.prep** folder in the current directory.  By specifying the **-g** option, **/usr/local/share/prep** will be used instead.
+
+Under the repository:
 
 **/plugins** : holds all plugins
 
@@ -66,7 +73,7 @@ Repository Structure
 packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include**, etc.
 
 
-Example Configuration
+example configuration
 =====================
 
 Examples explain best.  This is prep's configuration to build itself:
@@ -119,7 +126,7 @@ Examples explain best.  This is prep's configuration to build itself:
 				{
 					"name": "libxml2",
 					"archive": {
-						"location": 				    "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
+						"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
 						"build_system": ["autotools", "make"],
 						"build_options": "--without-python"
 					}
@@ -135,5 +142,7 @@ Examples explain best.  This is prep's configuration to build itself:
 		}
 	]
 }
+
+!["Example Use Case"](screenshot.png)
 
 ```

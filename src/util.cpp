@@ -349,6 +349,13 @@ namespace arg3
 
         int copy_file(const std::string &from, const std::string &to)
         {
+            struct stat fst, tst;
+
+            if (stat(from.c_str(),&fst)) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
+
             std::ifstream src(from, std::ios::binary);
 
             if (!src.is_open()) {
@@ -363,6 +370,23 @@ namespace arg3
 
             dst << src.rdbuf();
 
+            src.close();
+            dst.close();
+
+            if (stat(to.c_str(), &tst)) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
+
+            if (chown(to.c_str(), fst.st_uid, fst.st_gid)) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
+
+            if (chmod(to.c_str(), fst.st_mode)) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
             return PREP_SUCCESS;
         }
 
@@ -396,13 +420,13 @@ namespace arg3
             }
 
             while ((parent = fts_read(file_system)) != NULL) {
-                struct stat st;
 
                 // get the repo path
                 snprintf(buf, PATH_MAX, "%s%s", to.c_str(), parent->fts_path + from.length());
 
                 // check the install file is a directory
                 if (parent->fts_info == FTS_D) {
+                    struct stat st;
                     if (stat(buf, &st) == 0) {
                         if (S_ISDIR(st.st_mode)) {
                             log_trace("directory %s already exists", buf);
@@ -428,13 +452,6 @@ namespace arg3
                     continue;
                 }
 
-                if (stat(buf, &st) == 0) {
-                    if (S_ISREG(st.st_mode)) {
-                        log_error("File already exists and is not a link");
-                        rval = PREP_FAILURE;
-                        break;
-                    }
-                }
 
                 log_debug("copying [%s] to [%s]", parent->fts_path, buf);
 

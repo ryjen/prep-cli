@@ -1,0 +1,41 @@
+#!/usr/bin/env perl
+
+use lib '..';
+use arg3::prep::plugin qw(get_param get_package_params);
+
+sub on_install
+{
+    my ($package, $version, $repository) = get_package_params;
+
+    #todo version support
+    #my $result = `brew versions $package`
+    #my $commit = cut -d ' ' -f 4
+    #my $formula = cut -d ' ' -f 5
+    #brew unlink $package
+
+    exec "brew", "install", $package
+}
+
+sub on_remove
+{
+    my ($package, $version, $repository) = get_package_params;
+
+    exec "brew", "remove", $package
+}
+
+sub main
+{
+    my $command = get_param;
+
+    if ($command eq "install") {
+        return on_install;
+    }
+
+    if ($command eq "remove") {
+        return on_remove;
+    }
+
+    return 1;
+}
+
+exit(&main);

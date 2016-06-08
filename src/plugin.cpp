@@ -16,9 +16,21 @@ namespace arg3
     {
         namespace helper {
             bool is_valid_plugin_path(const std::string &path) {
+                if (path.empty()) {
+                    return false;
+                }
+
                 auto manifest = build_sys_path(path.c_str(), plugin::MANIFEST_FILE, NULL);
 
                 return file_exists(manifest);
+            }
+
+            bool is_plugin_support(const std::string &path) {
+                if (path.empty() || path.length() < 4) {
+                    return false;
+                }
+
+                return !strcasecmp(path.substr(path.length()-4).c_str(), "arg3");
             }
         }
 
@@ -70,6 +82,12 @@ namespace arg3
 
             json_object_put(obj);
 
+            if (json_object_object_get_ex(config, "type", &obj)) {
+                type_ = json_object_get_string(obj);
+            }
+
+            json_object_put(obj);
+
             json_object_put(config);
 
             log_info("loaded plugin [%s] version [%s]", name_.c_str(), version_.c_str());
@@ -106,27 +124,39 @@ namespace arg3
             return name_;
         }
 
-        int plugin::on_install(const package &config)
+        std::string plugin::type() const {
+            return type_;
+        }
+
+        int plugin::on_install(const package &config, const std::string &path)
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
             }
 
+            if (strcasecmp(type().c_str(), "dependency")) {
+                return PREP_FAILURE;
+            }
+
             std::vector<std::string> info = {
-                config.get_plugin_name(this), config.version()
+                config.get_plugin_name(this), config.version(), path
             };
 
             return execute("install", info);
         }
 
-        int plugin::on_remove(const package &config)
+        int plugin::on_remove(const package &config, const std::string &path)
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
             }
 
+            if (strcasecmp(type().c_str(), "dependency")) {
+                return PREP_FAILURE;
+            }
+
             std::vector<std::string> info = {
-                config.get_plugin_name(this), config.version()
+                config.get_plugin_name(this), config.version(), path
             };
 
             return execute("remove", info);
@@ -137,6 +167,12 @@ namespace arg3
             if (!is_valid()) {
                 return PREP_FAILURE;
             }
+
+            if (strcasecmp(type().c_str(), "build")) {
+                return PREP_FAILURE;
+            }
+
+            log_debug("Running [%s] for \x1b[1;35m%s\x1b[0m", name().c_str(), config.name().c_str());
 
             auto envVars = environment::build_cpp_variables();
 

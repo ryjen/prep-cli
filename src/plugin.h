@@ -21,10 +21,11 @@ namespace arg3
             plugin &operator=(plugin &&other) = default;
             bool is_valid() const;
             std::string name() const;
+            std::string type() const;
             int on_load();
             int on_unload();
-            int on_install(const package &config);
-            int on_remove(const package &config);
+            int on_install(const package &config, const std::string &path);
+            int on_remove(const package &config, const std::string &path);
             int on_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath);
             int load(const std::string &path);
             bool is_enabled() const;
@@ -34,6 +35,7 @@ namespace arg3
             std::string executablePath_;
             std::string version_;
             std::string basePath_;
+            std::string type_;
             std::vector<package_dependency> dependencies_;
         };
     }

@@ -48,6 +48,7 @@ namespace arg3
     {
         namespace helper {
             extern bool is_valid_plugin_path(const std::string &path);
+            extern bool is_plugin_support(const std::string &path);
         }
 
         const char *const repository::get_local_repo()
@@ -157,29 +158,32 @@ namespace arg3
 
                 const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, NULL);
 
-                if (!helper::is_valid_plugin_path(globalPlugin)) {
+                bool is_plugin = helper::is_valid_plugin_path(globalPlugin);
+
+                if (!is_plugin && !helper::is_plugin_support(globalPlugin)) {
                     continue;
                 }
 
                 const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, NULL);
 
-                if (helper::is_valid_plugin_path(localPath)) {
-                    continue;
-                }
+                if (is_plugin) {
+                    if (helper::is_valid_plugin_path(localPath)) {
+                        continue;
+                    }
 
-                printf("OK to add plugin %s? (Y/n) ", d->d_name);
+                    printf("OK to add plugin %s? (Y/n) ", d->d_name);
 
-                int ch = getchar();
+                    int ch = getchar();
 
-                if (ch != 10 && toupper(ch) != 'Y') {
-                    continue;
+                    if (ch != 10 && toupper(ch) != 'Y') {
+                        continue;
+                    }
+                    added = true;
                 }
 
                 if (copy_directory(globalPlugin, localPath)) {
                     log_error("unable to copy [%s] to [%s]", globalPlugin.c_str(), localPath.c_str());
                 }
-
-                added = true;
             }
 
             closedir(dir);
@@ -673,7 +677,7 @@ namespace arg3
             log_trace("checking plugins for install of [%s]...", config.name().c_str());
 
             for(auto plugin : plugins_) {
-                if (plugin->on_install(config) == PREP_SUCCESS) {
+                if (plugin->on_install(config, path_) == PREP_SUCCESS) {
                     log_info("installed [%s] from plugin", config.name().c_str());
                     return PREP_SUCCESS;
                 }
@@ -686,7 +690,7 @@ namespace arg3
             log_trace("checking plugins for removal of [%s]...", config.name().c_str());
 
             for (auto plugin : plugins_) {
-                if (plugin->on_remove(config) == PREP_SUCCESS) {
+                if (plugin->on_remove(config, path_) == PREP_SUCCESS) {
                     log_info("removed [%s] from plugin", config.name().c_str());
                     return PREP_SUCCESS;
                 }
@@ -713,8 +717,6 @@ namespace arg3
                     log_error("No plugin [%s] found", name.c_str());
                     return PREP_FAILURE;
                 }
-
-                log_debug("Running [%s] for \x1b[1;35m%s\x1b[0m", plugin->name().c_str(), config.name().c_str());
 
                 if(plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
