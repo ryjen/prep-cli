@@ -11,12 +11,6 @@ namespace arg3
             using std::exception::exception;
         };
 
-        class revalidate_repository : public prep_exception
-        {
-        public:
-            using prep_exception::prep_exception;
-        };
-
         class not_a_plugin : public prep_exception
         {
         public:

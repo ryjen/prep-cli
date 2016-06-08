@@ -23,6 +23,7 @@
 #include <fts.h>
 #include <pwd.h>
 #include <string>
+#include <cstdio>
 #include "common.h"
 #include "log.h"
 #include "repository.h"
@@ -82,11 +83,6 @@ namespace arg3
                 path_ = get_local_repo();
             }
 
-            if (load_plugins() == PREP_FAILURE) {
-                log_error("unable to load plugins");
-                return PREP_FAILURE;
-            }
-
             return PREP_SUCCESS;
         }
 
@@ -97,13 +93,13 @@ namespace arg3
             }
 
             if (!directory_exists(path_.c_str())) {
-                int ch;
+                std::string buf;
 
                 printf("OK to create folder %s? (Y/n) ", path_.c_str());
 
-                ch = getchar();
+                std::getline(std::cin, buf);
 
-                if (ch != 10 && toupper(ch) != 'Y') {
+                if (buf.empty() || (buf[0] != 10 && toupper(buf[0]) != 'Y')) {
                     return PREP_FAILURE;
                 }
 
@@ -138,6 +134,7 @@ namespace arg3
         int repository::validate_plugins() const
         {
             const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, NULL);
+
             struct dirent *d = NULL;
             DIR *dir = opendir(globalPath.c_str());
 
@@ -146,9 +143,14 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            bool added = false;
-
             const std::string pluginPath = get_plugin_path();
+
+            if (!directory_exists(pluginPath.c_str())) {
+                if (mkdir(pluginPath.c_str(), 0777)) {
+                    log_errno(errno);
+                    return PREP_FAILURE;
+                }
+            }
 
             while((d = readdir(dir)) != NULL) {
 
@@ -167,18 +169,19 @@ namespace arg3
                 const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, NULL);
 
                 if (is_plugin) {
+                    std::string buf;
+
                     if (helper::is_valid_plugin_path(localPath)) {
                         continue;
                     }
 
                     printf("OK to add plugin %s? (Y/n) ", d->d_name);
 
-                    int ch = getchar();
+                    std::getline(std::cin, buf);
 
-                    if (ch != 10 && toupper(ch) != 'Y') {
+                    if (buf.empty() || (buf[0] != 10 && toupper(buf[0]) != 'Y')) {
                         continue;
                     }
-                    added = true;
                 }
 
                 if (copy_directory(globalPlugin, localPath)) {
@@ -187,10 +190,6 @@ namespace arg3
             }
 
             closedir(dir);
-
-            if (added) {
-                throw revalidate_repository();
-            }
 
             return PREP_SUCCESS;
         }

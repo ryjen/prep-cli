@@ -15,19 +15,18 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
+            if (repo_.validate() == PREP_FAILURE) {
+                return PREP_FAILURE;
+            }
+
             if (!opts.global) {
-                try {
-                    if (repo_.validate_plugins() == PREP_FAILURE) {
-                        return PREP_FAILURE;
-                    }
-                } catch(const revalidate_repository &exception) {
-                    if (repo_.initialize(opts)) {
-                        return PREP_FAILURE;
-                    }
+                if (repo_.validate_plugins() == PREP_FAILURE) {
+                    return PREP_FAILURE;
                 }
             }
 
-            if (repo_.validate() == PREP_FAILURE) {
+            if (repo_.load_plugins() == PREP_FAILURE) {
+                log_error("unable to load plugins");
                 return PREP_FAILURE;
             }
 

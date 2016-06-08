@@ -83,10 +83,10 @@ namespace arg3
 
             std::shared_ptr<plugin> get_plugin_by_name(const std::string &name) const;
 
+            int load_plugins();
+
            private:
             int package_dependency_count(const package &config, const string &package_name, const options &opts) const;
-
-            int load_plugins();
 
             std::vector<std::shared_ptr<plugin>> plugins_;
 
