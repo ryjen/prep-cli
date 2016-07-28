@@ -43,7 +43,7 @@ namespace std
     }
 }
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
@@ -649,7 +649,7 @@ namespace arg3
                     continue;
                 }
 
-                auto plugin = std::make_shared<arg3::prep::plugin>(d->d_name);
+                auto plugin = std::make_shared<rj::prep::plugin>(d->d_name);
 
                 try {
                     if (plugin->load(pluginPath) == PREP_SUCCESS) {
@@ -678,6 +678,18 @@ namespace arg3
             for(auto plugin : plugins_) {
                 if (plugin->on_install(config, path_) == PREP_SUCCESS) {
                     log_info("installed [%s] from plugin", config.name().c_str());
+                    return PREP_SUCCESS;
+                }
+            }
+            return PREP_FAILURE;
+        }
+        int repository::plugin_resolve(const package &config)
+        {
+            log_trace("checking plugins for resolving [%s]...", config.name().c_str());
+
+            for(auto plugin : plugins_) {
+                if (plugin->on_resolve(config, path_) == PREP_SUCCESS) {
+                    log_info("resolved [%s] from plugin", config.name().c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -723,5 +735,6 @@ namespace arg3
             }
             return PREP_SUCCESS;
         }
+
     }
 }

@@ -2,11 +2,11 @@
 #include "common.h"
 #include "package_config.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
-        package_dependency::package_dependency(json_object *obj) : package(obj)
+        package_dependency::package_dependency(const rj::json::object &obj) : package(obj)
         {
         }
 
@@ -16,10 +16,6 @@ namespace arg3
 
         package_dependency::~package_dependency()
         {
-            if (values_ != NULL) {
-                json_object_put(values_);
-                values_ = NULL;
-            }
         }
 
         int package_dependency::load(const std::string &path, const options &opts)

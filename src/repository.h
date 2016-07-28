@@ -1,5 +1,5 @@
-#ifndef ARG3_PREP_REPOSITORY_H
-#define ARG3_PREP_REPOSITORY_H
+#ifndef RJ_PREP_REPOSITORY_H
+#define RJ_PREP_REPOSITORY_H
 
 #include <string>
 #include <memory>
@@ -8,7 +8,7 @@
 #include "package_resolver.h"
 #include "plugin.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
@@ -76,6 +76,8 @@ namespace arg3
             int execute(const std::string &executable, int argc, char *const *argv) const;
 
             int plugin_install(const package &config);
+
+            int plugin_resolve(const package &config);
 
             int plugin_remove(const package &config);
 

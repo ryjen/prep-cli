@@ -1,5 +1,5 @@
-#ifndef ARG3_PREP_LOG_H
-#define ARG3_PREP_LOG_H
+#ifndef RJ_PREP_LOG_H
+#define RJ_PREP_LOG_H
 
 #include <string.h>
 
@@ -7,7 +7,7 @@
 #define __attribute__(x)
 #endif
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

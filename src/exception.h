@@ -1,7 +1,7 @@
-#ifndef ARG3_PREP_EXCEPTION_H
-#define ARG3_PREP_EXCEPTION_H
+#ifndef RJ_PREP_EXCEPTION_H
+#define RJ_PREP_EXCEPTION_H
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

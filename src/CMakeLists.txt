@@ -1,24 +1,28 @@
 
-set(SOURCE_FILES
+set(LIBRARY_FILES
     decompressor.cpp
     environment.cpp
     log.cpp
+    util.cpp
+)
+
+set(SOURCE_FILES
     package_builder.cpp
     package_config.cpp
     package_dependency.cpp
     package_resolver.cpp
     plugin.cpp
-    repository.cpp
-    util.cpp
-)
+    repository.cpp)
 
-include_directories(${LibArchive_INCLUDE_DIRS})
+add_subdirectory(json)
 
-add_library(${PROJECT_LIBRARY} ${SOURCE_FILES})
+include_directories(${LibArchive_INCLUDE_DIRS} json/src)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_library(${PROJECT_LIBRARY} ${LIBRARY_FILES})
 
-target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${ZLIB_LIBRARIES} ${JSON_C_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
+add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
+
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} rj_json ${ZLIB_LIBRARIES} ${JSON_C_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
 
 set(HEADER_FILES
     common.h

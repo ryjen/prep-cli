@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
-use lib '..';
-use arg3::prep::plugin qw(get_param get_build_params);
+use lib '../support';
+use rj::prep::plugin qw(get_param get_build_params);
 use strict;
 use warnings;
 

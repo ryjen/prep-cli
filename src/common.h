@@ -1,11 +1,11 @@
-#ifndef ARG3_PREP_COMMON_H
-#define ARG3_PREP_COMMON_H
+#ifndef RJ_PREP_COMMON_H
+#define RJ_PREP_COMMON_H
 
 #define PREP_SUCCESS EXIT_SUCCESS
 
 #define PREP_FAILURE EXIT_FAILURE
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

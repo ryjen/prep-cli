@@ -1,8 +1,8 @@
 /**
  * @author: Ryan Jennings <c0der78@gmail.com>
  */
-#ifndef ARG3_PREP_DECOMPRESSOR_H
-#define ARG3_PREP_DECOMPRESSOR_H
+#ifndef RJ_PREP_DECOMPRESSOR_H
+#define RJ_PREP_DECOMPRESSOR_H
 
 #include "config.h"
 
@@ -12,7 +12,7 @@
 
 #include <string>
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

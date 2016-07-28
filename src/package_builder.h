@@ -1,11 +1,11 @@
-#ifndef ARG3_PREP_PACKAGE_BUILDER_H
-#define ARG3_PREP_PACKAGE_BUILDER_H
+#ifndef RJ_PREP_PACKAGE_BUILDER_H
+#define RJ_PREP_PACKAGE_BUILDER_H
 
 #include "environment.h"
 #include "package_config.h"
 #include "repository.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

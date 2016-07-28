@@ -1,11 +1,11 @@
-#ifndef ARG3_PREP_PACKAGE_RESOLVER_H
-#define ARG3_PREP_PACKAGE_RESOLVER_H
+#ifndef RJ_PREP_PACKAGE_RESOLVER_H
+#define RJ_PREP_PACKAGE_RESOLVER_H
 
 #include <string>
 
 #include "package_config.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

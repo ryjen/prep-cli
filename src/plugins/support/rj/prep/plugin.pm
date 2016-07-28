@@ -1,5 +1,5 @@
 # Ryan Jennings 2016
-package arg3::prep::plugin;
+package rj::prep::plugin;
 use strict;
 use warnings;
 use Exporter qw(import);
@@ -53,8 +53,9 @@ sub get_package_params
     my $package = get_param;
     my $version = get_param;
     my $repository = get_param;
+    my $config = get_param;
 
-    return ($package, $version, $repository);
+    return ($package, $version, $repository, $config);
 }
 
 1;

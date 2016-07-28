@@ -5,7 +5,7 @@
 #include "util.h"
 #include "exception.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
@@ -186,7 +186,11 @@ namespace arg3
                     continue;
                 }
 
-                package_dir = repo_.exists_in_history(p.location());
+                package_dir = repo_.plugin_resolve(p);
+
+                if (package_dir.empty()) {
+                    package_dir = repo_.exists_in_history(p.location());
+                }
 
                 if (package_dir.empty() || !directory_exists(package_dir.c_str())) {
 

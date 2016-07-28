@@ -6,7 +6,7 @@
 #include "package_resolver.h"
 #include "util.h"
 
-using namespace arg3::prep;
+using namespace rj::prep;
 
 void print_help(char *exe)
 {
@@ -20,8 +20,8 @@ void print_help(char *exe)
 
 int main(int argc, char *const argv[])
 {
-    arg3::prep::package_builder prep;
-    arg3::prep::options options;
+    rj::prep::package_builder prep;
+    rj::prep::options options;
     const char *command;
     int option;
 
@@ -36,7 +36,7 @@ int main(int argc, char *const argv[])
             case 'f':
                 options.force_build = true;
             case 'l':
-                arg3::prep::set_log_level(optarg);
+                rj::prep::set_log_level(optarg);
                 break;
             case 'h':
                 print_help(argv[0]);
@@ -49,7 +49,7 @@ int main(int argc, char *const argv[])
             return PREP_FAILURE;
         }
     } catch (const std::exception &e) {
-        arg3::prep::log_error(e.what());
+        rj::prep::log_error(e.what());
         return PREP_FAILURE;
     }
 
@@ -60,8 +60,8 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "install")) {
-        arg3::prep::package_resolver resolver;
-        arg3::prep::package_config config;
+        rj::prep::package_resolver resolver;
+        rj::prep::package_config config;
         char cwd[PATH_MAX];
 
         if (optind < 0 || optind >= argc) {
@@ -76,7 +76,7 @@ int main(int argc, char *const argv[])
         }
 
         if (resolver.resolve_package(config, options)) {
-            arg3::prep::log_error("%s is not a valid prep package", options.location.c_str());
+            rj::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 
@@ -84,11 +84,11 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "remove")) {
-        arg3::prep::package_resolver resolver;
-        arg3::prep::package_config config;
+        rj::prep::package_resolver resolver;
+        rj::prep::package_config config;
 
         if (optind < 0 || optind >= argc) {
-            arg3::prep::log_error("Remove which package?");
+            rj::prep::log_error("Remove which package?");
             return PREP_FAILURE;
         }
 
@@ -96,10 +96,10 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "setpath")) {
-        arg3::prep::repository repo;
+        rj::prep::repository repo;
 
         if (repo.initialize(options)) {
-            arg3::prep::log_error("unable to initialize repository");
+            rj::prep::log_error("unable to initialize repository");
             return PREP_FAILURE;
         }
 
@@ -116,8 +116,8 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "run")) {
-        arg3::prep::package_resolver resolver;
-        arg3::prep::package_config config;
+        rj::prep::package_resolver resolver;
+        rj::prep::package_config config;
         char cwd[PATH_MAX];
 
         if (getcwd(cwd, sizeof(cwd))) {
@@ -127,7 +127,7 @@ int main(int argc, char *const argv[])
         }
 
         if (resolver.resolve_package(config, options)) {
-            arg3::prep::log_error("%s is not a valid prep package", options.location.c_str());
+            rj::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 

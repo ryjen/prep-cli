@@ -1,10 +1,10 @@
-#ifndef ARG3_PREP_ENVIRONMENT_H
-#define ARG3_PREP_ENVIRONMENT_H
+#ifndef RJ_PREP_ENVIRONMENT_H
+#define RJ_PREP_ENVIRONMENT_H
 
 #include <string>
 #include <vector>
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

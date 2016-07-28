@@ -17,8 +17,6 @@ create_package("a c/c++ package and project manager")
 
 set(PROJECT_LIBRARY "utensil")
 
-include(FindJSONC)
-
 find_package(CURL)
 find_package(ZLIB)
 
@@ -35,13 +33,12 @@ find_library(GIT2_LIBRARIES git2)
 
 find_file(HAVE_LIBGEN_H NAMES libgen.h)
 find_file(HAVE_CURL_CURL_H NAMES ${CURL_INCLUDE_DIRS})
-find_file(HAVE_JSON_C_H NAMES json-c/json.h)
 
 # add target for code coverage
 if(CODE_COVERAGE)
 	include(CodeCoverage)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_COVERAGE}")
-	setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test ${PROJECT_SOURCE_DIR}/coverage)
+	setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_SOURCE_DIR}/coverage)
 endif()
 
 # create config header
@@ -56,8 +53,8 @@ add_subdirectory(tests)
 enable_testing()
 
 if (MEMORY_CHECK)
-	include(MemCheckTest)
-	add_memcheck_test(${PROJECT_NAME}-test ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test)
+	include(ValgrindTest)
+	add_valgrind_test(${PROJECT_NAME}-test ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test)
 else ()
 	add_test(${PROJECT_NAME}-test ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test)
 endif()

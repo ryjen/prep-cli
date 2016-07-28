@@ -13,8 +13,9 @@
 #include <libgen.h>
 #endif
 #include "plugin.h"
+#include "array.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
@@ -26,26 +27,22 @@ namespace arg3
         {
         }
 
-        package::package() : values_(NULL)
+        package::package() : values_()
         {
         }
 
-        package::package(json_object *obj) : values_(obj)
+        package::package(const rj::json::object &obj) : values_(obj)
         {
-            json_object *depjson = NULL;
+            if (values_.contains("dependencies")) {
+                auto deps = values_.get_array("dependencies");
 
-            if (json_object_object_get_ex(values_, "dependencies", &depjson)) {
-                int len = json_object_array_length(depjson);
-
-                for (int i = 0; i < len; i++) {
-                    json_object *dep = json_object_array_get_idx(depjson, i);
-
-                    dependencies_.push_back(package_dependency(json_object_get(dep)));
+                for (auto &dep: deps) {
+                    dependencies_.push_back(package_dependency(dep));
                 }
             }
         }
 
-        package::package(const package &other) : values_(json_object_get(other.values_))
+        package::package(const package &other) : values_(other.values_)
         {
             for (const auto &dep : other.dependencies_) {
                 dependencies_.push_back(dep);
@@ -54,7 +51,7 @@ namespace arg3
 
         package &package::operator=(const package &other)
         {
-            values_ = json_object_get(other.values_);
+            values_ = other.values_;
             for (const auto &dep : other.dependencies_) {
                 dependencies_.push_back(dep);
             }
@@ -63,10 +60,6 @@ namespace arg3
 
         package::~package()
         {
-            if (values_ != NULL) {
-                json_object_put(values_);
-                values_ = NULL;
-            }
         }
 
         package_config::package_config()
@@ -90,7 +83,7 @@ namespace arg3
 
         bool package::is_loaded() const
         {
-            return values_ != NULL;
+            return values_.is_valid();
         }
 
         vector<package_dependency> package::dependencies() const
@@ -156,11 +149,6 @@ namespace arg3
                 return PREP_FAILURE;
             }
 
-            if (values_ != NULL) {
-                json_object_put(values_);
-                values_ = NULL;
-            }
-
             if (resolve_package_file(path, opts.package_file, file)) {
                 log_debug("unable to resolve %s/%s", path.c_str(), opts.package_file.c_str());
                 return PREP_FAILURE;
@@ -173,36 +161,28 @@ namespace arg3
 
             file >> os.rdbuf();
 
-            values_ = json_tokener_parse(os.str().c_str());
-
-            if (values_ == NULL) {
+            if (!values_.parse(os.str().c_str())) {
                 printf("invalid configuration for %s\n", os.str().c_str());
                 return PREP_FAILURE;
             }
 
-            if (json_object_object_get_ex(values_, "dependencies", &depjson)) {
-                int len = json_object_array_length(depjson);
+            if (values_.contains("dependencies")) {
+                auto deps = values_.get_array("dependencies");
 
-                for (int i = 0; i < len; i++) {
-                    json_object *dep = json_object_array_get_idx(depjson, i);
-
-                    dependencies_.push_back(package_dependency(json_object_get(dep)));
+                for (auto &dep: deps) {
+                    dependencies_.push_back(package_dependency(dep));
                 }
             }
 
-            if (json_object_object_get_ex(values_, "build_system", &depjson)) {
-                int len = json_object_array_length(depjson);
+            if (values_.contains("build_system")) {
+                auto bs = values_.get_array("build_system");
 
-                for (int i = 0; i < len; i++) {
-                    json_object *obj = json_object_array_get_idx(depjson, i);
-
-                    auto command = json_object_get_string(obj);
-
-                    build_system_.push_back(command);
+                for (auto &command: bs) {
+                    build_system_.push_back(command.to_string());
                 }
             }
 
-            path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
+            path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), nullptr);
 
             log_info("Preparing package \033[1;35m%s\033[0m", name().c_str());
 
@@ -211,12 +191,12 @@ namespace arg3
 
         std::string package::name() const
         {
-            return get_str("name");
+            return values_.get_string("name");
         }
 
         std::string package::version() const
         {
-            return get_str("version");
+            return values_.get_string("version");
         }
 
         vector<string> package::build_system() const
@@ -226,17 +206,22 @@ namespace arg3
 
         std::string package::location() const
         {
-            return get_str("location");
+            return values_.get_string("location");
+        }
+
+        void package::set_location(const std::string &value)
+        {
+            values_.set_string("location", value);
         }
 
         std::string package::build_options() const
         {
-            return get_str("build_options");
+            return values_.get_string("build_options");
         }
 
         std::string package::executable() const
         {
-            return get_str("executable");
+            return values_.get_string("executable");
         }
 
         std::string package::path() const
@@ -251,77 +236,16 @@ namespace arg3
 
         bool package::has_name() const
         {
-            return json_object_object_get_ex(values_, "name", NULL);
+            return values_.contains("name");
         }
 
-        void package::set_str(const std::string &key, const std::string &value)
+        rj::json::object package::get_plugin_config(const plugin *plugin) const
         {
-            json_object *obj = NULL;
-
-            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
-                json_object_put(obj);
-            }
-            json_object_object_add(values_, key.c_str(), json_object_new_string(value.c_str()));
-        }
-
-        void package::set_bool(const std::string &key, bool value)
-        {
-            json_object *obj = NULL;
-
-            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
-                json_object_put(obj);
-            }
-            json_object_object_add(values_, key.c_str(), json_object_new_boolean(value));
-        }
-
-        std::string package::get_str(const std::string &key) const
-        {
-            json_object *obj = NULL;
-
-            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
-                const char *temp = json_object_get_string(obj);
-
-                if (temp) {
-                    return temp;
-                }
+            if (plugin == nullptr) {
+                return rj::json::object();
             }
 
-            return std::string();
-        }
-
-        bool package::get_bool(const std::string &key) const
-        {
-            json_object *obj = NULL;
-
-            if (json_object_object_get_ex(values_, key.c_str(), &obj)) {
-                return json_object_get_boolean(obj);
-            }
-
-            return false;
-        }
-
-        std::string package::get_plugin_name(plugin *plugin) const
-        {
-            json_object *obj = NULL;
-
-            if (plugin == NULL) {
-                return name();
-            }
-
-            if (json_object_object_get_ex(values_, plugin->name().c_str(), &obj)) {
-
-                json_object *name = NULL;
-
-                if (json_object_object_get_ex(obj, "name", &name)) {
-                    auto temp = json_object_get_string(name);
-
-                    if (temp) {
-                        return temp;
-                    }
-                }
-            }
-
-            return name();
+            return values_.get(plugin->name());
         }
     }
 }

@@ -10,7 +10,7 @@
 #include "util.h"
 #include "exception.h"
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
@@ -30,7 +30,7 @@ namespace arg3
                     return false;
                 }
 
-                return !strcasecmp(path.substr(path.length()-4).c_str(), "arg3");
+                return !strcasecmp(path.substr(path.length()-4).c_str(), "support");
             }
         }
 
@@ -57,38 +57,30 @@ namespace arg3
 
             file >> buf.rdbuf();
 
-            json_object *config = json_tokener_parse(buf.str().c_str());
+            rj::json::object config;
 
-            if (config == NULL) {
+            if (!config.parse(buf.str().c_str())) {
                 log_error("invalid configuration for plugin [%s]", name_.c_str());
                 return PREP_FAILURE;
             }
 
             json_object *obj = NULL;
 
-            if (json_object_object_get_ex(config, "executable", &obj)) {
-                executablePath_ = build_sys_path(basePath_.c_str(), json_object_get_string(obj), NULL);
+            if (config.contains("executable")) {
+                executablePath_ = build_sys_path(basePath_.c_str(), config.get_string("executable").c_str(), NULL);
                 log_trace("plugin [%s] executable [%s]", name_.c_str(), executablePath_.c_str());
             } else {
                 log_error("plugin [%s] has no executable", name_.c_str());
                 return PREP_FAILURE;
             }
 
-            json_object_put(obj);
-
-            if (json_object_object_get_ex(config, "version", &obj)) {
-                version_ = json_object_get_string(obj);
+            if (config.contains("version")) {
+                version_ = config.get_string("version");
             }
 
-            json_object_put(obj);
-
-            if (json_object_object_get_ex(config, "type", &obj)) {
-                type_ = json_object_get_string(obj);
+            if (config.contains("type")) {
+                type_ = config.get_string("type");
             }
-
-            json_object_put(obj);
-
-            json_object_put(config);
 
             log_info("loaded plugin [%s] version [%s]", name_.c_str(), version_.c_str());
 
@@ -128,6 +120,16 @@ namespace arg3
             return type_;
         }
 
+        std::string plugin::plugin_name(const package &config) const {
+            auto plugin = config.get_plugin_config(this);
+
+            if (plugin.contains("name")) {
+                return plugin.get_string("name");
+            }
+
+            return config.name();
+        }
+
         int plugin::on_install(const package &config, const std::string &path)
         {
             if (!is_valid()) {
@@ -139,10 +141,32 @@ namespace arg3
             }
 
             std::vector<std::string> info = {
-                config.get_plugin_name(this), config.version(), path
+                plugin_name(config), config.version(), path, config.get_plugin_config(this).to_string()
             };
 
             return execute("install", info);
+        }
+
+        int plugin::on_resolve(const package &config, const std::string &path)
+        {
+            char buf[PATH_MAX];
+
+            if (!is_valid()) {
+                return PREP_FAILURE;
+            }
+
+            if (strcasecmp(type().c_str(), "resolver")) {
+                return PREP_FAILURE;
+            }
+
+            make_temp_dir(buf, PATH_MAX);
+
+            std::vector<std::string> info = {
+                plugin_name(config), config.version(), path,
+                        config.get_plugin_config(this).to_string()
+            };
+
+            return execute("resolve", info);
         }
 
         int plugin::on_remove(const package &config, const std::string &path)
@@ -156,7 +180,7 @@ namespace arg3
             }
 
             std::vector<std::string> info = {
-                config.get_plugin_name(this), config.version(), path
+                plugin_name(config), config.version(), path
             };
 
             return execute("remove", info);
@@ -177,7 +201,7 @@ namespace arg3
             auto envVars = environment::build_cpp_variables();
 
             std::vector<std::string> info({
-                config.get_plugin_name(this), config.version(), sourcePath, buildPath, installPath, config.build_options()
+                plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()
             });
 
             info.insert(std::end(info), std::begin(envVars), std::end(envVars));

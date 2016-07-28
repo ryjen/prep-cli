@@ -1,38 +1,31 @@
 #!/usr/bin/env perl
 
-use lib '..';
-use arg3::prep::plugin qw(get_param get_package_params);
+use lib '../support';
+use Archive::Extract;
+use rj::prep::plugin qw(get_param get_package_params);
+use File::Temp qw/ :mktemp  /;
 
-sub on_install
+sub extract
 {
-    my ($package, $version, $repository) = get_package_params;
+    my ($package, $version, $path, $config) = get_package_params;
 
-    #todo version support
-    #my $result = `brew versions $package`
-    #my $commit = cut -d ' ' -f 4
-    #my $formula = cut -d ' ' -f 5
-    #brew unlink $package
+    my $ae = Archive::Extract->new( archive => $package );
+
+    $tmpdir = mkdtemp( '/tmp/prep-XXXXXX' );
+
+    if (!$ae->extract( to => $tmpdir )) {
+        return 1;
+    }
 
     exec "brew", "install", $package
-}
-
-sub on_remove
-{
-    my ($package, $version, $repository) = get_package_params;
-
-    exec "brew", "remove", $package
 }
 
 sub main
 {
     my $command = get_param;
 
-    if ($command eq "install") {
-        return on_install;
-    }
-
-    if ($command eq "remove") {
-        return on_remove;
+    if ($command eq "build") {
+        return extract;
     }
 
     return 1;

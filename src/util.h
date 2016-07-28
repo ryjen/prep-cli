@@ -1,9 +1,9 @@
-#ifndef ARG3_PREP_UTIL_H
-#define ARG3_PREP_UTIL_H
+#ifndef RJ_PREP_UTIL_H
+#define RJ_PREP_UTIL_H
 
 #include <string>
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {

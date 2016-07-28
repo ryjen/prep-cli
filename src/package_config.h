@@ -1,20 +1,18 @@
-#ifndef ARG3_PREP_PACKAGE_CONFIG_H
-#define ARG3_PREP_PACKAGE_CONFIG_H
+#ifndef RJ_PREP_PACKAGE_CONFIG_H
+#define RJ_PREP_PACKAGE_CONFIG_H
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
-
-#ifndef HAVE_JSON_C_H
-#include <json/json.h>
-#else
-#include <json-c/json.h>
 #endif
+
+#include "object.h"
 #include <fstream>
 #include <string>
 #include <vector>
 
 using namespace std;
 
-namespace arg3
+namespace rj
 {
     namespace prep
     {
@@ -43,21 +41,19 @@ namespace arg3
             bool has_name() const;
             virtual int load(const std::string &path, const options &opts) = 0;
             virtual std::string location() const;
+            void set_location(const std::string &value);
             bool is_loaded() const;
             vector<package_dependency> dependencies() const;
             std::string executable() const;
 
+            rj::json::object get_plugin_config(const plugin *plugin) const;
+
            protected:
             package();
-            package(json_object *obj);
+            package(const rj::json::object &obj);
             package(const package &other);
             package &operator=(const package &other);
-            std::string get_str(const std::string &key) const;
-            bool get_bool(const std::string &key) const;
-            void set_str(const std::string &key, const std::string &value);
-            void set_bool(const std::string &key, bool value);
-            std::string get_plugin_name(plugin *plugin) const;
-            json_object *values_;
+            rj::json::object values_;
             std::string path_;
             vector<package_dependency> dependencies_;
             vector<string> build_system_;
@@ -76,7 +72,7 @@ namespace arg3
             int load(const std::string &path, const options &opts);
 
            protected:
-            package_dependency(json_object *obj);
+            package_dependency(const rj::json::object &obj);
         };
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
-use lib '..';
-use arg3::prep::plugin qw(get_param get_package_params);
+use lib '../support';
+use rj::prep::plugin qw(get_param get_package_params);
 
 sub on_load
 {
