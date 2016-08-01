@@ -1,13 +1,13 @@
 #!/usr/bin/env perl
 
 use rlib '../support';
-use rj::prep::plugin qw(get_param get_build_params);
+use rj::prep::plugin qw(read_build_params);
 use strict;
 use warnings;
 
 sub cmake
 {
-    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = get_build_params;
+    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = read_build_params;
 
     chdir($buildPath);
 
@@ -16,13 +16,11 @@ sub cmake
 
 sub main
 {
-    my $command = get_param;
+    my $plugin = rj::prep::plugin->new();
 
-    if ($command eq "build") {
-        return cmake;
-    }
+    $plugin->on_build(\&cmake);
 
-    return 1;
+    return $plugin->execute();
 }
 
 exit(&main);

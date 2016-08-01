@@ -185,7 +185,7 @@ namespace rj
                     continue;
                 }
 
-                auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) { package_dir = plugin->return_values().front(); };
+                auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) { package_dir = plugin->return_value(); };
 
                 if (repo_.plugin_resolve(p, callback) != PREP_SUCCESS) {
                     package_dir = repo_.exists_in_history(p.location());

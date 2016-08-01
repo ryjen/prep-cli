@@ -3,11 +3,11 @@
 use rlib '../support';
 use Archive::Extract;
 use File::Fetch;
-use rj::prep::plugin qw(get_param get_resolve_params);
+use rj::prep::plugin qw(read_resolve_params add_return_value);
 
 sub extract
 {
-    my ($path, $location) = get_resolve_params;
+    my ($path, $location) = read_resolve_params;
 
     my $file = File::Fetch->new( uri => $location );
 
@@ -18,29 +18,29 @@ sub extract
     my $archive = $file->fetch( to => $path );
 
     if (!$archive) {
+        print "Unable to fetch $location to $path\n";
         return 1;
     }
 
     my $ae = Archive::Extract->new( archive => $archive );
 
     if (!$ae->extract( to => $path )) {
+        print "Unable to extract $archive to $path\n";
         return 1;
     }
 
-    print "RETURN " . $ae->extract_path . "\n";
-    
+    add_return_value($ae->extract_path);
+
     return 0;
 }
 
 sub main
 {
-    my $command = get_param;
+    my $plugin = rj::prep::plugin->new();
 
-    if ($command eq "resolve") {
-        return extract;
-    }
+    $plugin->on_resolve(\&extract);
 
-    return 1;
+    return $plugin->execute();
 }
 
 exit(&main);

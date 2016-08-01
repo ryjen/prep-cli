@@ -1,25 +1,25 @@
 #!/usr/bin/env perl
 
 use rlib '../support';
-use rj::prep::plugin qw(get_param get_build_params);
+use rj::prep::plugin qw(read_build_params);
 
 sub make
 {
-    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = get_build_params;
+	my $self = shift;
+    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = read_build_params;
 
     chdir($buildPath);
 
     exec "make", "-j2", "install"
 }
+
 sub main
 {
-    my $command = get_param;
+	my $plugin = rj::prep::plugin->new();
 
-    if ($command eq "build") {
-        return make;
-    }
+	$plugin->on_build(\&make);
 
-    return 1;
+    return $plugin->execute();
 }
 
 exit(&main);

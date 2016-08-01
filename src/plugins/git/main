@@ -1,0 +1,27 @@
+#!/usr/bin/env perl
+
+use rlib '../support';
+use Git::Repository;
+use rj::prep::plugin qw(read_resolve_params add_return_value);
+
+sub clone
+{
+    my ($path, $location) = read_resolve_params;
+
+    Git::Repository->run( clone => $location => $path );
+
+    add_return_value($path);
+    
+    return 0;
+}
+
+sub main
+{
+    my $plugin = rj::prep::plugin->new();
+
+    $plugin->on_resolve(\&clone);
+
+    return $plugin->execute();
+}
+
+exit(&main);

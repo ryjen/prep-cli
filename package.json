@@ -30,6 +30,9 @@
 		},
 		{
 			"name": "json-c",
+			"homebrew": {
+				"name": "asdfasdfas"
+			},
 			"git": {
 				"location": "https://github.com/json-c/json-c.git"
 			},

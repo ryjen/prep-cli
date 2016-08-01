@@ -675,7 +675,7 @@ namespace rj
 
             for (auto plugin : plugins_) {
                 if (plugin->on_resolve(config) == PREP_SUCCESS) {
-                    log_info("resolved [%s] from plugin", config.name().c_str());
+                    log_info("resolved [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
                     if (callback) {
                         callback(plugin);
                     }
@@ -691,7 +691,7 @@ namespace rj
 
             for (auto plugin : plugins_) {
                 if (plugin->on_install(config, path_) == PREP_SUCCESS) {
-                    log_info("installed [%s] from plugin", config.name().c_str());
+                    log_info("installed [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -704,7 +704,7 @@ namespace rj
 
             for (auto plugin : plugins_) {
                 if (plugin->on_remove(config, path_) == PREP_SUCCESS) {
-                    log_info("removed [%s] from plugin", config.name().c_str());
+                    log_info("removed [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
                     return PREP_SUCCESS;
                 }
             }

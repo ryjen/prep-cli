@@ -1,15 +1,17 @@
 #!/usr/bin/env perl
 
 use rlib '../support';
-use rj::prep::plugin qw(get_param get_build_params);
+use rj::prep::plugin qw(read_build_params);
 
 sub autoconf
 {
-    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = get_build_params;
+    my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = read_build_params;
 
     my $configure = $sourcePath . "/configure";
 
     if ( ! -e $configure ) {
+        chdir($sourcePath);
+
         my $autogen = $sourcePath . "/autogen.sh";
 
         if ( ! -e $autogen ) {
@@ -34,13 +36,11 @@ sub autoconf
 
 sub main
 {
-    my $command = get_param;
+    my $plugin = rj::prep::plugin->new();
 
-    if ($command eq "build") {
-        return autoconf;
-    }
+    $plugin->on_build(\&autoconf);
 
-    return 1;
+    return $plugin->execute();
 }
 
 exit(&main);
