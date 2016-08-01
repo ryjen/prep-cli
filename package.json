@@ -14,14 +14,16 @@
 				"name": "curl"
 			},
 			"archive": {
-				"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
-				"build_system": ["autotools", "make"],
-				"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
+				"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2"
 			},
+			"build_system": ["autotools", "make"],
+			"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
 			"dependencies": [
 				{
 					"name": "libz",
-					"location": "http://zlib.net/zlib-1.2.8.tar.gz",
+					"archive": {
+						"location": "http://zlib.net/zlib-1.2.8.tar.gz"
+					},
 					"build_system": ["cmake", "make"]
 				}
 			]
@@ -29,20 +31,22 @@
 		{
 			"name": "json-c",
 			"git": {
-				"location": "https://github.com/json-c/json-c.git",
-				"build_system": ["autotools", "make"]
-			}
+				"location": "https://github.com/json-c/json-c.git"
+			},
+			"build_system": ["autotools", "make"]
 		},
 		{
 			"name": "libarchive",
 			"archive": {
-				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
-				"build_system": ["autotools", "make"]
+				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz"
 			},
+			"build_system": ["autotools", "make"],
 			"dependencies": [
 				{
 					"name": "libxml2",
-					"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
+					"archive": {
+						"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz"
+					},
 					"build_system": ["autotools", "make"],
 					"build_options": "--without-python"
 				}
@@ -51,9 +55,9 @@
 		{
 			"name": "libgit2",
 			"archive": {
-				"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz",
-				"build_system": ["cmake", "make"]
-			}
+				"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz"
+			},
+			"build_system": ["cmake", "make"]
 		}
 	]
 

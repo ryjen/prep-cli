@@ -1,8 +1,8 @@
 #ifndef RJ_PREP_REPOSITORY_H
 #define RJ_PREP_REPOSITORY_H
 
-#include <string>
 #include <memory>
+#include <string>
 #include <vector>
 #include "package_config.h"
 #include "package_resolver.h"
@@ -43,6 +43,8 @@ namespace rj
 
             constexpr static const char *const PACKAGE_FILE = "package.json";
 
+            typedef std::function<void(const std::shared_ptr<plugin> &plugin)> resolver_callback;
+
             static const char *const get_local_repo();
 
             int unlink_directory(const std::string &path) const;
@@ -77,7 +79,7 @@ namespace rj
 
             int plugin_install(const package &config);
 
-            int plugin_resolve(const package &config);
+            int plugin_resolve(const package &config, const resolver_callback &callback = nullptr);
 
             int plugin_remove(const package &config);
 

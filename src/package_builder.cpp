@@ -1,9 +1,9 @@
 #include "package_builder.h"
 #include "common.h"
+#include "exception.h"
 #include "log.h"
 #include "package_resolver.h"
 #include "util.h"
-#include "exception.h"
 
 namespace rj
 {
@@ -72,8 +72,7 @@ namespace rj
 
             log_trace("Installing to [%s]", installPath.c_str());
 
-            if (repo_.plugin_build(config, path, buildPath, installPath) == PREP_FAILURE)
-            {
+            if (repo_.plugin_build(config, path, buildPath, installPath) == PREP_FAILURE) {
                 auto cmds = config.build_system();
 
                 if (cmds.size() > 0) {
@@ -117,7 +116,6 @@ namespace rj
 
         int package_builder::remove(const string &package_name, options &opts)
         {
-
             string installDir = repo_.get_install_path(package_name);
 
             if (!directory_exists(installDir.c_str())) {
@@ -179,6 +177,7 @@ namespace rj
             for (package_dependency &p : config.dependencies()) {
                 package_resolver resolver;
                 string package_dir;
+                char buf[PATH_MAX];
 
                 log_info("    - preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
 
@@ -186,14 +185,13 @@ namespace rj
                     continue;
                 }
 
-                package_dir = repo_.plugin_resolve(p);
+                auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) { package_dir = plugin->return_values().front(); };
 
-                if (package_dir.empty()) {
+                if (repo_.plugin_resolve(p, callback) != PREP_SUCCESS) {
                     package_dir = repo_.exists_in_history(p.location());
                 }
 
                 if (package_dir.empty() || !directory_exists(package_dir.c_str())) {
-
                     if (p.location().empty()) {
                         log_error("[%s] dependency [%s] has no plugin or location", config.name().c_str(), p.name().c_str());
                         return PREP_FAILURE;
@@ -253,7 +251,7 @@ namespace rj
             return repo_.unlink_directory(packageInstall.c_str());
         }
 
-        int package_builder::execute(const package &config, int argc, char * const *argv) const
+        int package_builder::execute(const package &config, int argc, char *const *argv) const
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");

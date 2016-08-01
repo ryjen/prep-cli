@@ -1,30 +1,42 @@
 #!/usr/bin/env perl
 
-use lib '../support';
+use rlib '../support';
 use Archive::Extract;
-use rj::prep::plugin qw(get_param get_package_params);
-use File::Temp qw/ :mktemp  /;
+use File::Fetch;
+use rj::prep::plugin qw(get_param get_resolve_params);
 
 sub extract
 {
-    my ($package, $version, $path, $config) = get_package_params;
+    my ($path, $location) = get_resolve_params;
 
-    my $ae = Archive::Extract->new( archive => $package );
+    my $file = File::Fetch->new( uri => $location );
 
-    $tmpdir = mkdtemp( '/tmp/prep-XXXXXX' );
-
-    if (!$ae->extract( to => $tmpdir )) {
+    if (!$file) {
         return 1;
     }
 
-    exec "brew", "install", $package
+    my $archive = $file->fetch( to => $path );
+
+    if (!$archive) {
+        return 1;
+    }
+
+    my $ae = Archive::Extract->new( archive => $archive );
+
+    if (!$ae->extract( to => $path )) {
+        return 1;
+    }
+
+    print "RETURN " . $ae->extract_path . "\n";
+    
+    return 0;
 }
 
 sub main
 {
     my $command = get_param;
 
-    if ($command eq "build") {
+    if ($command eq "resolve") {
         return extract;
     }
 

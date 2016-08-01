@@ -12,8 +12,8 @@
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
-#include "plugin.h"
 #include "array.h"
+#include "plugin.h"
 
 namespace rj
 {
@@ -33,28 +33,42 @@ namespace rj
 
         package::package(const rj::json::object &obj) : values_(obj)
         {
+            init_dependencies();
+            init_build_system();
+        }
+
+        void package::init_dependencies()
+        {
             if (values_.contains("dependencies")) {
                 auto deps = values_.get_array("dependencies");
 
-                for (auto &dep: deps) {
+                for (auto &dep : deps) {
                     dependencies_.push_back(package_dependency(dep));
                 }
             }
         }
 
-        package::package(const package &other) : values_(other.values_)
+        void package::init_build_system()
         {
-            for (const auto &dep : other.dependencies_) {
-                dependencies_.push_back(dep);
+            if (values_.contains("build_system")) {
+                auto systems = values_.get_array("build_system");
+                for (auto &system : systems) {
+                    build_system_.push_back(system);
+                }
             }
+        }
+
+        package::package(const package &other)
+            : values_(other.values_), path_(other.path_), dependencies_(other.dependencies_), build_system_(other.build_system_)
+        {
         }
 
         package &package::operator=(const package &other)
         {
             values_ = other.values_;
-            for (const auto &dep : other.dependencies_) {
-                dependencies_.push_back(dep);
-            }
+            path_ = other.path_;
+            dependencies_ = other.dependencies_;
+            build_system_ = other.build_system_;
             return *this;
         }
 
@@ -166,21 +180,9 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            if (values_.contains("dependencies")) {
-                auto deps = values_.get_array("dependencies");
+            init_dependencies();
 
-                for (auto &dep: deps) {
-                    dependencies_.push_back(package_dependency(dep));
-                }
-            }
-
-            if (values_.contains("build_system")) {
-                auto bs = values_.get_array("build_system");
-
-                for (auto &command: bs) {
-                    build_system_.push_back(command.to_string());
-                }
-            }
+            init_build_system();
 
             path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), nullptr);
 
@@ -246,6 +248,11 @@ namespace rj
             }
 
             return values_.get(plugin->name());
+        }
+
+        void package::merge(const rj::json::object &other)
+        {
+            values_.merge(other);
         }
     }
 }

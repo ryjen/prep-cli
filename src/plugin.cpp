@@ -1,21 +1,23 @@
+#include "plugin.h"
+#include <signal.h>
 #include <unistd.h>
 #include <util.h>
-#include <thread>
-#include <signal.h>
 #include <sstream>
-#include "plugin.h"
+#include <thread>
 #include "common.h"
-#include "log.h"
 #include "environment.h"
-#include "util.h"
 #include "exception.h"
+#include "log.h"
+#include "util.h"
 
 namespace rj
 {
     namespace prep
     {
-        namespace helper {
-            bool is_valid_plugin_path(const std::string &path) {
+        namespace helper
+        {
+            bool is_valid_plugin_path(const std::string &path)
+            {
                 if (path.empty()) {
                     return false;
                 }
@@ -25,22 +27,85 @@ namespace rj
                 return file_exists(manifest);
             }
 
-            bool is_plugin_support(const std::string &path) {
+            bool is_plugin_support(const std::string &path)
+            {
                 if (path.empty() || path.length() < 4) {
                     return false;
                 }
 
-                return !strcasecmp(path.substr(path.length()-4).c_str(), "support");
+                return !strcasecmp(path.substr(path.length() - 7).c_str(), "support");
+            }
+
+            bool is_return_command(const std::string &line)
+            {
+                return line.length() > 7 && line.substr(0, 7) == "RETURN ";
+            }
+
+            ssize_t write_line(int fd, const std::string &line)
+            {
+                ssize_t n1 = write(fd, line.c_str(), line.length());
+
+                if (n1 < 0) {
+                    return n1;
+                }
+
+                auto n2 = write(fd, "\n", 1);
+
+                if (n2 < 0) {
+                    return n2;
+                }
+
+                return n1 + n2;
+            }
+
+            ssize_t read_line(int fd, std::string &buf)
+            {
+                ssize_t numRead; /* # of bytes fetched by last read() */
+                size_t totRead;  /* Total bytes read so far */
+                char ch;
+
+                totRead = 0;
+                for (;;) {
+                    numRead = read(fd, &ch, 1);
+
+                    if (numRead == -1) {
+                        if (errno == EINTR) /* Interrupted --> restart read() */
+                            continue;
+                        else
+                            return -1; /* Some other error */
+
+                    } else if (numRead == 0) { /* EOF */
+                        if (totRead == 0)      /* No bytes read; return 0 */
+                            return 0;
+                        else /* Some bytes read; add '\0' */
+                            break;
+
+                    } else { /* 'numRead' must be 1 if we get here */
+                        totRead++;
+
+                        if (ch != '\n' && ch != '\r') {
+                            buf += ch;
+                        }
+
+                        if (ch == '\n') break;
+                    }
+                }
+
+                return totRead;
             }
         }
 
-        plugin::plugin(const std::string &name) : name_(name) {}
+        plugin::plugin(const std::string &name) : name_(name)
+        {
+        }
 
-        plugin::~plugin() {
+        plugin::~plugin()
+        {
             on_unload();
         }
 
-        int plugin::load(const std::string &path) {
+        int plugin::load(const std::string &path)
+        {
             basePath_ = path;
 
             std::string manifest = build_sys_path(path.c_str(), MANIFEST_FILE, NULL);
@@ -87,7 +152,8 @@ namespace rj
             return PREP_SUCCESS;
         }
 
-        bool plugin::is_enabled() const {
+        bool plugin::is_enabled() const
+        {
             return !executablePath_.empty();
         }
         int plugin::on_load()
@@ -108,19 +174,37 @@ namespace rj
             return execute("unload");
         }
 
-        bool plugin::is_valid() const {
+        bool plugin::is_valid() const
+        {
             return is_enabled() && can_exec_file(executablePath_);
         }
 
-        std::string plugin::name() const {
+        std::string plugin::name() const
+        {
             return name_;
         }
 
-        std::string plugin::type() const {
+        std::string plugin::type() const
+        {
             return type_;
         }
 
-        std::string plugin::plugin_name(const package &config) const {
+        std::vector<std::string> plugin::return_values() const
+        {
+            return returnValues_;
+        }
+
+        std::string plugin::return_value() const
+        {
+            if (returnValues_.size() == 0) {
+                return std::string();
+            }
+
+            return returnValues_.front();
+        }
+
+        std::string plugin::plugin_name(const package &config) const
+        {
             auto plugin = config.get_plugin_config(this);
 
             if (plugin.contains("name")) {
@@ -128,6 +212,17 @@ namespace rj
             }
 
             return config.name();
+        }
+
+        std::string plugin::plugin_location(const package &config) const
+        {
+            auto plugin = config.get_plugin_config(this);
+
+            if (plugin.contains("location")) {
+                return plugin.get_string("location");
+            }
+
+            return "";
         }
 
         int plugin::on_install(const package &config, const std::string &path)
@@ -140,14 +235,12 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = {
-                plugin_name(config), config.version(), path, config.get_plugin_config(this).to_string()
-            };
+            std::vector<std::string> info = {plugin_name(config), config.version(), path};
 
             return execute("install", info);
         }
 
-        int plugin::on_resolve(const package &config, const std::string &path)
+        int plugin::on_resolve(const package &config)
         {
             char buf[PATH_MAX];
 
@@ -161,10 +254,7 @@ namespace rj
 
             make_temp_dir(buf, PATH_MAX);
 
-            std::vector<std::string> info = {
-                plugin_name(config), config.version(), path,
-                        config.get_plugin_config(this).to_string()
-            };
+            std::vector<std::string> info = {buf, plugin_location(config)};
 
             return execute("resolve", info);
         }
@@ -179,9 +269,7 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = {
-                plugin_name(config), config.version(), path
-            };
+            std::vector<std::string> info = {plugin_name(config), config.version(), path};
 
             return execute("remove", info);
         }
@@ -200,9 +288,7 @@ namespace rj
 
             auto envVars = environment::build_cpp_variables();
 
-            std::vector<std::string> info({
-                plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()
-            });
+            std::vector<std::string> info({plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()});
 
             info.insert(std::end(info), std::begin(envVars), std::end(envVars));
 
@@ -231,7 +317,7 @@ namespace rj
                 const char *argv[] = {name_.c_str(), nullptr};
 
                 // we are the child
-                execvp(executablePath_.c_str(), (char*const*) argv);
+                execvp(executablePath_.c_str(), (char *const *)argv);
 
                 exit(PREP_FAILURE);  // exec never returns
             } else {
@@ -242,10 +328,9 @@ namespace rj
                 tios.c_lflag &= ~(ECHO | ECHONL);
                 tcsetattr(master, TCSAFLUSH, &tios);
 
-                sleep(1);
+                // sleep(1);
 
-                if (write(master, method.c_str(), method.length()) < 0 ||
-                    write(master, "\n", 1) < 0) {
+                if (helper::write_line(master, method) < 0) {
                     log_errno(errno);
                     if (kill(pid, SIGKILL) < 0) {
                         log_errno(errno);
@@ -253,9 +338,8 @@ namespace rj
                     return PREP_FAILURE;
                 }
 
-                for(auto &i : info) {
-                    if (write(master, i.c_str(), i.length()) < 0 ||
-                        write(master, "\n", 1) < 0) {
+                for (auto &i : info) {
+                    if (helper::write_line(master, i) < 0) {
                         log_errno(errno);
                         if (kill(pid, SIGKILL) < 0) {
                             log_errno(errno);
@@ -264,9 +348,7 @@ namespace rj
                     }
                 }
 
-                if (write(master, "END", 3) < 0 ||
-                    write(master, "\n", 1) < 0) {
-
+                if (helper::write_line(master, "END") < 0) {
                     log_errno(errno);
                     if (kill(pid, SIGKILL) < 0) {
                         log_errno(errno);
@@ -288,14 +370,15 @@ namespace rj
                     FD_SET(master, &read_fd);
                     FD_SET(STDIN_FILENO, &read_fd);
 
-                    if (select(master+1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
+                    if (select(master + 1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
                         log_errno(errno);
                         break;
                     }
 
-                    if (FD_ISSET(master, &read_fd))
-                    {
-                        int n = read(master, &output, 1);
+                    if (FD_ISSET(master, &read_fd)) {
+                        std::string line;
+
+                        int n = helper::read_line(master, line);
 
                         if (n <= 0) {
                             if (n < 0) {
@@ -304,14 +387,15 @@ namespace rj
                             break;
                         }
 
-                        if (write(STDOUT_FILENO, &output, 1) < 0) {
+                        if (helper::is_return_command(line)) {
+                            returnValues_.push_back(line.substr(7));
+                        } else if (helper::write_line(STDOUT_FILENO, line) < 0) {
                             log_errno(errno);
                             break;
                         }
                     }
 
-                    if (FD_ISSET(STDIN_FILENO, &read_fd))
-                    {
+                    if (FD_ISSET(STDIN_FILENO, &read_fd)) {
                         int n = read(STDIN_FILENO, &input, 1);
 
                         if (n <= 0) {

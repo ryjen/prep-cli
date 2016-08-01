@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw(import);
 
-our @EXPORT_OK = qw(get_build_params get_param get_package_params);
+our @EXPORT_OK = qw(get_build_params get_param get_package_params get_resolve_params);
 
 sub parse_env_vars
 {
@@ -53,9 +53,16 @@ sub get_package_params
     my $package = get_param;
     my $version = get_param;
     my $repository = get_param;
-    my $config = get_param;
 
-    return ($package, $version, $repository, $config);
+    return ($package, $version, $repository);
+}
+
+sub get_resolve_params
+{
+    my $path = get_param;
+    my $location = get_param;
+
+    return ($path, $location);
 }
 
 1;

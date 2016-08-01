@@ -5,10 +5,10 @@
 #include "config.h"
 #endif
 
-#include "object.h"
 #include <fstream>
 #include <string>
 #include <vector>
+#include "object.h"
 
 using namespace std;
 
@@ -16,7 +16,6 @@ namespace rj
 {
     namespace prep
     {
-
         typedef struct options_s {
             options_s();
             bool global;
@@ -45,7 +44,7 @@ namespace rj
             bool is_loaded() const;
             vector<package_dependency> dependencies() const;
             std::string executable() const;
-
+            void merge(const rj::json::object &other);
             rj::json::object get_plugin_config(const plugin *plugin) const;
 
            protected:
@@ -53,6 +52,10 @@ namespace rj
             package(const rj::json::object &obj);
             package(const package &other);
             package &operator=(const package &other);
+
+            void init_dependencies();
+            void init_build_system();
+
             rj::json::object values_;
             std::string path_;
             vector<package_dependency> dependencies_;
@@ -68,7 +71,7 @@ namespace rj
            public:
             ~package_dependency();
             package_dependency(const package_dependency &other);
-            package_dependency &operator=(const package_dependency &);
+            package_dependency &operator=(const package_dependency &) = default;
             int load(const std::string &path, const options &opts);
 
            protected:

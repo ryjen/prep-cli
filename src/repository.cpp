@@ -22,13 +22,13 @@
 #endif
 #include <fts.h>
 #include <pwd.h>
-#include <string>
 #include <cstdio>
+#include <string>
 #include "common.h"
+#include "exception.h"
 #include "log.h"
 #include "repository.h"
 #include "util.h"
-#include "exception.h"
 
 // for std::copy
 namespace std
@@ -47,7 +47,8 @@ namespace rj
 {
     namespace prep
     {
-        namespace helper {
+        namespace helper
+        {
             extern bool is_valid_plugin_path(const std::string &path);
             extern bool is_plugin_support(const std::string &path);
         }
@@ -64,7 +65,7 @@ namespace rj
             const char *prefix = buf;
             const char *current_path = build_sys_path(prefix, LOCAL_REPO_NAME, NULL);
 
-            while(directory_exists(current_path) == 1) {
+            while (directory_exists(current_path) == 1) {
                 prefix = build_sys_path(prefix, "..", NULL);
                 if (directory_exists(prefix) == 1) {
                     break;
@@ -99,7 +100,7 @@ namespace rj
 
                 std::getline(std::cin, buf);
 
-                if (buf.empty() || (buf[0] != 10 && toupper(buf[0]) != 'Y')) {
+                if (!buf.empty() && buf[0] != 10 && toupper(buf[0]) != 'Y') {
                     return PREP_FAILURE;
                 }
 
@@ -136,13 +137,7 @@ namespace rj
             const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, NULL);
 
             struct dirent *d = NULL;
-            DIR *dir = opendir(globalPath.c_str());
-
-            if (dir == NULL) {
-                log_errno(errno);
-                return PREP_FAILURE;
-            }
-
+            DIR *dir = NULL;
             const std::string pluginPath = get_plugin_path();
 
             if (!directory_exists(pluginPath.c_str())) {
@@ -152,8 +147,14 @@ namespace rj
                 }
             }
 
-            while((d = readdir(dir)) != NULL) {
+            dir = opendir(globalPath.c_str());
 
+            if (dir == NULL) {
+                log_errno(errno);
+                return PREP_FAILURE;
+            }
+
+            while ((d = readdir(dir)) != NULL) {
                 if (d->d_name[0] == '.') {
                     continue;
                 }
@@ -171,16 +172,14 @@ namespace rj
                 if (is_plugin) {
                     std::string buf;
 
-                    if (helper::is_valid_plugin_path(localPath)) {
-                        continue;
-                    }
+                    if (!helper::is_valid_plugin_path(localPath)) {
+                        printf("OK to add plugin %s? (Y/n) ", d->d_name);
 
-                    printf("OK to add plugin %s? (Y/n) ", d->d_name);
+                        std::getline(std::cin, buf);
 
-                    std::getline(std::cin, buf);
-
-                    if (buf.empty() || (buf[0] != 10 && toupper(buf[0]) != 'Y')) {
-                        continue;
+                        if (!buf.empty() && buf[0] != 10 && toupper(buf[0]) != 'Y') {
+                            continue;
+                        }
                     }
                 }
 
@@ -552,12 +551,12 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            const char **args = (const char**) calloc(argc + 2, sizeof(const char*));
+            const char **args = (const char **)calloc(argc + 2, sizeof(const char *));
 
             args[0] = build_sys_path(get_bin_path().c_str(), executable.c_str(), NULL);
 
-            for(int i = 1; i < argc; i++) {
-                args[i] = argv[i-1];
+            for (int i = 1; i < argc; i++) {
+                args[i] = argv[i - 1];
             }
 
             int rval = fork_command(args, ".", nullptr);
@@ -637,8 +636,7 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            while((d = readdir(dir)) != NULL) {
-
+            while ((d = readdir(dir)) != NULL) {
                 if (d->d_name[0] == '.') {
                     continue;
                 }
@@ -664,32 +662,36 @@ namespace rj
 
             closedir(dir);
 
-            for(auto &plugin : plugins_) {
+            for (auto &plugin : plugins_) {
                 plugin->on_load();
             }
 
             return PREP_SUCCESS;
         }
 
-        int repository::plugin_install(const package &config)
+        int repository::plugin_resolve(const package &config, const resolver_callback &callback)
         {
-            log_trace("checking plugins for install of [%s]...", config.name().c_str());
+            log_trace("checking plugins for resolving [%s]...", config.name().c_str());
 
-            for(auto plugin : plugins_) {
-                if (plugin->on_install(config, path_) == PREP_SUCCESS) {
-                    log_info("installed [%s] from plugin", config.name().c_str());
+            for (auto plugin : plugins_) {
+                if (plugin->on_resolve(config) == PREP_SUCCESS) {
+                    log_info("resolved [%s] from plugin", config.name().c_str());
+                    if (callback) {
+                        callback(plugin);
+                    }
                     return PREP_SUCCESS;
                 }
             }
             return PREP_FAILURE;
         }
-        int repository::plugin_resolve(const package &config)
-        {
-            log_trace("checking plugins for resolving [%s]...", config.name().c_str());
 
-            for(auto plugin : plugins_) {
-                if (plugin->on_resolve(config, path_) == PREP_SUCCESS) {
-                    log_info("resolved [%s] from plugin", config.name().c_str());
+        int repository::plugin_install(const package &config)
+        {
+            log_trace("checking plugins for install of [%s]...", config.name().c_str());
+
+            for (auto plugin : plugins_) {
+                if (plugin->on_install(config, path_) == PREP_SUCCESS) {
+                    log_info("installed [%s] from plugin", config.name().c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -709,8 +711,9 @@ namespace rj
             return PREP_FAILURE;
         }
 
-        std::shared_ptr<plugin> repository::get_plugin_by_name(const std::string &name) const {
-            for(auto &plugin : plugins_) {
+        std::shared_ptr<plugin> repository::get_plugin_by_name(const std::string &name) const
+        {
+            for (auto &plugin : plugins_) {
                 if (plugin->name() == name) {
                     return plugin;
                 }
@@ -719,7 +722,8 @@ namespace rj
         }
 
 
-        int repository::plugin_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath)
+        int repository::plugin_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
+                                     const std::string &installPath)
         {
             for (auto &name : config.build_system()) {
                 auto plugin = get_plugin_by_name(name);
@@ -729,12 +733,11 @@ namespace rj
                     return PREP_FAILURE;
                 }
 
-                if(plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
+                if (plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
                 }
             }
             return PREP_SUCCESS;
         }
-
     }
 }

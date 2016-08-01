@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-use lib '../support';
+use rlib '../support';
 use rj::prep::plugin qw(get_param get_build_params);
 
 sub autoconf
