@@ -2,7 +2,7 @@
 
 use rlib '../support';
 use Git::Repository;
-use rj::prep::plugin qw(read_resolve_params add_return_value);
+use rj::prep::plugin qw(read_resolve_params write_return_value);
 
 sub clone
 {
@@ -10,7 +10,7 @@ sub clone
 
     Git::Repository->run( clone => $location => $path );
 
-    add_return_value($path);
+    write_return_value($path);
     
     return 0;
 }

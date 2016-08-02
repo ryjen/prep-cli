@@ -12,10 +12,10 @@
 #endif
 #include <cassert>
 #include "common.h"
-#include "repository.h"
 #include "decompressor.h"
 #include "log.h"
 #include "package_resolver.h"
+#include "repository.h"
 #include "util.h"
 
 namespace rj
@@ -43,11 +43,11 @@ namespace rj
                 if (opts == NULL) {
                     return;
                 }
-                #if (LIBGIT2_SOVERSION >= 23)
-                    opts->checkout_strategy = GIT_CHECKOUT_SAFE;
-                #else
-                    opts->checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
-                #endif
+#if (LIBGIT2_SOVERSION >= 23)
+                opts->checkout_strategy = GIT_CHECKOUT_SAFE;
+#else
+                opts->checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+#endif
                 opts->progress_cb = checkout_progress;
                 opts->progress_payload = NULL;
             }
@@ -58,10 +58,10 @@ namespace rj
                     return;
                 }
 
-                #if (LIBGIT2_SOVERSION >= 23)
-                    opts->callbacks.transfer_progress = &fetch_progress;
-                    opts->callbacks.payload = NULL;
-                #endif
+#if (LIBGIT2_SOVERSION >= 23)
+                opts->callbacks.transfer_progress = &fetch_progress;
+                opts->callbacks.payload = NULL;
+#endif
             }
 
             int init_package_submodule(git_submodule *submodule, const char *name, void *payload)
@@ -74,13 +74,13 @@ namespace rj
                 build_checkout_opts(&opts.checkout_opts);
 
                 build_fetch_opts(&opts.fetch_opts);
-                #if (LIBGIT2_SOVERSION >= 23)
-                    opts.clone_checkout_strategy = GIT_CHECKOUT_SAFE;
-                #else
-                    opts.clone_checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
-                #endif
+#if (LIBGIT2_SOVERSION >= 23)
+                opts.clone_checkout_strategy = GIT_CHECKOUT_SAFE;
+#else
+                opts.clone_checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+#endif
 
-                int error = git_submodule_update(submodule, 1,  &opts);
+                int error = git_submodule_update(submodule, 1, &opts);
 
                 return error;
             }

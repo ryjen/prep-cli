@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw(import);
 
-our @EXPORT_OK = qw(new execute read_build_params read_package_params read_resolve_params add_return_value);
+our @EXPORT_OK = qw(new execute read_build_params read_package_params read_resolve_params write_return_value);
 
 sub parse_env_vars
 {
@@ -65,7 +65,7 @@ sub read_resolve_params
     return ($path, $location);
 }
 
-sub add_return_value
+sub write_return_value
 {
     my $value = shift;
 

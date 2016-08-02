@@ -73,15 +73,8 @@ namespace rj
             log_trace("Installing to [%s]", installPath.c_str());
 
             if (repo_.plugin_build(config, path, buildPath, installPath) == PREP_FAILURE) {
-                auto cmds = config.build_system();
-
-                if (cmds.size() > 0) {
-                    if (build_commands(config, path, cmds)) {
-                        return PREP_FAILURE;
-                    }
-                } else {
-                    return PREP_FAILURE;
-                }
+                log_error("unable to build [%s]", config.name().c_str());
+                return PREP_FAILURE;
             }
 
             if (repo_.save_meta(config)) {
@@ -179,7 +172,7 @@ namespace rj
                 string package_dir;
                 char buf[PATH_MAX];
 
-                log_info("    - preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
+                log_info("preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
 
                 if (repo_.plugin_install(p) == PREP_SUCCESS) {
                     continue;
@@ -187,21 +180,9 @@ namespace rj
 
                 auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) { package_dir = plugin->return_value(); };
 
-                if (repo_.plugin_resolve(p, callback) != PREP_SUCCESS) {
-                    package_dir = repo_.exists_in_history(p.location());
-                }
-
-                if (package_dir.empty() || !directory_exists(package_dir.c_str())) {
-                    if (p.location().empty()) {
-                        log_error("[%s] dependency [%s] has no plugin or location", config.name().c_str(), p.name().c_str());
-                        return PREP_FAILURE;
-                    }
-
-                    if (resolver.resolve_package(p, opts, p.location())) {
-                        return PREP_FAILURE;
-                    }
-
-                    package_dir = resolver.package_dir();
+                if (repo_.plugin_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
+                    log_error("[%s] could not resolve dependency [%s]", config.name().c_str(), p.name().c_str());
+                    return PREP_FAILURE;
                 }
 
                 if (build(p, opts, package_dir.c_str())) {
