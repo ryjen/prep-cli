@@ -7,7 +7,7 @@ sub autoconf
 {
     my ($package, $version, $sourcePath, $buildPath, $installPath, $buildOpts) = read_build_params;
 
-    my $configure = $sourcePath . "/configure";
+    my $configure = $buildPath . "/configure";
 
     if ( ! -e $configure ) {
         chdir($sourcePath);
@@ -30,6 +30,8 @@ sub autoconf
             return PREP_FAILURE;
         }
     }
+
+    chdir($buildPath);
 
     exec $configure, "--prefix=$installPath", $buildOpts
 }

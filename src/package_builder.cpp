@@ -2,7 +2,6 @@
 #include "common.h"
 #include "exception.h"
 #include "log.h"
-#include "package_resolver.h"
 #include "util.h"
 
 namespace rj
@@ -33,6 +32,11 @@ namespace rj
             force_build_ = opts.force_build;
 
             return PREP_SUCCESS;
+        }
+
+        repository *package_builder::repository()
+        {
+            return &repo_;
         }
 
         int package_builder::build_package(const package &config, const char *path)
@@ -168,7 +172,6 @@ namespace rj
             }
 
             for (package_dependency &p : config.dependencies()) {
-                package_resolver resolver;
                 string package_dir;
                 char buf[PATH_MAX];
 

@@ -1,6 +1,5 @@
 
 set(LIBRARY_FILES
-    decompressor.cpp
     environment.cpp
     log.cpp
     util.cpp
@@ -10,7 +9,6 @@ set(SOURCE_FILES
     package_builder.cpp
     package_config.cpp
     package_dependency.cpp
-    package_resolver.cpp
     plugin.cpp
     repository.cpp)
 
@@ -26,12 +24,10 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} rj_json ${ZLIB_LIBRARIE
 
 set(HEADER_FILES
     common.h
-    decompressor.h
     environment.h
     log.h
     package_builder.h
     package_config.h
-    package_resolver.h
     plugin.h
     repository.h
     util.h

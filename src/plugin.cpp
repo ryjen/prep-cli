@@ -242,6 +242,11 @@ namespace rj
 
         int plugin::on_resolve(const package &config)
         {
+            return on_resolve(plugin_location(config));
+        }
+
+        int plugin::on_resolve(const std::string &location)
+        {
             char buf[PATH_MAX];
 
             if (!is_valid()) {
@@ -254,7 +259,7 @@ namespace rj
 
             make_temp_dir(buf, PATH_MAX);
 
-            std::vector<std::string> info = {buf, plugin_location(config)};
+            std::vector<std::string> info = {buf, location};
 
             return execute("resolve", info);
         }

@@ -351,7 +351,7 @@ namespace rj
         {
             struct stat fst, tst;
 
-            if (stat(from.c_str(),&fst)) {
+            if (stat(from.c_str(), &fst)) {
                 log_errno(errno);
                 return PREP_FAILURE;
             }
@@ -390,13 +390,14 @@ namespace rj
             return PREP_SUCCESS;
         }
 
-        int copy_directory(const std::string &from, const std::string &to)
+        int copy_directory(const std::string &from, const std::string &to, bool overwrite)
         {
             FTS *file_system = NULL;
             FTSENT *child = NULL;
             FTSENT *parent = NULL;
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
+            struct stat st;
 
             if (!directory_exists(from.c_str())) {
                 log_error("%s is not a directory", from.c_str());
@@ -420,13 +421,11 @@ namespace rj
             }
 
             while ((parent = fts_read(file_system)) != NULL) {
-
                 // get the repo path
                 snprintf(buf, PATH_MAX, "%s%s", to.c_str(), parent->fts_path + from.length());
 
                 // check the install file is a directory
                 if (parent->fts_info == FTS_D) {
-                    struct stat st;
                     if (stat(buf, &st) == 0) {
                         if (S_ISDIR(st.st_mode)) {
                             log_trace("directory %s already exists", buf);
@@ -452,6 +451,12 @@ namespace rj
                     continue;
                 }
 
+                if (!overwrite) {
+                    if (stat(buf, &st) == 0) {
+                        log_debug("skipping existing regular file file %s", buf);
+                        continue;
+                    }
+                }
 
                 log_debug("copying [%s] to [%s]", parent->fts_path, buf);
 
@@ -559,12 +564,10 @@ namespace rj
 
         bool can_exec_file(const std::string &file)
         {
-            struct stat  st;
+            struct stat st;
 
-            if (stat(file.c_str(), &st) < 0)
-                return false;
-            if ((st.st_mode & S_IEXEC) != 0)
-                return true;
+            if (stat(file.c_str(), &st) < 0) return false;
+            if ((st.st_mode & S_IEXEC) != 0) return true;
             return false;
         }
     }

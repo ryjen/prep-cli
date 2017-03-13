@@ -1,9 +1,9 @@
 #include <unistd.h>
 #include <iostream>
+#include <vector>
 #include "common.h"
-#include "package_builder.h"
 #include "log.h"
-#include "package_resolver.h"
+#include "package_builder.h"
 #include "util.h"
 
 using namespace rj::prep;
@@ -48,6 +48,7 @@ int main(int argc, char *const argv[])
         if (prep.initialize(options)) {
             return PREP_FAILURE;
         }
+
     } catch (const std::exception &e) {
         rj::prep::log_error(e.what());
         return PREP_FAILURE;
@@ -60,7 +61,6 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "install")) {
-        rj::prep::package_resolver resolver;
         rj::prep::package_config config;
         char cwd[PATH_MAX];
 
@@ -75,16 +75,22 @@ int main(int argc, char *const argv[])
             options.location = argv[optind++];
         }
 
-        if (resolver.resolve_package(config, options)) {
+        auto callback = [&options](const std::shared_ptr<plugin> &plugin) { options.location = plugin->return_value(); };
+
+        if (!directory_exists(options.location.c_str()) && prep.repository()->plugin_resolve(options.location, callback) == PREP_FAILURE) {
             rj::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 
-        return prep.build(config, options, resolver.package_dir().c_str());
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            rj::prep::log_error("unable to load config at %s", options.location.c_str());
+            return PREP_FAILURE;
+        }
+
+        return prep.build(config, options, options.location.c_str());
     }
 
     if (!strcmp(command, "remove")) {
-        rj::prep::package_resolver resolver;
         rj::prep::package_config config;
 
         if (optind < 0 || optind >= argc) {
@@ -96,18 +102,11 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "setpath")) {
-        rj::prep::repository repo;
-
-        if (repo.initialize(options)) {
-            rj::prep::log_error("unable to initialize repository");
-            return PREP_FAILURE;
+        prompt_to_add_path_to_shell_rc(".zshrc", prep.repository()->get_bin_path().c_str());
+        if (prompt_to_add_path_to_shell_rc(".bash_profile", prep.repository()->get_bin_path().c_str())) {
+            prompt_to_add_path_to_shell_rc(".bashrc", prep.repository()->get_bin_path().c_str());
         }
-
-        prompt_to_add_path_to_shell_rc(".zshrc", repo.get_bin_path().c_str());
-        if (prompt_to_add_path_to_shell_rc(".bash_profile", repo.get_bin_path().c_str())) {
-            prompt_to_add_path_to_shell_rc(".bashrc", repo.get_bin_path().c_str());
-        }
-        prompt_to_add_path_to_shell_rc(".kshrc", repo.get_bin_path().c_str());
+        prompt_to_add_path_to_shell_rc(".kshrc", prep.repository()->get_bin_path().c_str());
 
         return PREP_SUCCESS;
     }
@@ -116,7 +115,6 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "run")) {
-        rj::prep::package_resolver resolver;
         rj::prep::package_config config;
         char cwd[PATH_MAX];
 
@@ -125,8 +123,9 @@ int main(int argc, char *const argv[])
         } else {
             options.location = ".";
         }
+        auto callback = [&options](const std::shared_ptr<plugin> &plugin) { options.location = plugin->return_value(); };
 
-        if (resolver.resolve_package(config, options)) {
+        if (prep.repository()->plugin_resolve(options.location, callback) == PREP_FAILURE) {
             rj::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }

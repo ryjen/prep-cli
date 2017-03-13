@@ -9,6 +9,10 @@ sub extract
 {
     my ($path, $location) = read_resolve_params;
 
+    if (length($location) == 0) {
+        return 1;
+    }
+
     my $file = File::Fetch->new( uri => $location );
 
     if (!$file) {

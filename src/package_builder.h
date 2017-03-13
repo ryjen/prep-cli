@@ -22,7 +22,7 @@ namespace rj
             // @param opts the session options
             // @param path the path the source is in
             // @returns PREP_SUCCESS or PREP_FAILURE if an error occured
-            int build(const package &config, options &opts, const char* path);
+            int build(const package &config, options &opts, const char *path);
 
             int build_from_folder(options &opts, const char *path);
             string repo_path() const;
@@ -30,7 +30,9 @@ namespace rj
             int remove(const std::string &package_name, options &opts);
             int link_package(const package &config) const;
             int unlink_package(const package &config) const;
-            int execute(const package &config, int argc, char * const *argv) const;
+            int execute(const package &config, int argc, char *const *argv) const;
+
+            repository *repository();
 
            private:
             int build_package(const package &p, const char *path);
@@ -38,7 +40,7 @@ namespace rj
 
             string get_install_dir(const package &config) const;
 
-            repository repo_;
+            rj::prep::repository repo_;
 
             bool force_build_;
         };

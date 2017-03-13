@@ -5,5 +5,6 @@
 	path = tests/vendor/bandit
 	url = https://github.com/joakimkarlsson/bandit.git
 [submodule "src/json"]
-	path = src/json
-	url = http://github.com/ryjen/json
+path = src/json
+url = https://github.com/nlohmann/json.git
+

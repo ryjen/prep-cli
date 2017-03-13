@@ -26,6 +26,7 @@ namespace rj
             std::string return_value() const;
             int on_load();
             int on_unload();
+            int on_resolve(const std::string &location);
             int on_resolve(const package &config);
             int on_install(const package &config, const std::string &path);
             int on_remove(const package &config, const std::string &path);

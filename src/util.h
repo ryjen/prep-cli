@@ -19,7 +19,7 @@ namespace rj
 
         int directory_exists(const char *path);
 
-        int copy_directory(const std::string &from, const std::string &to);
+        int copy_directory(const std::string &from, const std::string &to, bool overwrite = false);
 
         int file_exists(const char *path);
 

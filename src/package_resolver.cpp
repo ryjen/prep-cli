@@ -29,7 +29,6 @@ namespace rj
             {
                 printf("\x1b[Afetching %d/%d %.0f%% \n\r", stats->indexed_objects, stats->total_objects,
                        (float)stats->indexed_objects / (float)stats->total_objects * 100.f);
-
                 return 0;
             }
 

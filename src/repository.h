@@ -81,6 +81,8 @@ namespace rj
 
             int plugin_resolve(const package &config, const resolver_callback &callback = nullptr);
 
+            int plugin_resolve(const std::string &location, const resolver_callback &callback = nullptr);
+
             int plugin_remove(const package &config);
 
             int plugin_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath);

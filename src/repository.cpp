@@ -183,7 +183,7 @@ namespace rj
                     }
                 }
 
-                if (copy_directory(globalPlugin, localPath)) {
+                if (copy_directory(globalPlugin, localPath, false)) {
                     log_error("unable to copy [%s] to [%s]", globalPlugin.c_str(), localPath.c_str());
                 }
             }
@@ -676,6 +676,22 @@ namespace rj
             for (auto plugin : plugins_) {
                 if (plugin->on_resolve(config) == PREP_SUCCESS) {
                     log_info("resolved [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
+                    if (callback) {
+                        callback(plugin);
+                    }
+                    return PREP_SUCCESS;
+                }
+            }
+            return PREP_FAILURE;
+        }
+
+        int repository::plugin_resolve(const std::string &location, const resolver_callback &callback)
+        {
+            log_trace("checking plugins for resolving [%s]...", location.c_str());
+
+            for (auto plugin : plugins_) {
+                if (plugin->on_resolve(location) == PREP_SUCCESS) {
+                    log_info("resolved [%s] from plugin [%s]", location.c_str(), plugin->name().c_str());
                     if (callback) {
                         callback(plugin);
                     }
