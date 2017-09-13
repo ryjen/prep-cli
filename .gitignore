@@ -6,3 +6,4 @@ tests/prep-test
 tags
 .idea
 cmake-build-*
+*.inc
