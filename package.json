@@ -3,7 +3,7 @@
 	"version": 1.0,
 	"author": {
 		"name": "Ryan Jennings",
-		"email": "c0der78@gmail.com"
+		"email": "ryan@micrantha.com"
 	},
 	"build_system": ["cmake", "make"],
 	"executable": "prep",
@@ -27,16 +27,6 @@
 					"build_system": ["cmake", "make"]
 				}
 			]
-		},
-		{
-			"name": "json-c",
-			"homebrew": {
-				"name": "asdfasdfas"
-			},
-			"git": {
-				"location": "https://github.com/json-c/json-c.git"
-			},
-			"build_system": ["autotools", "make"]
 		},
 		{
 			"name": "libarchive",

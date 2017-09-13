@@ -1,10 +1,9 @@
 #include "package_builder.h"
 #include "common.h"
-#include "exception.h"
 #include "log.h"
 #include "util.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -19,7 +18,7 @@ namespace rj
             }
 
             if (!opts.global) {
-                if (repo_.validate_plugins() == PREP_FAILURE) {
+                if (repo_.validate_plugins(opts) == PREP_FAILURE) {
                     return PREP_FAILURE;
                 }
             }
@@ -34,14 +33,23 @@ namespace rj
             return PREP_SUCCESS;
         }
 
-        repository *package_builder::repository()
+        repository &package_builder::repository()
         {
-            return &repo_;
+            return repo_;
+        }
+
+        void package_builder::add_path_to_shell() const
+        {
+            prompt_to_add_path_to_shell_rc(".zshrc", repo_.get_bin_path().c_str());
+            if (prompt_to_add_path_to_shell_rc(".bash_profile", repo_.get_bin_path().c_str())) {
+                prompt_to_add_path_to_shell_rc(".bashrc", repo_.get_bin_path().c_str());
+            }
+            prompt_to_add_path_to_shell_rc(".kshrc", repo_.get_bin_path().c_str());
         }
 
         int package_builder::build_package(const package &config, const char *path)
         {
-            string installPath, buildPath;
+            std::string installPath, buildPath;
 
             if (!config.is_loaded()) {
                 log_error("config not loaded");
@@ -76,7 +84,7 @@ namespace rj
 
             log_trace("Installing to [%s]", installPath.c_str());
 
-            if (repo_.plugin_build(config, path, buildPath, installPath) == PREP_FAILURE) {
+            if (repo_.notify_plugins_build(config, path, buildPath, installPath) == PREP_FAILURE) {
                 log_error("unable to build [%s]", config.name().c_str());
                 return PREP_FAILURE;
             }
@@ -104,16 +112,16 @@ namespace rj
             }
 
             // TODO: ensure we actually installed via plugin
-            if (repo_.plugin_remove(config) == PREP_SUCCESS) {
+            if (repo_.notify_plugins_remove(config) == PREP_SUCCESS) {
                 return PREP_SUCCESS;
             }
 
             return remove(config.name(), opts);
         }
 
-        int package_builder::remove(const string &package_name, options &opts)
+        int package_builder::remove(const std::string &package_name, options &opts)
         {
-            string installDir = repo_.get_install_path(package_name);
+            std::string installDir = repo_.get_install_path(package_name);
 
             if (!directory_exists(installDir.c_str())) {
                 log_info("%s is not installed", package_name.c_str());
@@ -151,7 +159,7 @@ namespace rj
 
         int package_builder::build(const package &config, options &opts, const char *path)
         {
-            string installDir;
+            std::string installDir;
 
             if (!config.is_loaded()) {
                 log_error("config is not loaded");
@@ -172,18 +180,20 @@ namespace rj
             }
 
             for (package_dependency &p : config.dependencies()) {
-                string package_dir;
+                std::string package_dir;
                 char buf[PATH_MAX];
 
                 log_info("preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
 
-                if (repo_.plugin_install(p) == PREP_SUCCESS) {
+                if (repo_.notify_plugins_install(p) == PREP_SUCCESS) {
                     continue;
                 }
 
-                auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) { package_dir = plugin->return_value(); };
+                auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) {
+                    package_dir = plugin->return_value();
+                };
 
-                if (repo_.plugin_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
+                if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
                     log_error("[%s] could not resolve dependency [%s]", config.name().c_str(), p.name().c_str());
                     return PREP_FAILURE;
                 }
@@ -218,7 +228,7 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            string packageInstall = repo_.get_install_path(config.name());
+            std::string packageInstall = repo_.get_install_path(config.name());
 
             return repo_.link_directory(packageInstall.c_str());
         }
@@ -230,7 +240,7 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            string packageInstall = repo_.get_install_path(config.name());
+            std::string packageInstall = repo_.get_install_path(config.name());
 
             return repo_.unlink_directory(packageInstall.c_str());
         }
@@ -257,7 +267,8 @@ namespace rj
             return repo_.execute(config.executable().c_str(), argc, argv);
         }
 
-        int package_builder::build_commands(const package &config, const char *path, const vector<string> &commands)
+        int package_builder::build_commands(const package &config, const char *path,
+                                            const std::vector<std::string> &commands)
         {
             for (auto &cmd : commands) {
                 if (environment::execute(cmd.c_str(), path)) {

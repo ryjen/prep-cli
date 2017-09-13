@@ -2,56 +2,69 @@
 prep
 ====
 
-Prep is a modular package manager for c/c++ (think npm for c++).  Plugins are used for dependency management and builds.
+Prep is a modular package manager for c/c++.  Plugins are used for dependency management and build systems.  
+
+Prep tries to follow NPM style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory.
+
+I am no longer maintaining this project, so I'm releasing to open source.
 
 plugins
 =======
 
-Plugins can be written in any language that supports stdin/stdout. Input parameters are read one line at a time on stdin.  All output is forwarded back to prep.  
+Plugins can be written in any language that supports stdin/stdout. Input parameters are read one line at a time on stdin.  All output is forwarded back to prep.   The plugins are forked to run in a seperate pseudo terminal. (See TODO for security)
 
-There are the following plugin hooks:
+The default plugins are currently written in Perl for prototyping purposes. Ideally this would be a compiled language.
 
-### load
+There are two types of plugins **resolver** plugins and **build** plugins.
+
+## plugin hooks:
+
+#### load
 
 occurs when a plugin is loaded for custom initialization
 
-### unload
+#### unload
 
 occurs when a plugin is unloaded for custom cleanup
 
-### install
+#### install
 
-occurs when a dependency is installed.  Only affects plugins of type "dependency".
-
-parameters: [**package, version**]
-
-### remove
-
-occurs when a dependency is removed.  Only affects plugins of type "dependency".
+occurs when a dependency is installed.  Only affects plugins of type "resolver".
 
 parameters: [**package, version**]
 
-### build
+#### remove
+
+occurs when a dependency is removed.  Only affects plugins of type "resolver".
+
+parameters: [**package, version**]
+
+#### build
 
 occurs when a package is built. Only affects plugins of type "build".
 
 parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value... END**]
 
-features
-========
-- npm style repositories (current directory or global)
-- cmake, autoconf and make build plugins included
-- archive and homebrew package manager plugins included
-- simple json configuration
+## current plugins:
 
-TODO
-====
-- package repository website/api (ipfs?)
-- parse archive versions from filename
-- store md5 hash of config in meta to detect changes
-- a way to rebuild a dependency or all dependencies
-- a way to rebuild a package
-- secure plugins (enforce digital signature?, chroot?)
+- **archive**: extracts different archived formats
+- **autotools**: configure script build system
+- **cmake**: cmake build systems
+- **git**: cloneing git resolver
+- **homebrew**: install package resolver
+- **make**: build system
+
+## plugin manifest:
+
+Plugins should contain a **manifest.json** to describe the type of plugin and how to run.
+
+```JSON
+{
+    "executable": "main",
+    "version": "0.1.0",
+    "type": "resolver"
+}
+```
 
 repository structure
 ====================
@@ -73,18 +86,45 @@ Under the repository:
 packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include**, etc.
 
 
-example configuration
+configuration
 =====================
 
-Examples explain best.  This is prep's configuration to build itself:
+The configuration for a project is simple a **package.json** file containing the json.  The fields are as follows:
+
+#### name
+the name of the project
+
+#### version
+the version of the project 
+
+#### build_system
+an array of build plugins that define how to make a build.  So if your project uses cmake, you would define **cmake**, then **make**.
+
+#### build_options
+an array of options to pass directly to the build system.  You also have the option of using CPPFLAGS and LDFLAGS environment variables.
+
+#### executable
+the name of the executable to build
+
+#### dependencies
+an array of this configuration type objects defining each dependency.  Dependencies can be resolved using **resolver** plugins.  You can define multiple plugins on a dependency for example: **homebrew** to try and resolve a package, and **archive** to default resolve from an archive and build from source.
+
+---
+##### &lt;plugin&gt;
+each resolver plugin can define its own options to override
+
+---
+
+### example:
+This is what prep's configuration to build itself looks like:
 
 ```JSON
 {
 	"name": "prep",
-	"version": 1.0,
+	"version": "1.0",
 	"author": {
 		"name": "Ryan Jennings",
-		"email": "c0der78@gmail.com"
+		"email": "ryan@micrantha.com"
 	},
 	"build_system": ["cmake", "make"],
 	"executable": "prep",
@@ -108,13 +148,6 @@ Examples explain best.  This is prep's configuration to build itself:
 					}
 				}
 			]
-		},
-		{
-			"name": "json-c",
-			"git": {
-				"location": "https://github.com/json-c/json-c.git",
-				"build_system": ["autotools", "make"]
-			}
 		},
 		{
 			"name": "libarchive",
@@ -143,6 +176,19 @@ Examples explain best.  This is prep's configuration to build itself:
 	]
 }
 
+```
+
 !["Example Use Case"](screenshot.png)
 
-```
+TODO
+====
+- package repository website/api (ipfs?)
+- parse archive versions from filename
+- store md5 hash of config in meta to detect changes
+- a way to rebuild a dependency or all dependencies
+- a way to rebuild a package
+- secure plugins (enforce digital signature?, chroot?)
+- test suite
+- convert plugins to compiled language
+
+

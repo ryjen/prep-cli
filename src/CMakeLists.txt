@@ -3,6 +3,7 @@ set(LIBRARY_FILES
     environment.cpp
     log.cpp
     util.cpp
+    decompressor.cpp
 )
 
 set(SOURCE_FILES
@@ -12,15 +13,17 @@ set(SOURCE_FILES
     plugin.cpp
     repository.cpp)
 
-add_subdirectory(json)
-
-include_directories(${LibArchive_INCLUDE_DIRS} json/src)
+include_directories(${LibArchive_INCLUDE_DIRS})
 
 add_library(${PROJECT_LIBRARY} ${LIBRARY_FILES})
 
 add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} rj_json ${ZLIB_LIBRARIES} ${JSON_C_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${ZLIB_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
+
+add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK COMMAND zip -r ${PROJECT_BINARY_DIR}/gen/plugins.zip . WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND cat ${PROJECT_BINARY_DIR}/gen/plugins.zip >> ${PROJECT_BINARY_DIR}/src/${PROJECT_NAME})
 
 set(HEADER_FILES
     common.h

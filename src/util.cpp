@@ -1,27 +1,30 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <dirent.h>
+#include <fstream>
 #include <fts.h>
+#include <iostream>
 #include <libgen.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include "config.h"
 #ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 #include <curl/easy.h>
 #endif
 #include <pwd.h>
 #include <string>
+
 #include "common.h"
 #include "log.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -73,7 +76,7 @@ namespace rj
                 // we are the child
                 execve(argv[0], (char *const *)&argv[0], envp);
 
-                exit(EXIT_FAILURE);  // exec never returns
+                exit(EXIT_FAILURE); // exec never returns
             } else {
                 int status = 0;
 
@@ -101,9 +104,9 @@ namespace rj
             return rval;
         }
 
-        int pipe_command(const char *buf, const char *directory)
+        int pipe_command(const char *buf, const char *directory, FILE *output)
         {
-            char cur_dir[MAXPATHLEN + 1] = {0};
+            char cur_dir[MAXPATHLEN + 1] = { 0 };
 
             if (directory) {
                 if (!getcwd(cur_dir, MAXPATHLEN)) {
@@ -116,13 +119,13 @@ namespace rj
             }
 
             FILE *out = popen(buf, "r");
-            int rval = EXIT_FAILURE;
+            int rval  = EXIT_FAILURE;
 
             if (out != NULL) {
-                char line[BUFSIZ + 1] = {0};
+                char line[BUFSIZ + 1] = { 0 };
 
                 while (fgets(line, BUFSIZ, out) != NULL) {
-                    fputs(line, stdout);
+                    fputs(line, output);
                 }
 
                 if (pclose(out) != -1) {
@@ -138,14 +141,14 @@ namespace rj
 
         int remove_directory(const char *dir)
         {
-            int ret = PREP_SUCCESS;
-            FTS *ftsp = NULL;
+            int ret      = PREP_SUCCESS;
+            FTS *ftsp    = NULL;
             FTSENT *curr = NULL;
 
             // Cast needed (in C) because fts_open() takes a "char * const *", instead
             // of a "const char * const *", which is only allowed in C++. fts_open()
             // does not modify the argument.
-            char *files[] = {(char *)dir, NULL};
+            char *files[] = { (char *)dir, NULL };
 
             // FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
             //                in multithreaded programs
@@ -161,34 +164,34 @@ namespace rj
 
             while ((curr = fts_read(ftsp))) {
                 switch (curr->fts_info) {
-                    case FTS_NS:
-                    case FTS_DNR:
-                    case FTS_ERR:
-                        log_error("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
-                        break;
+                case FTS_NS:
+                case FTS_DNR:
+                case FTS_ERR:
+                    log_error("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
+                    break;
 
-                    case FTS_DC:
-                    case FTS_DOT:
-                    case FTS_NSOK:
-                        // Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
-                        // passed to fts_open()
-                        break;
+                case FTS_DC:
+                case FTS_DOT:
+                case FTS_NSOK:
+                    // Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
+                    // passed to fts_open()
+                    break;
 
-                    case FTS_D:
-                        // Do nothing. Need depth-first search, so directories are deleted
-                        // in FTS_DP
-                        break;
+                case FTS_D:
+                    // Do nothing. Need depth-first search, so directories are deleted
+                    // in FTS_DP
+                    break;
 
-                    case FTS_DP:
-                    case FTS_F:
-                    case FTS_SL:
-                    case FTS_SLNONE:
-                    case FTS_DEFAULT:
-                        if (remove(curr->fts_accpath) < 0) {
-                            log_error("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
-                            ret = PREP_FAILURE;
-                        }
-                        break;
+                case FTS_DP:
+                case FTS_F:
+                case FTS_SL:
+                case FTS_SLNONE:
+                case FTS_DEFAULT:
+                    if (remove(curr->fts_accpath) < 0) {
+                        log_error("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
+                        ret = PREP_FAILURE;
+                    }
+                    break;
                 }
             }
 
@@ -221,72 +224,68 @@ namespace rj
             }
         }
 
-        int file_exists(const char *path)
+        bool file_exists(const char *path)
         {
             struct stat s;
             int err = stat(path, &s);
             if (-1 == err) {
-                if (ENOENT == errno) {
-                    /* does not exist */
-                    return 0;
-                } else {
+                if (ENOENT != errno) {
                     perror("stat");
-                    exit(1);
                 }
+                /* does not exist */
+                return false;
             } else {
                 if (S_ISREG(s.st_mode)) {
                     /* it's a file */
-                    return 1;
+                    return true;
                 } else {
-                    return 0;
+                    return false;
                 }
             }
         }
 
-        int file_executable(const char *path)
+        bool file_executable(const char *path)
         {
             struct stat s;
             int err = stat(path, &s);
             if (-1 == err) {
-                if (ENOENT == errno) {
-                    /* does not exist */
-                    return 0;
-                } else {
+                if (ENOENT != errno) {
                     perror("stat");
-                    exit(1);
                 }
+                /* does not exist */
+                return false;
             } else {
                 if (S_ISREG(s.st_mode)) {
-                    /* it's a dir */
-                    return s.st_mode & S_IXUSR;
+                    return s.st_mode & S_IEXEC;
                 } else {
-                    return 0;
+                    return false;
                 }
             }
         }
 
         int mkpath(const char *file_path, mode_t mode)
         {
-            char *p;
+            char *p = NULL;
+
             if (!file_path || !*file_path) {
-                return 1;
+                return PREP_FAILURE;
             }
-            for (p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
+            for (p = const_cast<char *>(strchr(file_path + 1, '/')); p; p = strchr(p + 1, '/')) {
                 *p = '\0';
                 if (mkdir(file_path, mode) == -1) {
                     if (errno != EEXIST) {
                         *p = '/';
-                        return -1;
+                        return PREP_ERROR;
                     }
                 }
                 *p = '/';
             }
             if (mkdir(file_path, mode) == -1) {
                 if (errno != EEXIST) {
-                    return -1;
+                    return PREP_ERROR;
                 }
             }
-            return 0;
+            return PREP_SUCCESS;
         }
 
 #ifdef HAVE_LIBCURL
@@ -300,14 +299,14 @@ namespace rj
         int download_to_temp_file(const char *url, std::string &filename)
         {
 #ifdef HAVE_LIBCURL
-            char temp[BUFSIZ + 1] = {0};
-            FILE *fp = NULL;
+            char temp[BUFSIZ + 1] = { 0 };
+            FILE *fp              = NULL;
             int fd = -1, httpCode = 0;
             CURLcode res;
             CURL *curl = curl_easy_init();
 
             if (curl == NULL || url == NULL || *url == '\0') {
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             log_debug("Downloading %s", url);
@@ -315,7 +314,7 @@ namespace rj
             strncpy(temp, "/tmp/prep-XXXXXX", BUFSIZ);
 
             if ((fd = mkstemp(temp)) < 0 || (fp = fdopen(fd, "wb")) == NULL) {
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             filename = temp;
@@ -330,20 +329,20 @@ namespace rj
 
             if (res != CURLE_OK) {
                 log_error("%s", curl_easy_strerror(res));
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
             res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
 
             if (res != CURLE_OK || httpCode < 200 || httpCode >= 300) {
                 log_error("%d code from server", httpCode);
-                return EXIT_FAILURE;
+                return PREP_FAILURE;
             }
 
-            return EXIT_SUCCESS;
+            return PREP_SUCCESS;
 #else
             log_error("libcurl not installed or configured");
-            return EXIT_FAILURE;
+            return PREP_FAILURE;
 #endif
         }
 
@@ -392,11 +391,11 @@ namespace rj
 
         int copy_directory(const std::string &from, const std::string &to, bool overwrite)
         {
-            FTS *file_system = NULL;
-            FTSENT *child = NULL;
-            FTSENT *parent = NULL;
-            int rval = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = {0};
+            FTS *file_system       = NULL;
+            FTSENT *child          = NULL;
+            FTSENT *parent         = NULL;
+            int rval               = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = { 0 };
             struct stat st;
 
             if (!directory_exists(from.c_str())) {
@@ -411,7 +410,7 @@ namespace rj
                 }
             }
 
-            char *const paths[] = {(char *const)from.c_str(), NULL};
+            char *const paths[] = { (char *const)from.c_str(), NULL };
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -480,7 +479,7 @@ namespace rj
                 char *homedir = getenv("HOME");
 
                 if (homedir == NULL) {
-                    uid_t uid = getuid();
+                    uid_t uid         = getuid();
                     struct passwd *pw = getpwuid(uid);
 
                     if (pw == NULL) {
@@ -519,9 +518,11 @@ namespace rj
 
             while (next != NULL) {
 #ifdef _WIN32
-                if (buf[strlen(buf) - 1] != '\\') strcat(buf, "\\");
+                if (buf[strlen(buf) - 1] != '\\')
+                    strcat(buf, "\\");
 #else
-                if (buf[strlen(buf) - 1] != '/') strcat(buf, "/");
+                if (buf[strlen(buf) - 1] != '/')
+                    strcat(buf, "/");
 #endif
                 strcat(buf, next);
 
@@ -535,7 +536,7 @@ namespace rj
 
         int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path)
         {
-            char buf[BUFSIZ] = {0};
+            char buf[BUFSIZ] = { 0 };
 
             char *home = getenv("HOME");
 
@@ -560,15 +561,6 @@ namespace rj
             }
 
             return PREP_SUCCESS;
-        }
-
-        bool can_exec_file(const std::string &file)
-        {
-            struct stat st;
-
-            if (stat(file.c_str(), &st) < 0) return false;
-            if ((st.st_mode & S_IEXEC) != 0) return true;
-            return false;
         }
     }
 }

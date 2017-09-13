@@ -1,31 +1,28 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 #include <dirent.h>
+#include <fstream>
+#include <fts.h>
+#include <iostream>
+#include <iterator>
 #include <libgen.h>
+#include <map>
+#include <pwd.h>
+#include <string>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <string>
 #ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 #include <curl/easy.h>
 #endif
-#include <fts.h>
-#include <pwd.h>
-#include <cstdio>
-#include <string>
 #include "common.h"
-#include "exception.h"
+#include "decompressor.h"
 #include "log.h"
 #include "repository.h"
 #include "util.h"
@@ -43,7 +40,7 @@ namespace std
     }
 }
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -55,14 +52,14 @@ namespace rj
 
         const char *const repository::get_local_repo()
         {
-            char buf[BUFSIZ] = {0};
+            char buf[BUFSIZ] = { 0 };
 
             if (!getcwd(buf, BUFSIZ)) {
                 log_error("no current directory");
                 return nullptr;
             }
 
-            const char *prefix = buf;
+            const char *prefix       = buf;
             const char *current_path = build_sys_path(prefix, LOCAL_REPO_NAME, NULL);
 
             while (directory_exists(current_path) == 1) {
@@ -107,11 +104,11 @@ namespace rj
                 mkdir(path_.c_str(), 0700);
             }
 
-            char *temp = getenv("PATH");
-            string binPath = build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
+            char *temp          = getenv("PATH");
+            std::string binPath = build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
 
             if (temp != NULL) {
-                char buf[BUFSIZ] = {0};
+                char buf[BUFSIZ] = { 0 };
 
                 strncpy(buf, temp, BUFSIZ);
 
@@ -132,12 +129,12 @@ namespace rj
             return PREP_SUCCESS;
         }
 
-        int repository::validate_plugins() const
+        int repository::validate_plugins(const options &opts) const
         {
             const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, NULL);
 
-            struct dirent *d = NULL;
-            DIR *dir = NULL;
+            struct dirent *d             = NULL;
+            DIR *dir                     = NULL;
             const std::string pluginPath = get_plugin_path();
 
             if (!directory_exists(pluginPath.c_str())) {
@@ -150,8 +147,16 @@ namespace rj
             dir = opendir(globalPath.c_str());
 
             if (dir == NULL) {
-                log_errno(errno);
-                return PREP_FAILURE;
+                if (init_plugins(opts, globalPath) == PREP_FAILURE) {
+                    return PREP_FAILURE;
+                }
+
+                dir = opendir(globalPath.c_str());
+
+                if (dir == NULL) {
+                    log_errno(errno);
+                    return PREP_FAILURE;
+                }
             }
 
             while ((d = readdir(dir)) != NULL) {
@@ -193,6 +198,13 @@ namespace rj
             return PREP_SUCCESS;
         }
 
+        int repository::init_plugins(const options &opts, const std::string &path) const
+        {
+            decompressor unzip(opts.executable, path);
+
+            return unzip.decompress(true);
+        }
+
         std::string repository::get_bin_path() const
         {
             return build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
@@ -208,7 +220,7 @@ namespace rj
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, NULL);
         }
 
-        std::string repository::get_build_path(const string &package_name) const
+        std::string repository::get_build_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, package_name.c_str(), NULL);
         }
@@ -218,7 +230,7 @@ namespace rj
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, NULL);
         }
 
-        std::string repository::get_install_path(const string &package_name) const
+        std::string repository::get_install_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, package_name.c_str(), NULL);
         }
@@ -228,7 +240,7 @@ namespace rj
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, NULL);
         }
 
-        std::string repository::get_meta_path(const string &package_name) const
+        std::string repository::get_meta_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, package_name.c_str(), NULL);
         }
@@ -245,7 +257,8 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
+            std::string metaDir =
+                build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 if (mkpath(metaDir.c_str(), 0777)) {
@@ -254,7 +267,7 @@ namespace rj
                 }
             }
 
-            ofstream out(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
+            std::ofstream out(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
 
             if (!out.is_open()) {
                 log_error("unable to save version for %s", config.name().c_str());
@@ -262,9 +275,9 @@ namespace rj
             }
 
             if (!config.version().empty()) {
-                out << config.version() << endl;
+                out << config.version() << std::endl;
             } else if (!config.location().empty()) {
-                out << config.location() << endl;
+                out << config.location() << std::endl;
             }
 
             out.close();
@@ -282,15 +295,16 @@ namespace rj
 
         int repository::has_meta(const package &config) const
         {
-            string metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
+            std::string metaDir =
+                build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
 
             if (!directory_exists(metaDir.c_str())) {
                 return PREP_FAILURE;
             }
 
-            ifstream in(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
+            std::ifstream in(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
 
-            string info;
+            std::string info;
             in >> info;
             in.close();
 
@@ -309,29 +323,15 @@ namespace rj
             return PREP_FAILURE;
         }
 
-        int repository::package_dependency_count(const package &config, const string &package_name, const options &opts) const
-        {
-            int count = 0;
-
-            for (const package_dependency &dep : config.dependencies()) {
-                if (!strcmp(dep.name().c_str(), package_name.c_str())) {
-                    count++;
-                }
-                count += package_dependency_count(dep, package_name, opts);
-            }
-
-            return count;
-        }
-
-        int repository::dependency_count(const string &package_name, const options &opts) const
+        int repository::dependency_count(const std::string &package_name, const options &opts) const
         {
             DIR *dir;
             struct dirent *d_ent;
-            int rval = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = {0};
+            int rval               = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = { 0 };
             struct stat st;
             size_t count = 0;
-            string metaDir;
+            std::string metaDir;
 
             if (path_.empty()) {
                 log_error("No repository path defined!");
@@ -378,7 +378,7 @@ namespace rj
                 package_config temp;
 
                 if (temp.load(buf, opts) == PREP_SUCCESS) {
-                    count += package_dependency_count(temp, package_name, opts);
+                    count += temp.dependency_count(package_name);
                 }
             }
 
@@ -398,18 +398,18 @@ namespace rj
 
         int repository::link_directory(const std::string &path) const
         {
-            FTS *file_system = NULL;
-            FTSENT *child = NULL;
-            FTSENT *parent = NULL;
-            int rval = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = {0};
+            FTS *file_system       = NULL;
+            FTSENT *child          = NULL;
+            FTSENT *parent         = NULL;
+            int rval               = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = { 0 };
 
             if (!directory_exists(path.c_str())) {
                 log_error("%s is not a directory", path.c_str());
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = {(char *const)path.c_str(), NULL};
+            char *const paths[] = { (char *const)path.c_str(), NULL };
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -481,19 +481,19 @@ namespace rj
 
         int repository::unlink_directory(const std::string &path) const
         {
-            FTS *file_system = NULL;
-            FTSENT *child = NULL;
-            FTSENT *parent = NULL;
-            int rval = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = {0};
-            string installDir;
+            FTS *file_system       = NULL;
+            FTSENT *child          = NULL;
+            FTSENT *parent         = NULL;
+            int rval               = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = { 0 };
+            std::string installDir;
 
             if (!directory_exists(path.c_str())) {
                 log_error("%s does not exist.", path.c_str());
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = {(char *const)path.c_str(), NULL};
+            char *const paths[] = { (char *const)path.c_str(), NULL };
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -573,13 +573,13 @@ namespace rj
                 return location;
             }
 
-            ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
+            std::ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
 
             std::map<std::string, std::string> mps;
-            std::insert_iterator<std::map<std::string, std::string> > mpsi(mps, mps.begin());
+            std::insert_iterator<std::map<std::string, std::string>> mpsi(mps, mps.begin());
 
-            const std::istream_iterator<std::pair<std::string, std::string> > eos;
-            std::istream_iterator<std::pair<std::string, std::string> > its(is);
+            const std::istream_iterator<std::pair<std::string, std::string>> eos;
+            std::istream_iterator<std::pair<std::string, std::string>> its(is);
 
             std::copy(its, eos, mpsi);
 
@@ -594,13 +594,13 @@ namespace rj
                 return;
             }
 
-            ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
+            std::ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
 
             std::map<std::string, std::string> mps;
-            std::insert_iterator<std::map<std::string, std::string> > mpsi(mps, mps.begin());
+            std::insert_iterator<std::map<std::string, std::string>> mpsi(mps, mps.begin());
 
-            const std::istream_iterator<std::pair<std::string, std::string> > eos;
-            std::istream_iterator<std::pair<std::string, std::string> > its(is);
+            const std::istream_iterator<std::pair<std::string, std::string>> eos;
+            std::istream_iterator<std::pair<std::string, std::string>> its(is);
 
             std::copy(its, eos, mpsi);
 
@@ -608,9 +608,9 @@ namespace rj
 
             mps[location] = working_dir;
 
-            ofstream os(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
+            std::ofstream os(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
 
-            std::copy(mps.begin(), mps.end(), std::ostream_iterator<std::pair<std::string, std::string> >(os, "\n"));
+            std::copy(mps.begin(), mps.end(), std::ostream_iterator<std::pair<std::string, std::string>>(os, "\n"));
 
             os.close();
         }
@@ -629,7 +629,7 @@ namespace rj
             }
 
             struct dirent *d = NULL;
-            DIR *dir = opendir(path.c_str());
+            DIR *dir         = opendir(path.c_str());
 
             if (dir == NULL) {
                 log_errno(errno);
@@ -647,29 +647,34 @@ namespace rj
                     continue;
                 }
 
-                auto plugin = std::make_shared<rj::prep::plugin>(d->d_name);
+                auto plugin = std::make_shared<micrantha::prep::plugin>(d->d_name);
 
-                try {
-                    if (plugin->load(pluginPath) == PREP_SUCCESS) {
-                        plugins_.push_back(plugin);
-                    } else {
-                        log_warn("unable to load plugin [%s]", d->d_name);
-                    }
-                } catch (const not_a_plugin &exception) {
+                switch (plugin->load(pluginPath)) {
+
+                case PREP_SUCCESS:
+                    plugins_.push_back(plugin);
+                    break;
+                case PREP_FAILURE:
+                    log_warn("unable to load plugin [%s]", d->d_name);
+                    break;
+                case PREP_ERROR:
                     log_trace("skipping non-plugin [%s]", d->d_name);
+                    break;
                 }
             }
 
             closedir(dir);
 
             for (auto &plugin : plugins_) {
-                plugin->on_load();
+                if (plugin->on_load() == PREP_ERROR) {
+                    return PREP_FAILURE;
+                }
             }
 
             return PREP_SUCCESS;
         }
 
-        int repository::plugin_resolve(const package &config, const resolver_callback &callback)
+        int repository::notify_plugins_resolve(const package &config, const resolver_callback &callback)
         {
             log_trace("checking plugins for resolving [%s]...", config.name().c_str());
 
@@ -685,7 +690,7 @@ namespace rj
             return PREP_FAILURE;
         }
 
-        int repository::plugin_resolve(const std::string &location, const resolver_callback &callback)
+        int repository::notify_plugins_resolve(const std::string &location, const resolver_callback &callback)
         {
             log_trace("checking plugins for resolving [%s]...", location.c_str());
 
@@ -701,7 +706,7 @@ namespace rj
             return PREP_FAILURE;
         }
 
-        int repository::plugin_install(const package &config)
+        int repository::notify_plugins_install(const package &config)
         {
             log_trace("checking plugins for install of [%s]...", config.name().c_str());
 
@@ -714,7 +719,7 @@ namespace rj
             return PREP_FAILURE;
         }
 
-        int repository::plugin_remove(const package &config)
+        int repository::notify_plugins_remove(const package &config)
         {
             log_trace("checking plugins for removal of [%s]...", config.name().c_str());
 
@@ -738,8 +743,8 @@ namespace rj
         }
 
 
-        int repository::plugin_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
-                                     const std::string &installPath)
+        int repository::notify_plugins_build(const package &config, const std::string &sourcePath,
+                                             const std::string &buildPath, const std::string &installPath)
         {
             for (auto &name : config.build_system()) {
                 auto plugin = get_plugin_by_name(name);

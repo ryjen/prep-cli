@@ -1,12 +1,14 @@
-#include <unistd.h>
+
 #include <iostream>
+#include <unistd.h>
 #include <vector>
+
 #include "common.h"
 #include "log.h"
 #include "package_builder.h"
 #include "util.h"
 
-using namespace rj::prep;
+using namespace micrantha::prep;
 
 void print_help(char *exe)
 {
@@ -20,27 +22,29 @@ void print_help(char *exe)
 
 int main(int argc, char *const argv[])
 {
-    rj::prep::package_builder prep;
-    rj::prep::options options;
+    micrantha::prep::package_builder prep;
+    micrantha::prep::options options;
     const char *command;
     int option;
 
+    options.executable = argv[0];
+
     while ((option = getopt(argc, argv, "hgfp:l:")) != EOF) {
         switch (option) {
-            case 'g':
-                options.global = true;
-                break;
-            case 'p':
-                options.package_file = optarg;
-                break;
-            case 'f':
-                options.force_build = true;
-            case 'l':
-                rj::prep::set_log_level(optarg);
-                break;
-            case 'h':
-                print_help(argv[0]);
-                return PREP_FAILURE;
+        case 'g':
+            options.global = true;
+            break;
+        case 'p':
+            options.package_file = optarg;
+            break;
+        case 'f':
+            options.force_build = true;
+        case 'l':
+            micrantha::prep::set_log_level(optarg);
+            break;
+        case 'h':
+            print_help(argv[0]);
+            return PREP_FAILURE;
         }
     }
 
@@ -50,7 +54,7 @@ int main(int argc, char *const argv[])
         }
 
     } catch (const std::exception &e) {
-        rj::prep::log_error(e.what());
+        micrantha::prep::log_error(e.what());
         return PREP_FAILURE;
     }
 
@@ -61,7 +65,7 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "install")) {
-        rj::prep::package_config config;
+        micrantha::prep::package_config config;
         char cwd[PATH_MAX];
 
         if (optind < 0 || optind >= argc) {
@@ -75,15 +79,18 @@ int main(int argc, char *const argv[])
             options.location = argv[optind++];
         }
 
-        auto callback = [&options](const std::shared_ptr<plugin> &plugin) { options.location = plugin->return_value(); };
+        auto callback = [&options](const std::shared_ptr<plugin> &plugin) {
+            options.location = plugin->return_value();
+        };
 
-        if (!directory_exists(options.location.c_str()) && prep.repository()->plugin_resolve(options.location, callback) == PREP_FAILURE) {
-            rj::prep::log_error("%s is not a valid prep package", options.location.c_str());
+        if (!directory_exists(options.location.c_str()) &&
+            prep.repository().notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
+            micrantha::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 
         if (config.load(options.location, options) == PREP_FAILURE) {
-            rj::prep::log_error("unable to load config at %s", options.location.c_str());
+            micrantha::prep::log_error("unable to load config at %s", options.location.c_str());
             return PREP_FAILURE;
         }
 
@@ -91,10 +98,10 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "remove")) {
-        rj::prep::package_config config;
+        micrantha::prep::package_config config;
 
         if (optind < 0 || optind >= argc) {
-            rj::prep::log_error("Remove which package?");
+            micrantha::prep::log_error("Remove which package?");
             return PREP_FAILURE;
         }
 
@@ -102,11 +109,8 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "setpath")) {
-        prompt_to_add_path_to_shell_rc(".zshrc", prep.repository()->get_bin_path().c_str());
-        if (prompt_to_add_path_to_shell_rc(".bash_profile", prep.repository()->get_bin_path().c_str())) {
-            prompt_to_add_path_to_shell_rc(".bashrc", prep.repository()->get_bin_path().c_str());
-        }
-        prompt_to_add_path_to_shell_rc(".kshrc", prep.repository()->get_bin_path().c_str());
+
+        prep.add_path_to_shell();
 
         return PREP_SUCCESS;
     }
@@ -115,7 +119,7 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "run")) {
-        rj::prep::package_config config;
+        micrantha::prep::package_config config;
         char cwd[PATH_MAX];
 
         if (getcwd(cwd, sizeof(cwd))) {
@@ -123,10 +127,12 @@ int main(int argc, char *const argv[])
         } else {
             options.location = ".";
         }
-        auto callback = [&options](const std::shared_ptr<plugin> &plugin) { options.location = plugin->return_value(); };
+        auto callback = [&options](const std::shared_ptr<plugin> &plugin) {
+            options.location = plugin->return_value();
+        };
 
-        if (prep.repository()->plugin_resolve(options.location, callback) == PREP_FAILURE) {
-            rj::prep::log_error("%s is not a valid prep package", options.location.c_str());
+        if (prep.repository().notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
+            micrantha::prep::log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 

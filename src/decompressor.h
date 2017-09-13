@@ -1,10 +1,8 @@
 /**
- * @author: Ryan Jennings <c0der78@gmail.com>
+ * @author: Ryan Jennings <ryan@micrantha.com>
  */
-#ifndef RJ_PREP_DECOMPRESSOR_H
-#define RJ_PREP_DECOMPRESSOR_H
-
-#include "config.h"
+#ifndef MICRANTHA_PREP_DECOMPRESSOR_H
+#define MICRANTHA_PREP_DECOMPRESSOR_H
 
 #ifdef HAVE_ARCHIVE_H
 #include <archive.h>
@@ -12,30 +10,30 @@
 
 #include <string>
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
         class decompressor
         {
-           public:
-            decompressor(const char *path);
+          public:
+            decompressor(const std::string &path);
+            decompressor(const std::string &path, const std::string &topath);
             ~decompressor();
 
             std::string outputPath() const;
             std::string inputPath() const;
 
-            int decompress();
+            int decompress(bool ignoreErrors = false);
 
-           private:
+          private:
             void cleanup();
             decompressor &operator=(const decompressor &other);
             decompressor(const decompressor &other);
 
-#ifdef HAVE_LIBARCHIVE
             struct archive *in_;
             struct archive *out_;
-#endif
+
             std::string path_;
             std::string outPath_;
         };

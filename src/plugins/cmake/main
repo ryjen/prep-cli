@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use rlib '../support';
-use rj::prep::plugin qw(read_build_params);
+use micrantha::prep::plugin qw(read_build_params);
 use strict;
 use warnings;
 
@@ -16,7 +16,7 @@ sub cmake
 
 sub main
 {
-    my $plugin = rj::prep::plugin->new();
+    my $plugin = micrantha::prep::plugin->new();
 
     $plugin->on_build(\&cmake);
 

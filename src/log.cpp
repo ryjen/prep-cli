@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "log.h"
 #include <dlfcn.h>
 #include <execinfo.h>
 #include <stdarg.h>
@@ -8,15 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "log.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
-        const char *LOG_LEVEL_NAMES[] = {"UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", NULL};
+        const char *LOG_LEVEL_NAMES[] = { "UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", NULL };
 
-        const char *LOG_LEVEL_COLOR[] = {"", "\x1b[1;31m", "\x1b[1;33m", "\x1b[1;32m", "\x1b[1;36m", "\x1b[1;37m", NULL};
+        const char *LOG_LEVEL_COLOR[] = {
+            "", "\x1b[1;31m", "\x1b[1;33m", "\x1b[1;32m", "\x1b[1;36m", "\x1b[1;37m", NULL
+        };
 
         LogLevel __current_log_level = LogInfo;
 
@@ -54,6 +56,11 @@ namespace rj
             va_start(args, format);
             log_vargs(LogError, format, args);
             va_end(args);
+        }
+
+        void log_errno(int errnum)
+        {
+            log_error("%d: %s", errnum, strerror(errnum));
         }
 
         void log_warn(const char *const format, ...)

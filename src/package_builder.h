@@ -1,17 +1,17 @@
-#ifndef RJ_PREP_PACKAGE_BUILDER_H
-#define RJ_PREP_PACKAGE_BUILDER_H
+#ifndef MICRANTHA_PREP_PACKAGE_BUILDER_H
+#define MICRANTHA_PREP_PACKAGE_BUILDER_H
 
 #include "environment.h"
 #include "package_config.h"
 #include "repository.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
         class package_builder
         {
-           public:
+          public:
             //! initializes this instance
             // @param opts the options to initialize with
             // @returns PREP_SUCESS or PREP_FAILURE if an error occured
@@ -25,22 +25,23 @@ namespace rj
             int build(const package &config, options &opts, const char *path);
 
             int build_from_folder(options &opts, const char *path);
-            string repo_path() const;
             int remove(package &config, options &opts, const char *package);
             int remove(const std::string &package_name, options &opts);
             int link_package(const package &config) const;
             int unlink_package(const package &config) const;
             int execute(const package &config, int argc, char *const *argv) const;
 
-            repository *repository();
+            void add_path_to_shell() const;
 
-           private:
+            repository &repository();
+
+          private:
             int build_package(const package &p, const char *path);
-            int build_commands(const package &config, const char *path, const vector<string> &commands);
+            int build_commands(const package &config, const char *path, const std::vector<std::string> &commands);
 
-            string get_install_dir(const package &config) const;
+            std::string get_install_dir(const package &config) const;
 
-            rj::prep::repository repo_;
+            micrantha::prep::repository repo_;
 
             bool force_build_;
         };

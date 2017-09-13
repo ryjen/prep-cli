@@ -1,11 +1,13 @@
-#ifndef RJ_PREP_COMMON_H
-#define RJ_PREP_COMMON_H
+#ifndef MICRANTHA_PREP_COMMON_H
+#define MICRANTHA_PREP_COMMON_H
 
-#define PREP_SUCCESS EXIT_SUCCESS
+#define PREP_SUCCESS 0
 
-#define PREP_FAILURE EXIT_FAILURE
+#define PREP_FAILURE 1
 
-namespace rj
+#define PREP_ERROR -1
+
+namespace micrantha
 {
     namespace prep
     {

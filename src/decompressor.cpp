@@ -10,17 +10,13 @@
 #include <libgen.h>
 #endif
 #include <limits.h>
+
 #include "common.h"
 #include "decompressor.h"
 #include "log.h"
 #include "util.h"
 
-
-#define windowBits 15
-
-#define ENABLE_ZLIB_GZIP 32
-
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -53,7 +49,11 @@ namespace rj
         }
 #endif
 
-        decompressor::decompressor(const char *path)
+        decompressor::decompressor(const std::string &path) : decompressor(path, path)
+        {
+        }
+
+        decompressor::decompressor(const std::string &path, const std::string &topath)
             : path_(path)
 #ifdef HAVE_LIBARCHIVE
               ,
@@ -61,9 +61,9 @@ namespace rj
               out_(NULL)
 #endif
         {
-            char buf[PATH_MAX + 1] = {0};
+            char buf[PATH_MAX + 1] = { 0 };
 
-            strncpy(buf, path, PATH_MAX);
+            strncpy(buf, topath.c_str(), PATH_MAX);
 
             outPath_ = dirname(buf);
         }
@@ -104,13 +104,13 @@ namespace rj
             }
 #endif
         }
-        int decompressor::decompress()
+        int decompressor::decompress(bool ignoreErrors)
         {
 #ifdef HAVE_LIBARCHIVE
             int r;
             struct archive_entry *entry;
-            char folderName[PATH_MAX + 1] = {0};
-            char buf[PATH_MAX + 1] = {0};
+            char folderName[PATH_MAX + 1] = { 0 };
+            char buf[PATH_MAX + 1]        = { 0 };
 
             if (in_ != NULL || out_ != NULL) {
                 log_errno(EINVAL);
@@ -139,7 +139,7 @@ namespace rj
             // check the first entry for a directory
             r = archive_read_next_header(in_, &entry);
 
-            if (r < ARCHIVE_OK) {
+            if (!ignoreErrors && r < ARCHIVE_OK) {
                 log_error("error extracting %s - %d:%s\n", path_.c_str(), r, archive_error_string(in_));
                 cleanup();
                 return PREP_SUCCESS;

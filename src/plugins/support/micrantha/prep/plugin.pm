@@ -1,5 +1,5 @@
 # Ryan Jennings 2016
-package rj::prep::plugin;
+package micrantha::prep::plugin;
 use strict;
 use warnings;
 use Exporter qw(import);

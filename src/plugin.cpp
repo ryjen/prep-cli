@@ -1,16 +1,20 @@
-#include "plugin.h"
+
+#include <fstream>
 #include <signal.h>
-#include <unistd.h>
-#include <util.h>
 #include <sstream>
 #include <thread>
+#include <unistd.h>
+#include <util.h>
+
+
 #include "common.h"
 #include "environment.h"
-#include "exception.h"
 #include "log.h"
+#include "package_config.h"
+#include "plugin.h"
 #include "util.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -87,7 +91,8 @@ namespace rj
                             buf += ch;
                         }
 
-                        if (ch == '\n') break;
+                        if (ch == '\n')
+                            break;
                     }
                 }
 
@@ -112,7 +117,7 @@ namespace rj
 
             // skip folders with no manifest
             if (!file_exists(manifest.c_str())) {
-                throw not_a_plugin();
+                return PREP_ERROR;
             }
 
             std::ifstream file;
@@ -122,29 +127,33 @@ namespace rj
 
             file >> buf.rdbuf();
 
-            rj::json::object config;
+            auto config = package::json_type::parse(buf.str().c_str());
 
-            if (!config.parse(buf.str().c_str())) {
+            if (config.size() == 0) {
                 log_error("invalid configuration for plugin [%s]", name_.c_str());
                 return PREP_FAILURE;
             }
 
-            json_object *obj = NULL;
+            auto entry = config["executable"];
 
-            if (config.contains("executable")) {
-                executablePath_ = build_sys_path(basePath_.c_str(), config.get_string("executable").c_str(), NULL);
+            if (entry.is_string()) {
+                executablePath_ = build_sys_path(basePath_.c_str(), entry.get<std::string>().c_str(), NULL);
                 log_trace("plugin [%s] executable [%s]", name_.c_str(), executablePath_.c_str());
             } else {
                 log_error("plugin [%s] has no executable", name_.c_str());
                 return PREP_FAILURE;
             }
 
-            if (config.contains("version")) {
-                version_ = config.get_string("version");
+            entry = config["version"];
+
+            if (entry.is_string()) {
+                version_ = entry.get<std::string>();
             }
 
-            if (config.contains("type")) {
-                type_ = config.get_string("type");
+            entry = config["type"];
+
+            if (entry.is_string()) {
+                type_ = entry.get<std::string>();
             }
 
             log_info("loaded plugin [%s] version [%s]", name_.c_str(), version_.c_str());
@@ -176,7 +185,7 @@ namespace rj
 
         bool plugin::is_valid() const
         {
-            return is_enabled() && can_exec_file(executablePath_);
+            return is_enabled() && file_executable(executablePath_.c_str());
         }
 
         std::string plugin::name() const
@@ -207,8 +216,10 @@ namespace rj
         {
             auto plugin = config.get_plugin_config(this);
 
-            if (plugin.contains("name")) {
-                return plugin.get_string("name");
+            auto name = plugin["name"];
+
+            if (name.is_string()) {
+                return name.get<std::string>();
             }
 
             return config.name();
@@ -218,8 +229,10 @@ namespace rj
         {
             auto plugin = config.get_plugin_config(this);
 
-            if (plugin.contains("location")) {
-                return plugin.get_string("location");
+            auto location = plugin["location"];
+
+            if (location.is_string()) {
+                return location.get<std::string>();
             }
 
             return "";
@@ -235,7 +248,7 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = {plugin_name(config), config.version(), path};
+            std::vector<std::string> info = { plugin_name(config), config.version(), path };
 
             return execute("install", info);
         }
@@ -259,7 +272,7 @@ namespace rj
 
             make_temp_dir(buf, PATH_MAX);
 
-            std::vector<std::string> info = {buf, location};
+            std::vector<std::string> info = { buf, location };
 
             return execute("resolve", info);
         }
@@ -274,12 +287,13 @@ namespace rj
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = {plugin_name(config), config.version(), path};
+            std::vector<std::string> info = { plugin_name(config), config.version(), path };
 
             return execute("remove", info);
         }
 
-        int plugin::on_build(const package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath)
+        int plugin::on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
+                             const std::string &installPath)
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -293,7 +307,8 @@ namespace rj
 
             auto envVars = environment::build_cpp_variables();
 
-            std::vector<std::string> info({plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()});
+            std::vector<std::string> info(
+                { plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options() });
 
             info.insert(std::end(info), std::begin(envVars), std::end(envVars));
 
@@ -319,12 +334,12 @@ namespace rj
                     return PREP_FAILURE;
                 }
 
-                const char *argv[] = {name_.c_str(), nullptr};
+                const char *argv[] = { name_.c_str(), nullptr };
 
-                // we are the child
+                // we are the child, so execute
                 execvp(executablePath_.c_str(), (char *const *)argv);
 
-                exit(PREP_FAILURE);  // exec never returns
+                exit(PREP_FAILURE); // exec never returns
             } else {
                 int status = 0;
 
@@ -335,6 +350,7 @@ namespace rj
 
                 // sleep(1);
 
+                // write the method to the child
                 if (helper::write_line(master, method) < 0) {
                     log_errno(errno);
                     if (kill(pid, SIGKILL) < 0) {
@@ -343,7 +359,9 @@ namespace rj
                     return PREP_FAILURE;
                 }
 
+                // for each additional information string
                 for (auto &i : info) {
+                    // write to the child
                     if (helper::write_line(master, i) < 0) {
                         log_errno(errno);
                         if (kill(pid, SIGKILL) < 0) {
@@ -353,6 +371,7 @@ namespace rj
                     }
                 }
 
+                // write the header terminator
                 if (helper::write_line(master, "END") < 0) {
                     log_errno(errno);
                     if (kill(pid, SIGKILL) < 0) {
@@ -361,11 +380,12 @@ namespace rj
                     return PREP_FAILURE;
                 }
 
+                // start the io loop with child
                 for (;;) {
                     fd_set read_fd;
                     fd_set write_fd;
                     fd_set except_fd;
-                    char input = 0;
+                    char input  = 0;
                     char output = 0;
 
                     FD_ZERO(&read_fd);
@@ -375,14 +395,17 @@ namespace rj
                     FD_SET(master, &read_fd);
                     FD_SET(STDIN_FILENO, &read_fd);
 
+                    // wait for something to happen
                     if (select(master + 1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
                         log_errno(errno);
                         break;
                     }
 
+                    // if we have something to read from child...
                     if (FD_ISSET(master, &read_fd)) {
                         std::string line;
 
+                        // read a line
                         int n = helper::read_line(master, line);
 
                         if (n <= 0) {
@@ -392,6 +415,7 @@ namespace rj
                             break;
                         }
 
+                        // if the line is a command, add it, else print it
                         if (helper::is_return_command(line)) {
                             returnValues_.push_back(line.substr(7));
                         } else if (helper::write_line(STDOUT_FILENO, line) < 0) {
@@ -400,6 +424,7 @@ namespace rj
                         }
                     }
 
+                    // if we have something to read on stdin...
                     if (FD_ISSET(STDIN_FILENO, &read_fd)) {
                         int n = read(STDIN_FILENO, &input, 1);
 
@@ -409,6 +434,7 @@ namespace rj
                             }
                             break;
                         }
+                        // send it to the child
                         if (write(master, &input, 1) < 0) {
                             log_errno(errno);
                             break;
@@ -416,11 +442,12 @@ namespace rj
                     }
                 }
 
+                // wait for the child to exit
                 waitpid(pid, &status, 0);
 
                 if (WIFEXITED(status)) {
                     int rval = WEXITSTATUS(status);
-                    return rval == 0 ? PREP_SUCCESS : PREP_FAILURE;
+                    return rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 

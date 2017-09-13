@@ -4,3 +4,5 @@ src/prep
 tests/prep-test
 *.a
 tags
+.idea
+cmake-build-*

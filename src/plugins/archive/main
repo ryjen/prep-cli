@@ -3,7 +3,7 @@
 use rlib '../support';
 use Archive::Extract;
 use File::Fetch;
-use rj::prep::plugin qw(read_resolve_params write_return_value);
+use micrantha::prep::plugin qw(read_resolve_params write_return_value);
 
 sub extract
 {
@@ -40,7 +40,7 @@ sub extract
 
 sub main
 {
-    my $plugin = rj::prep::plugin->new();
+    my $plugin = micrantha::prep::plugin->new();
 
     $plugin->on_resolve(\&extract);
 

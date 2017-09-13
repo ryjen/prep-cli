@@ -1,49 +1,107 @@
-#ifndef RJ_PREP_UTIL_H
-#define RJ_PREP_UTIL_H
+#ifndef MICRANTHA_PREP_UTIL_H
+#define MICRANTHA_PREP_UTIL_H
 
 #include <string>
+#include <sys/stat.h>
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
+        /**
+         * compares two string, checking for null and empty
+         */
         bool str_cmp(const char *astr, const char *bstr);
 
+        /**
+         * tests if a string is null or empty
+         */
         bool str_empty(const char *str);
 
+        /**
+         * runs a command in a forked process
+         * @return PREP_SUCCESS or PREP_FAILURE upon error
+         */
         int fork_command(const char *argv[], const char *directory, char *const envp[]);
 
-        int pipe_command(const char *buf, const char *directory);
+        /**
+         * pipes output from a command into another stream
+         */
+        int pipe_command(const char *buf, const char *directory, FILE *output = stdout);
 
+        /**
+         * removes an entire directory hierarchy
+         */
         int remove_directory(const char *path);
 
+        /**
+         * tests if a directory exists
+         * @return PREP_SUCCESS or PREP_FAILURE upon error
+         */
         int directory_exists(const char *path);
 
+        /**
+         * copies an entire directory to another directory
+         * @param overwrite set to true to overwrite the to directory
+         * @return PREP_SUCESS or PREP_FAILURE upon error
+         */
         int copy_directory(const std::string &from, const std::string &to, bool overwrite = false);
 
-        int file_exists(const char *path);
+        /**
+         * tests if a file exists
+         */
+        bool file_exists(const char *path);
 
-        int file_executable(const char *path);
+        /**
+         * tests if a file is executable
+         */
+        bool file_executable(const char *path);
 
+        /**
+         * downloads a url endpoint to a temporary file
+         * NOTE: required libcurl enabled
+         * @return PREP_SUCCESS or PREP_FAILURE upon error
+         */
         int download_to_temp_file(const char *url, std::string &filename);
 
-        void checkout_progress(const char *path, size_t cur, size_t tot, void *payload);
-
+        /**
+         * makes a temporary file and assigns the name to the buffer
+         * @return PREP_ERROR upon error
+         */
         int make_temp_file(char *buffer, size_t size);
 
+        /**
+         * makes a temporary directory and assigns the name to the buffer
+         * @return the directory name
+         */
         char *make_temp_dir(char *buffer, size_t size);
 
+        /**
+         * create a directory path
+         * @return PREP_SUCCESS or PREP_ERROR upon error
+         */
         int mkpath(const char *dir, mode_t mode);
 
+        /**
+         * copies one file to another given their names
+         */
         int copy_file(const std::string &from, const std::string &to);
 
+        /**
+         * gets the home directory for the current system user
+         */
         std::string get_user_home_dir();
 
+        /**
+         * builds a platform independent directory path given directory names
+         */
         const char *build_sys_path(const char *start, ...) __attribute__((format(printf, 1, 2)));
 
+        /**
+         * updates various common shell config files to add prep to the path
+         * @return PREP_SUCESS or PREP_FAILURE
+         */
         int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path);
-
-        bool can_exec_file(const std::string &path);
     }
 }
 

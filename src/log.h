@@ -1,13 +1,13 @@
-#ifndef RJ_PREP_LOG_H
-#define RJ_PREP_LOG_H
+#ifndef MICRANTHA_PREP_LOG_H
+#define MICRANTHA_PREP_LOG_H
 
-#include <string.h>
+#include <cstring>
 
 #ifndef __attribute__
 #define __attribute__(x)
 #endif
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -30,6 +30,8 @@ namespace rj
 
         void log_error(const char *const format, ...) __attribute__((format(printf, 1, 2)));
 
+        void log_errno(int errnum);
+
         void log_warn(const char *const format, ...) __attribute__((format(printf, 1, 2)));
 
         void log_info(const char *const format, ...) __attribute__((format(printf, 1, 2)));
@@ -39,8 +41,5 @@ namespace rj
         void log_trace(const char *const format, ...) __attribute__((format(printf, 1, 2)));
     }
 }
-
-// A macro so the correct method name is displayed
-#define log_errno(errnum) log_error("%d: %s", errnum, strerror(errnum))
 
 #endif

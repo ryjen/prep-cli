@@ -1,10 +1,10 @@
-#ifndef RJ_PREP_ENVIRONMENT_H
-#define RJ_PREP_ENVIRONMENT_H
+#ifndef MICRANTHA_PREP_ENVIRONMENT_H
+#define MICRANTHA_PREP_ENVIRONMENT_H
 
 #include <string>
 #include <vector>
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {

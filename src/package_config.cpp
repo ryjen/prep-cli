@@ -1,10 +1,8 @@
-
-#include "package_config.h"
-#include <fstream>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <sstream>
-#include "common.h"
-#include "log.h"
-#include "util.h"
+#include <vector>
 #ifdef HAVE_CURL_CURL_H
 #include <curl/curl.h>
 #include <curl/easy.h>
@@ -12,18 +10,23 @@
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
-#include "array.h"
-#include "plugin.h"
 
-namespace rj
+
+#include "common.h"
+#include "log.h"
+#include "package_config.h"
+#include "plugin.h"
+#include "repository.h"
+#include "util.h"
+
+namespace micrantha
 {
     namespace prep
     {
         static const char *const DEFAULT_LOCATION = ".";
 
-        static const char *const PACKAGE_FILE = "package.json";
-
-        options::options_s() : global(false), package_file(PACKAGE_FILE), location(DEFAULT_LOCATION), force_build(false)
+        options::options_s()
+            : global(false), package_file(repository::PACKAGE_FILE), location(DEFAULT_LOCATION), force_build(false)
         {
         }
 
@@ -31,7 +34,7 @@ namespace rj
         {
         }
 
-        package::package(const rj::json::object &obj) : values_(obj)
+        package::package(const json_type &obj) : values_(obj)
         {
             init_dependencies();
             init_build_system();
@@ -39,19 +42,37 @@ namespace rj
 
         void package::init_dependencies()
         {
-            if (values_.contains("dependencies")) {
-                auto deps = values_.get_array("dependencies");
+            auto deps = values_["dependencies"];
 
-                for (auto &dep : deps) {
-                    dependencies_.push_back(package_dependency(dep));
-                }
+            if (!deps.is_array()) {
+                return;
+            }
+
+            for (auto &dep : deps) {
+                dependencies_.push_back(package_dependency(dep));
             }
         }
 
+
+        int package::dependency_count(const std::string &package_name) const
+        {
+            int count = 0;
+
+            for (const package_dependency &dep : dependencies()) {
+                if (!strcmp(dep.name().c_str(), package_name.c_str())) {
+                    count++;
+                }
+                count += dep.dependency_count(package_name);
+            }
+
+            return count;
+        }
+
+
         void package::init_build_system()
         {
-            if (values_.contains("build_system")) {
-                auto systems = values_.get_array("build_system");
+            if (values_.count("build_system")) {
+                std::vector<std::string> systems = values_["build_system"];
                 for (auto &system : systems) {
                     build_system_.push_back(system);
                 }
@@ -59,14 +80,17 @@ namespace rj
         }
 
         package::package(const package &other)
-            : values_(other.values_), path_(other.path_), dependencies_(other.dependencies_), build_system_(other.build_system_)
+            : values_(other.values_),
+              path_(other.path_),
+              dependencies_(other.dependencies_),
+              build_system_(other.build_system_)
         {
         }
 
         package &package::operator=(const package &other)
         {
-            values_ = other.values_;
-            path_ = other.path_;
+            values_       = other.values_;
+            path_         = other.path_;
             dependencies_ = other.dependencies_;
             build_system_ = other.build_system_;
             return *this;
@@ -97,17 +121,18 @@ namespace rj
 
         bool package::is_loaded() const
         {
-            return values_.is_valid();
+            return !values_.is_null();
         }
 
-        vector<package_dependency> package::dependencies() const
+        std::vector<package_dependency> package::dependencies() const
         {
             return dependencies_;
         }
 
-        int package_config::resolve_package_file(const string &path, const string &filename, ifstream &file)
+        int package_config::resolve_package_file(const std::string &path, const std::string &filename,
+                                                 std::ifstream &file)
         {
-            char buf[PATH_MAX] = {0};
+            char buf[PATH_MAX] = { 0 };
 
             snprintf(buf, PATH_MAX, "%s/%s", path.c_str(), filename.c_str());
 
@@ -117,18 +142,18 @@ namespace rj
                 return PREP_SUCCESS;
             }
 
-            if (filename.find("://") != string::npos) {
+            if (filename.find("://") != std::string::npos) {
                 return download_package_file(path, filename, file);
             }
 
             return PREP_FAILURE;
         }
 
-        int package_config::download_package_file(const string &path, const string &url, ifstream &file)
+        int package_config::download_package_file(const std::string &path, const std::string &url, std::ifstream &file)
         {
-            string buffer;
-            char filename[PATH_MAX + 1] = {0};
-            char *fname = NULL;
+            std::string buffer;
+            char filename[PATH_MAX + 1] = { 0 };
+            char *fname                 = NULL;
 
             log_debug("attempting download of %s", url.c_str());
 
@@ -155,8 +180,7 @@ namespace rj
 
         int package_config::load(const std::string &path, const options &opts)
         {
-            ifstream file;
-            json_object *depjson;
+            std::ifstream file;
             std::ostringstream os;
 
             if (path.empty()) {
@@ -175,7 +199,9 @@ namespace rj
 
             file >> os.rdbuf();
 
-            if (!values_.parse(os.str().c_str())) {
+            values_ = json_type::parse(os.str().c_str());
+
+            if (values_.size() == 0) {
                 printf("invalid configuration for %s\n", os.str().c_str());
                 return PREP_FAILURE;
             }
@@ -193,37 +219,49 @@ namespace rj
 
         std::string package::name() const
         {
-            return values_.get_string("name");
+            auto name = values_.find("name");
+            if (name == values_.end()) {
+                return "";
+            }
+            return *name;
         }
 
         std::string package::version() const
         {
-            return values_.get_string("version");
+            auto vers = values_.find("version");
+            if (vers == values_.end()) {
+                return "";
+            }
+            return *vers;
         }
 
-        vector<string> package::build_system() const
+        std::vector<std::string> package::build_system() const
         {
             return build_system_;
         }
 
         std::string package::location() const
         {
-            return values_.get_string("location");
+            auto loc = values_.find("location");
+            if (loc == values_.end()) {
+                return "";
+            }
+            return *loc;
         }
 
         void package::set_location(const std::string &value)
         {
-            values_.set_string("location", value);
+            values_["location"] = value;
         }
 
         std::string package::build_options() const
         {
-            return values_.get_string("build_options");
+            return values_["build_options"];
         }
 
         std::string package::executable() const
         {
-            return values_.get_string("executable");
+            return values_["executable"];
         }
 
         std::string package::path() const
@@ -238,21 +276,44 @@ namespace rj
 
         bool package::has_name() const
         {
-            return values_.contains("name");
+            return values_.count("name");
         }
 
-        rj::json::object package::get_plugin_config(const plugin *plugin) const
+        package::json_type package::get_plugin_config(const plugin *plugin) const
         {
             if (plugin == nullptr) {
-                return rj::json::object();
+                return json_type();
             }
 
-            return values_.get(plugin->name());
+            auto config = values_.find(plugin->name());
+
+            if (config == values_.end()) {
+                return json_type();
+            }
+            return *config;
         }
 
-        void package::merge(const rj::json::object &other)
+        static void merge_json(package::json_type &value, const package::json_type &other)
         {
-            values_.merge(other);
+            if (other.is_null()) {
+                return;
+            }
+            if (other.is_object() && value.is_object()) {
+                for (auto it = other.begin(); it != other.end(); ++it) {
+                    value[it.key()] = it.value();
+                }
+            }
+
+            if (other.is_array() && value.is_array()) {
+                for (auto &it : other) {
+                    value.push_back(it);
+                }
+            }
+        }
+
+        void package::merge(const json_type &other)
+        {
+            merge_json(values_, other);
         }
     }
 }

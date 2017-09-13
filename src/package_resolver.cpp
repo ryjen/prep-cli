@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <cassert>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -10,7 +11,6 @@
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
-#include <cassert>
 #include "common.h"
 #include "decompressor.h"
 #include "log.h"
@@ -18,7 +18,7 @@
 #include "repository.h"
 #include "util.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
@@ -45,9 +45,9 @@ namespace rj
 #if (LIBGIT2_SOVERSION >= 23)
                 opts->checkout_strategy = GIT_CHECKOUT_SAFE;
 #else
-                opts->checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+                opts->checkout_strategy      = GIT_CHECKOUT_SAFE_CREATE;
 #endif
-                opts->progress_cb = checkout_progress;
+                opts->progress_cb      = checkout_progress;
                 opts->progress_payload = NULL;
             }
 
@@ -59,7 +59,7 @@ namespace rj
 
 #if (LIBGIT2_SOVERSION >= 23)
                 opts->callbacks.transfer_progress = &fetch_progress;
-                opts->callbacks.payload = NULL;
+                opts->callbacks.payload           = NULL;
 #endif
             }
 
@@ -68,7 +68,7 @@ namespace rj
                 git_submodule_update_options opts = GIT_SUBMODULE_UPDATE_OPTIONS_INIT;
 
                 opts.checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
-                opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
+                opts.fetch_opts    = GIT_FETCH_OPTIONS_INIT;
 
                 build_checkout_opts(&opts.checkout_opts);
 
@@ -102,7 +102,7 @@ namespace rj
         int package_resolver::resolve_package_git(package &config, const options &opts, const char *url)
         {
 #ifdef HAVE_LIBGIT2
-            char buffer[BUFSIZ + 1] = {0};
+            char buffer[BUFSIZ + 1] = { 0 };
             strncpy(buffer, "/tmp/prep-XXXXXX", BUFSIZ);
 
             mkdtemp(buffer);
@@ -113,7 +113,7 @@ namespace rj
             helper::build_checkout_opts(&checkout_opts);
 
             git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
-            clone_opts.checkout_opts = checkout_opts;
+            clone_opts.checkout_opts     = checkout_opts;
 
 #if (LIBGIT2_SOVERSION >= 23)
             helper::build_fetch_opts(&clone_opts.fetch_opts);

@@ -2,7 +2,7 @@
 
 use rlib '../support';
 use Git::Repository;
-use rj::prep::plugin qw(read_resolve_params write_return_value);
+use micrantha::prep::plugin qw(read_resolve_params write_return_value);
 
 sub clone
 {
@@ -17,7 +17,7 @@ sub clone
 
 sub main
 {
-    my $plugin = rj::prep::plugin->new();
+    my $plugin = micrantha::prep::plugin->new();
 
     $plugin->on_resolve(\&clone);
 

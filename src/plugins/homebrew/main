@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use rlib '../support';
-use rj::prep::plugin qw(read_package_params);
+use micrantha::prep::plugin qw(read_package_params);
 
 sub tap
 {
@@ -30,7 +30,7 @@ sub remove
 
 sub main
 {
-    my $plugin = rj::prep::plugin->new();
+    my $plugin = micrantha::prep::plugin->new();
 
     $plugin->on_load(\&tap);
     $plugin->on_install(\&install);

@@ -2,11 +2,11 @@
 #include "common.h"
 #include "package_config.h"
 
-namespace rj
+namespace micrantha
 {
     namespace prep
     {
-        package_dependency::package_dependency(const rj::json::object &obj) : package(obj)
+        package_dependency::package_dependency(const package::json_type &obj) : package(obj)
         {
         }
 
