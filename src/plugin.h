@@ -36,6 +36,7 @@ namespace micrantha
                 bool operator==(int value) const { return code == value; }
             } Result;
 
+            plugin();
             plugin(const std::string &name);
             ~plugin();
             plugin(const plugin &other) = delete;
@@ -50,6 +51,7 @@ namespace micrantha
             // properties
             std::string name() const;
             std::string type() const;
+            std::string version() const;
 
             // callbacks
             Result on_load() const;

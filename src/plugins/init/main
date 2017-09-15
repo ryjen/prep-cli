@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+
+use rlib '../support';
+use File::Basename;
+use micrantha::prep::plugin;
+use CPAN;
+
+sub install_dependencies
+{
+    my $file = dirname($0) . "/../support/cpan_modules.txt";
+
+    die unless -f $file;
+
+    open my $fp, $file or die "could not open $file";
+
+    while(my $line = <$fp>) {
+        CPAN::Shell->install($line);
+    }
+}
+
+sub main
+{
+    my $plugin = micrantha::prep::plugin->new();
+
+    $plugin->on_load(\&install_dependencies);
+
+    return $plugin->execute();
+}
+
+exit(&main);

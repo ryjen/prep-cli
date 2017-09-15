@@ -581,15 +581,19 @@ namespace micrantha
 
                 switch (plugin->load(pluginPath)) {
 
-                case PREP_SUCCESS:
-                    plugins_.push_back(plugin);
-                    break;
-                case PREP_FAILURE:
-                    log_warn("unable to load plugin [%s]", d->d_name);
-                    break;
-                case PREP_ERROR:
-                    log_trace("skipping non-plugin [%s]", d->d_name);
-                    break;
+                    case PREP_SUCCESS:
+                        plugins_.push_back(plugin);
+                        if (plugin->type() != "internal") {
+                            log_info("loaded plugin [%s] version [%s]", plugin->name().c_str(),
+                                     plugin->version().c_str());
+                        }
+                        break;
+                    case PREP_FAILURE:
+                        log_warn("unable to load plugin [%s]", d->d_name);
+                        break;
+                    case PREP_ERROR:
+                        log_trace("skipping non-plugin [%s]", d->d_name);
+                        break;
                 }
             }
 

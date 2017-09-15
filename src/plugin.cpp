@@ -162,8 +162,6 @@ namespace micrantha
                 type_ = entry.get<std::string>();
             }
 
-            log_info("loaded plugin [%s] version [%s]", name_.c_str(), version_.c_str());
-
             return PREP_SUCCESS;
         }
 
@@ -203,6 +201,11 @@ namespace micrantha
         std::string plugin::type() const
         {
             return type_;
+        }
+
+        std::string plugin::version() const
+        {
+            return version_;
         }
 
         std::string plugin::plugin_name(const package &config) const

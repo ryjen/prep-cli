@@ -37,6 +37,7 @@ set(HEADER_FILES
     package_config.h
     plugin.h
     repository.h
+    json.hpp
     util.h
 )
 

@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "package_config.h"
-#include "package_resolver.h"
 #include "plugin.h"
 
 namespace micrantha
