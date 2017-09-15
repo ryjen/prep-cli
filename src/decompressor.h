@@ -17,24 +17,25 @@ namespace micrantha
         class decompressor
         {
           public:
+            decompressor(const void *buf, size_t size, const std::string &topath);
             decompressor(const std::string &path);
             decompressor(const std::string &path, const std::string &topath);
             ~decompressor();
 
-            std::string outputPath() const;
-            std::string inputPath() const;
-
             int decompress(bool ignoreErrors = false);
 
           private:
+            typedef enum { FILE, MEMORY } Type;
             void cleanup();
-            decompressor &operator=(const decompressor &other);
-            decompressor(const decompressor &other);
+            decompressor &operator=(const decompressor &other) = delete;
+            decompressor(const decompressor &other) = delete;
 
             struct archive *in_;
             struct archive *out_;
 
-            std::string path_;
+            const void *from_;
+            size_t fromSize_;
+            Type type_;
             std::string outPath_;
         };
     }

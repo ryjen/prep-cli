@@ -24,7 +24,6 @@ namespace micrantha
             // @returns PREP_SUCCESS or PREP_FAILURE if an error occured
             int build(const package &config, options &opts, const char *path);
 
-            int build_from_folder(options &opts, const char *path);
             int remove(package &config, options &opts, const char *package);
             int remove(const std::string &package_name, options &opts);
             int link_package(const package &config) const;
@@ -33,15 +32,12 @@ namespace micrantha
 
             void add_path_to_shell() const;
 
-            repository &repository();
+            prep::repository *repository();
 
           private:
             int build_package(const package &p, const char *path);
-            int build_commands(const package &config, const char *path, const std::vector<std::string> &commands);
 
-            std::string get_install_dir(const package &config) const;
-
-            micrantha::prep::repository repo_;
+            prep::repository repo_;
 
             bool force_build_;
         };

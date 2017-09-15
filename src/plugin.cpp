@@ -18,6 +18,12 @@ namespace micrantha
 {
     namespace prep
     {
+        const unsigned char default_plugins_zip[] = {
+#include "plugins.inc"
+        };
+
+        const unsigned int default_plugins_size = sizeof(default_plugins_zip) / sizeof(default_plugins_zip[0]);
+
         namespace helper
         {
             bool is_valid_plugin_path(const std::string &path)
@@ -165,7 +171,8 @@ namespace micrantha
         {
             return !executablePath_.empty();
         }
-        int plugin::on_load()
+
+        plugin::Result plugin::on_load() const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -174,7 +181,7 @@ namespace micrantha
             return execute("load");
         }
 
-        int plugin::on_unload()
+        plugin::Result plugin::on_unload() const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -196,20 +203,6 @@ namespace micrantha
         std::string plugin::type() const
         {
             return type_;
-        }
-
-        std::vector<std::string> plugin::return_values() const
-        {
-            return returnValues_;
-        }
-
-        std::string plugin::return_value() const
-        {
-            if (returnValues_.size() == 0) {
-                return std::string();
-            }
-
-            return returnValues_.front();
         }
 
         std::string plugin::plugin_name(const package &config) const
@@ -238,7 +231,7 @@ namespace micrantha
             return "";
         }
 
-        int plugin::on_install(const package &config, const std::string &path)
+        plugin::Result plugin::on_install(const package &config, const std::string &path) const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -253,12 +246,12 @@ namespace micrantha
             return execute("install", info);
         }
 
-        int plugin::on_resolve(const package &config)
+        plugin::Result plugin::on_resolve(const package &config) const
         {
             return on_resolve(plugin_location(config));
         }
 
-        int plugin::on_resolve(const std::string &location)
+        plugin::Result plugin::on_resolve(const std::string &location) const
         {
             char buf[PATH_MAX];
 
@@ -277,7 +270,7 @@ namespace micrantha
             return execute("resolve", info);
         }
 
-        int plugin::on_remove(const package &config, const std::string &path)
+        plugin::Result plugin::on_remove(const package &config, const std::string &path) const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -292,8 +285,8 @@ namespace micrantha
             return execute("remove", info);
         }
 
-        int plugin::on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
-                             const std::string &installPath)
+        plugin::Result plugin::on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
+                             const std::string &installPath) const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -315,7 +308,7 @@ namespace micrantha
             return execute("build", info);
         }
 
-        int plugin::execute(const std::string &method, const std::vector<std::string> &info)
+        plugin::Result plugin::execute(const std::string &method, const std::vector<std::string> &info) const
         {
             int master = 0;
 
@@ -342,6 +335,7 @@ namespace micrantha
                 exit(PREP_FAILURE); // exec never returns
             } else {
                 int status = 0;
+                std::vector<std::string> returnValues;
 
                 struct termios tios;
                 tcgetattr(master, &tios);
@@ -386,7 +380,6 @@ namespace micrantha
                     fd_set write_fd;
                     fd_set except_fd;
                     char input  = 0;
-                    char output = 0;
 
                     FD_ZERO(&read_fd);
                     FD_ZERO(&write_fd);
@@ -417,7 +410,7 @@ namespace micrantha
 
                         // if the line is a command, add it, else print it
                         if (helper::is_return_command(line)) {
-                            returnValues_.push_back(line.substr(7));
+                            returnValues.push_back(line.substr(7));
                         } else if (helper::write_line(STDOUT_FILENO, line) < 0) {
                             log_errno(errno);
                             break;
@@ -447,7 +440,8 @@ namespace micrantha
 
                 if (WIFEXITED(status)) {
                     int rval = WEXITSTATUS(status);
-                    return rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
+                    rval = rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
+                    return {rval, returnValues};
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 

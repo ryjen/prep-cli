@@ -48,6 +48,8 @@ create_config_header(src/config.h.in)
 # add directories
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(util)
+
 
 # Setup testing
 enable_testing()

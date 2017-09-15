@@ -10,13 +10,11 @@ namespace micrantha
 {
     namespace prep
     {
-        typedef struct options_s {
-            options_s();
+        typedef struct options{
             bool global;
             std::string package_file;
             std::string location;
             bool force_build;
-            std::string executable;
         } options;
 
         class package_dependency;
@@ -47,10 +45,7 @@ namespace micrantha
             bool is_loaded() const;
 
             virtual int load(const std::string &path, const options &opts) = 0;
-            void set_location(const std::string &value);
-            void merge(const json_type &other);
             json_type get_plugin_config(const plugin *plugin) const;
-
 
             int dependency_count(const std::string &package_name) const;
 

@@ -11,6 +11,9 @@ namespace micrantha
         class package;
         class package_dependency;
 
+        extern const unsigned char default_plugins_zip[];
+        extern const unsigned int default_plugins_size;
+        
         /**
          * represents a plugin
          */
@@ -21,6 +24,17 @@ namespace micrantha
              * the plugin manifest file
              */
             constexpr static const char *const MANIFEST_FILE = "manifest.json";
+
+            /**
+             * a return value for executing a plugin.
+             */
+            typedef struct Result {
+                int code;
+                std::vector<std::string> values;
+                Result(int c) : code(c) {}
+                Result(int c, const std::vector<std::string> &r) : code(c), values(r) {}
+                bool operator==(int value) const { return code == value; }
+            } Result;
 
             plugin(const std::string &name);
             ~plugin();
@@ -36,18 +50,16 @@ namespace micrantha
             // properties
             std::string name() const;
             std::string type() const;
-            std::vector<std::string> return_values() const;
-            std::string return_value() const;
 
             // callbacks
-            int on_load();
-            int on_unload();
-            int on_resolve(const std::string &location);
-            int on_resolve(const package &config);
-            int on_install(const package &config, const std::string &path);
-            int on_remove(const package &config, const std::string &path);
-            int on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
-                         const std::string &installPath);
+            Result on_load() const;
+            Result on_unload() const;
+            Result on_resolve(const std::string &location) const;
+            Result on_resolve(const package &config) const;
+            Result on_install(const package &config, const std::string &path) const;
+            Result on_remove(const package &config, const std::string &path) const;
+            Result on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
+                         const std::string &installPath) const;
 
             /**
              * loads a plugin
@@ -57,9 +69,10 @@ namespace micrantha
             int load(const std::string &path);
 
           private:
+
             std::string plugin_name(const package &config) const;
             std::string plugin_location(const package &config) const;
-            int execute(const std::string &method, const std::vector<std::string> &input = std::vector<std::string>());
+            Result execute(const std::string &method, const std::vector<std::string> &input = std::vector<std::string>()) const;
 
             // properties
             std::string name_;
@@ -68,7 +81,6 @@ namespace micrantha
             std::string basePath_;
             std::string type_;
             std::vector<package_dependency> dependencies_;
-            std::vector<std::string> returnValues_;
         };
     }
 }

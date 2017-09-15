@@ -77,7 +77,7 @@ namespace micrantha
             /**
              * a callback for resolving plugins
              */
-            typedef std::function<void(const std::shared_ptr<plugin> &plugin)> resolver_callback;
+            typedef std::function<void(const plugin::Result &result)> resolver_callback;
 
             /**
              * gets the user local repository on the system
@@ -95,16 +95,6 @@ namespace micrantha
             int link_directory(const std::string &path) const;
 
             /**
-             * tests if a package download exists in the history
-             */
-            std::string exists_in_history(const std::string &download_endpoint) const;
-
-            /**
-             * saves a package download location in the history
-             */
-            void save_history(const std::string &location, const std::string &working_dir) const;
-
-            /**
              * saves meta data for a package
              */
             int save_meta(const package &config) const;
@@ -113,11 +103,6 @@ namespace micrantha
              * tests for meta data on a package
              */
             int has_meta(const package &config) const;
-
-            /**
-             * counts the dependencies for a package in the entire repository
-             */
-            int dependency_count(const package &config, const options &opts) const;
 
             /**
              * counts the dependencies for a package name in the entire repository
@@ -133,20 +118,17 @@ namespace micrantha
             /**
              * install path property
              */
-            std::string get_install_path() const;
             std::string get_install_path(const std::string &package_name) const;
 
             /**
              * meta path property
              */
-            std::string get_meta_path() const;
             std::string get_meta_path(const std::string &package_name) const;
 
             // bin path property
             std::string get_bin_path() const;
 
             // build path property
-            std::string get_build_path() const;
             std::string get_build_path(const std::string &package_name) const;
 
             // plugin path property

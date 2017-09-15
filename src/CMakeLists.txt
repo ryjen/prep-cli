@@ -3,13 +3,11 @@ set(LIBRARY_FILES
     environment.cpp
     log.cpp
     util.cpp
-    decompressor.cpp
-)
+    decompressor.cpp)
 
 set(SOURCE_FILES
     package_builder.cpp
     package_config.cpp
-    package_dependency.cpp
     plugin.cpp
     repository.cpp)
 
@@ -19,11 +17,17 @@ add_library(${PROJECT_LIBRARY} ${LIBRARY_FILES})
 
 add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${ZLIB_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES} ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${ZLIB_LIBRARIES} ${LibArchive_LIBRARIES} ${CURL_LIBRARIES}
+        ${GIT2_LIBRARIES} ${ICONV_LIBRARIES})
 
-add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK COMMAND zip -r ${PROJECT_BINARY_DIR}/gen/plugins.zip . WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins)
+add_custom_target(ZIP_PLUGINS COMMAND zip -r ${PROJECT_BINARY_DIR}/gen/plugins.zip .
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND cat ${PROJECT_BINARY_DIR}/gen/plugins.zip >> ${PROJECT_BINARY_DIR}/src/${PROJECT_NAME})
+add_custom_target(GEN_PLUGIN_INC COMMAND bin2csv ${PROJECT_BINARY_DIR}/gen/plugins.zip
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins.inc
+        DEPENDS ZIP_PLUGINS)
+
+add_dependencies(${PROJECT_LIBRARY} GEN_PLUGIN_INC)
 
 set(HEADER_FILES
     common.h

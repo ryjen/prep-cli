@@ -138,7 +138,7 @@ namespace micrantha
             const std::string pluginPath = get_plugin_path();
 
             if (!directory_exists(pluginPath.c_str())) {
-                if (mkdir(pluginPath.c_str(), 0777)) {
+                if (mkpath(pluginPath.c_str(), 0777)) {
                     log_errno(errno);
                     return PREP_FAILURE;
                 }
@@ -147,6 +147,11 @@ namespace micrantha
             dir = opendir(globalPath.c_str());
 
             if (dir == NULL) {
+                if (mkpath(globalPath.c_str(), 0777)) {
+                    log_errno(errno);
+                    return PREP_FAILURE;
+                }
+
                 if (init_plugins(opts, globalPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
                 }
@@ -200,7 +205,7 @@ namespace micrantha
 
         int repository::init_plugins(const options &opts, const std::string &path) const
         {
-            decompressor unzip(opts.executable, path);
+            decompressor unzip(default_plugins_zip, default_plugins_size, path);
 
             return unzip.decompress(true);
         }
@@ -215,29 +220,14 @@ namespace micrantha
             return build_sys_path(path_.c_str(), PLUGIN_FOLDER, NULL);
         }
 
-        std::string repository::get_build_path() const
-        {
-            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, NULL);
-        }
-
         std::string repository::get_build_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, package_name.c_str(), NULL);
         }
 
-        std::string repository::get_install_path() const
-        {
-            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, NULL);
-        }
-
         std::string repository::get_install_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, package_name.c_str(), NULL);
-        }
-
-        std::string repository::get_meta_path() const
-        {
-            return build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, NULL);
         }
 
         std::string repository::get_meta_path(const std::string &package_name) const
@@ -384,17 +374,6 @@ namespace micrantha
 
             return count;
         }
-
-        int repository::dependency_count(const package &config, const options &opts) const
-        {
-            if (!config.is_loaded()) {
-                log_error("config is not loaded");
-                return -1;
-            }
-
-            return dependency_count(config.name(), opts);
-        }
-
 
         int repository::link_directory(const std::string &path) const
         {
@@ -566,55 +545,6 @@ namespace micrantha
             return rval;
         }
 
-
-        std::string repository::exists_in_history(const std::string &location) const
-        {
-            if (location.empty()) {
-                return location;
-            }
-
-            std::ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
-
-            std::map<std::string, std::string> mps;
-            std::insert_iterator<std::map<std::string, std::string>> mpsi(mps, mps.begin());
-
-            const std::istream_iterator<std::pair<std::string, std::string>> eos;
-            std::istream_iterator<std::pair<std::string, std::string>> its(is);
-
-            std::copy(its, eos, mpsi);
-
-            is.close();
-
-            return mps[location];
-        }
-
-        void repository::save_history(const std::string &location, const std::string &working_dir) const
-        {
-            if (location.empty()) {
-                return;
-            }
-
-            std::ifstream is(build_sys_path(path_.c_str(), KITCHEN_FOLDER, HISTORY_FILE, NULL));
-
-            std::map<std::string, std::string> mps;
-            std::insert_iterator<std::map<std::string, std::string>> mpsi(mps, mps.begin());
-
-            const std::istream_iterator<std::pair<std::string, std::string>> eos;
-            std::istream_iterator<std::pair<std::string, std::string>> its(is);
-
-            std::copy(its, eos, mpsi);
-
-            is.close();
-
-            mps[location] = working_dir;
-
-            std::ofstream os(build_sys_path(path_.c_str(), HISTORY_FILE, NULL));
-
-            std::copy(mps.begin(), mps.end(), std::ostream_iterator<std::pair<std::string, std::string>>(os, "\n"));
-
-            os.close();
-        }
-
         int repository::load_plugins()
         {
             std::string path = get_plugin_path();
@@ -679,10 +609,11 @@ namespace micrantha
             log_trace("checking plugins for resolving [%s]...", config.name().c_str());
 
             for (auto plugin : plugins_) {
-                if (plugin->on_resolve(config) == PREP_SUCCESS) {
+                auto result = plugin->on_resolve(config);
+                if (result == PREP_SUCCESS) {
                     log_info("resolved [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
                     if (callback) {
-                        callback(plugin);
+                        callback(result);
                     }
                     return PREP_SUCCESS;
                 }
@@ -695,10 +626,12 @@ namespace micrantha
             log_trace("checking plugins for resolving [%s]...", location.c_str());
 
             for (auto plugin : plugins_) {
-                if (plugin->on_resolve(location) == PREP_SUCCESS) {
+                auto result = plugin->on_resolve(location);
+
+                if (result == PREP_SUCCESS) {
                     log_info("resolved [%s] from plugin [%s]", location.c_str(), plugin->name().c_str());
                     if (callback) {
-                        callback(plugin);
+                        callback(result);
                     }
                     return PREP_SUCCESS;
                 }

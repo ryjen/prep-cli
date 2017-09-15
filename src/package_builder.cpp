@@ -33,9 +33,9 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        repository &package_builder::repository()
+        prep::repository *package_builder::repository()
         {
-            return repo_;
+            return &repo_;
         }
 
         void package_builder::add_path_to_shell() const
@@ -168,8 +168,6 @@ namespace micrantha
 
             log_trace("Building from [%s]", path);
 
-            repo_.save_history(config.location(), path);
-
             installDir = repo_.get_install_path(config.name());
 
             if (!directory_exists(installDir.c_str())) {
@@ -189,8 +187,8 @@ namespace micrantha
                     continue;
                 }
 
-                auto callback = [&package_dir](const std::shared_ptr<plugin> &plugin) {
-                    package_dir = plugin->return_value();
+                auto callback = [&package_dir](const plugin::Result &result) {
+                    package_dir = result.values.front();
                 };
 
                 if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
@@ -265,31 +263,6 @@ namespace micrantha
             }
 
             return repo_.execute(config.executable().c_str(), argc, argv);
-        }
-
-        int package_builder::build_commands(const package &config, const char *path,
-                                            const std::vector<std::string> &commands)
-        {
-            for (auto &cmd : commands) {
-                if (environment::execute(cmd.c_str(), path)) {
-                    log_error("unable to execute command [%s]", cmd.c_str());
-                    return PREP_FAILURE;
-                }
-            }
-
-            return PREP_SUCCESS;
-        }
-
-        int package_builder::build_from_folder(options &opts, const char *path)
-        {
-            package_config config;
-
-            if (config.load(path, opts)) {
-                return build(config, opts, path);
-            } else {
-                log_error("%s is not a valid prep package\n", path);
-                return 1;
-            }
         }
     }
 }

@@ -53,33 +53,24 @@ namespace micrantha
         {
         }
 
-        decompressor::decompressor(const std::string &path, const std::string &topath)
-            : path_(path)
+        decompressor::decompressor(const void *from, size_t size, const std::string &topath) : from_(from), fromSize_(size), type_(MEMORY), outPath_(topath)
 #ifdef HAVE_LIBARCHIVE
-              ,
-              in_(NULL),
-              out_(NULL)
+            , in_(NULL), out_(NULL)
 #endif
         {
-            char buf[PATH_MAX + 1] = { 0 };
+        }
 
-            strncpy(buf, topath.c_str(), PATH_MAX);
-
-            outPath_ = dirname(buf);
+        decompressor::decompressor(const std::string &path, const std::string &topath)
+            : from_(path.c_str()), fromSize_(10240), type_(FILE), outPath_(topath)
+#ifdef HAVE_LIBARCHIVE
+              , in_(NULL), out_(NULL)
+#endif
+        {
         }
 
         decompressor::~decompressor()
         {
             cleanup();
-        }
-
-        std::string decompressor::outputPath() const
-        {
-            return outPath_;
-        }
-        std::string decompressor::inputPath() const
-        {
-            return path_;
         }
 
         void decompressor::cleanup()
@@ -104,13 +95,12 @@ namespace micrantha
             }
 #endif
         }
-        int decompressor::decompress(bool ignoreErrors)
-        {
+        int decompressor::decompress(bool ignoreErrors) {
 #ifdef HAVE_LIBARCHIVE
             int r;
             struct archive_entry *entry;
-            char folderName[PATH_MAX + 1] = { 0 };
-            char buf[PATH_MAX + 1]        = { 0 };
+            char folderName[PATH_MAX + 1] = {0};
+            char buf[PATH_MAX + 1] = {0};
 
             if (in_ != NULL || out_ != NULL) {
                 log_errno(EINVAL);
@@ -125,13 +115,21 @@ namespace micrantha
 #else
             archive_read_support_compression_all(in_);
 #endif
-
-            if ((r = archive_read_open_filename(in_, path_.c_str(), 10240))) {
-                log_error("unable to open %s %d: %s\n", path_.c_str(), r, archive_error_string(in_));
-                cleanup();
-                return PREP_FAILURE;
+            switch (type_) {
+                case FILE:
+                    if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), 10240))) {
+                        log_error("unable to open file %d: %s\n", r, archive_error_string(in_));
+                        cleanup();
+                        return PREP_FAILURE;
+                    }
+                    break;
+                case MEMORY:
+                    if ((r = archive_read_open_memory(in_, from_, fromSize_))) {
+                        log_error("unable to open memory archive %d: %s\n", r, archive_error_string(in_));
+                        cleanup();
+                        return PREP_FAILURE;
+                    }
             }
-
             out_ = archive_write_disk_new();
 
             archive_write_disk_set_options(out_, ARCHIVE_EXTRACT_TIME);
@@ -140,7 +138,7 @@ namespace micrantha
             r = archive_read_next_header(in_, &entry);
 
             if (!ignoreErrors && r < ARCHIVE_OK) {
-                log_error("error extracting %s - %d:%s\n", path_.c_str(), r, archive_error_string(in_));
+                log_error("error extracting %d:%s\n", r, archive_error_string(in_));
                 cleanup();
                 return PREP_SUCCESS;
             }
@@ -176,10 +174,8 @@ namespace micrantha
                 }
             }
 
-            outPath_ = build_sys_path(outPath_.c_str(), folderName, NULL);
-
             if (r < ARCHIVE_OK) {
-                log_error("unable to extract %s - %d: %s\n", path_.c_str(), r, archive_error_string(in_));
+                log_error("unable to extracting %d: %s\n", r, archive_error_string(in_));
                 cleanup();
                 return PREP_FAILURE;
             }

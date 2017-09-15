@@ -28,26 +28,6 @@ namespace micrantha
 {
     namespace prep
     {
-        bool str_cmp(const char *astr, const char *bstr)
-        {
-            if (astr == NULL || bstr == NULL) {
-                return true;
-            }
-
-            return strcasecmp(astr, bstr);
-        }
-
-        bool str_empty(const char *astr)
-        {
-            return astr == NULL || *astr == '\0';
-        }
-
-        int make_temp_file(char *buffer, size_t size)
-        {
-            strncpy(buffer, "/tmp/prep-XXXXXX", size);
-
-            return mkstemp(buffer);
-        }
 
         char *make_temp_dir(char *buffer, size_t size)
         {
@@ -101,41 +81,6 @@ namespace micrantha
                 }
             }
 
-            return rval;
-        }
-
-        int pipe_command(const char *buf, const char *directory, FILE *output)
-        {
-            char cur_dir[MAXPATHLEN + 1] = { 0 };
-
-            if (directory) {
-                if (!getcwd(cur_dir, MAXPATHLEN)) {
-                    return EXIT_FAILURE;
-                }
-
-                if (chdir(directory)) {
-                    return EXIT_FAILURE;
-                }
-            }
-
-            FILE *out = popen(buf, "r");
-            int rval  = EXIT_FAILURE;
-
-            if (out != NULL) {
-                char line[BUFSIZ + 1] = { 0 };
-
-                while (fgets(line, BUFSIZ, out) != NULL) {
-                    fputs(line, output);
-                }
-
-                if (pclose(out) != -1) {
-                    rval = EXIT_SUCCESS;
-                }
-            }
-
-            if (directory) {
-                chdir(cur_dir);
-            }
             return rval;
         }
 
@@ -469,31 +414,6 @@ namespace micrantha
             fts_close(file_system);
 
             return rval;
-        }
-
-        std::string get_user_home_dir()
-        {
-            static std::string home_dir_path;
-
-            if (home_dir_path.empty()) {
-                char *homedir = getenv("HOME");
-
-                if (homedir == NULL) {
-                    uid_t uid         = getuid();
-                    struct passwd *pw = getpwuid(uid);
-
-                    if (pw == NULL) {
-                        log_error("Failed to get user home directory");
-                        exit(PREP_FAILURE);
-                    }
-
-                    homedir = pw->pw_dir;
-                }
-
-                home_dir_path = homedir;
-            }
-
-            return home_dir_path;
         }
 
         const char *build_sys_path(const char *start, ...)

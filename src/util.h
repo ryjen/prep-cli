@@ -9,25 +9,10 @@ namespace micrantha
     namespace prep
     {
         /**
-         * compares two string, checking for null and empty
-         */
-        bool str_cmp(const char *astr, const char *bstr);
-
-        /**
-         * tests if a string is null or empty
-         */
-        bool str_empty(const char *str);
-
-        /**
          * runs a command in a forked process
          * @return PREP_SUCCESS or PREP_FAILURE upon error
          */
         int fork_command(const char *argv[], const char *directory, char *const envp[]);
-
-        /**
-         * pipes output from a command into another stream
-         */
-        int pipe_command(const char *buf, const char *directory, FILE *output = stdout);
 
         /**
          * removes an entire directory hierarchy
@@ -65,12 +50,6 @@ namespace micrantha
         int download_to_temp_file(const char *url, std::string &filename);
 
         /**
-         * makes a temporary file and assigns the name to the buffer
-         * @return PREP_ERROR upon error
-         */
-        int make_temp_file(char *buffer, size_t size);
-
-        /**
          * makes a temporary directory and assigns the name to the buffer
          * @return the directory name
          */
@@ -86,11 +65,6 @@ namespace micrantha
          * copies one file to another given their names
          */
         int copy_file(const std::string &from, const std::string &to);
-
-        /**
-         * gets the home directory for the current system user
-         */
-        std::string get_user_home_dir();
 
         /**
          * builds a platform independent directory path given directory names

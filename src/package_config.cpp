@@ -23,13 +23,6 @@ namespace micrantha
 {
     namespace prep
     {
-        static const char *const DEFAULT_LOCATION = ".";
-
-        options::options_s()
-            : global(false), package_file(repository::PACKAGE_FILE), location(DEFAULT_LOCATION), force_build(false)
-        {
-        }
-
         package::package() : values_()
         {
         }
@@ -249,11 +242,6 @@ namespace micrantha
             return *loc;
         }
 
-        void package::set_location(const std::string &value)
-        {
-            values_["location"] = value;
-        }
-
         std::string package::build_options() const
         {
             return values_["build_options"];
@@ -293,27 +281,21 @@ namespace micrantha
             return *config;
         }
 
-        static void merge_json(package::json_type &value, const package::json_type &other)
+        package_dependency::package_dependency(const package::json_type &obj) : package(obj)
         {
-            if (other.is_null()) {
-                return;
-            }
-            if (other.is_object() && value.is_object()) {
-                for (auto it = other.begin(); it != other.end(); ++it) {
-                    value[it.key()] = it.value();
-                }
-            }
-
-            if (other.is_array() && value.is_array()) {
-                for (auto &it : other) {
-                    value.push_back(it);
-                }
-            }
         }
 
-        void package::merge(const json_type &other)
+        package_dependency::package_dependency(const package_dependency &other) : package(other)
         {
-            merge_json(values_, other);
+        }
+
+        package_dependency::~package_dependency()
+        {
+        }
+
+        int package_dependency::load(const std::string &path, const options &opts)
+        {
+            return PREP_SUCCESS;
         }
     }
 }

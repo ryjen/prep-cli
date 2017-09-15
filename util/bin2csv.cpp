@@ -19,9 +19,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    sprintf(buf, "%s.inc", argv[2]);
-
-    out = fopen(buf, "w");
+    out = fopen(argv[2], "w");
 
     if (out == NULL) {
         printf("Invalid output file %s\n", argv[2]);
@@ -40,6 +38,6 @@ int main(int argc, char *argv[])
     fclose(in);
     fclose(out);
 
-    printf("Wrote %s.\n", buf);
+    printf("Wrote %s.\n", argv[2]);
     return 0;
 }
