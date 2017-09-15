@@ -187,9 +187,7 @@ namespace micrantha
                     continue;
                 }
 
-                auto callback = [&package_dir](const plugin::Result &result) {
-                    package_dir = result.values.front();
-                };
+                auto callback = [&package_dir](const plugin::Result &result) { package_dir = result.values.front(); };
 
                 if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
                     log_error("[%s] could not resolve dependency [%s]", config.name().c_str(), p.name().c_str());

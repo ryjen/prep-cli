@@ -1,11 +1,10 @@
 
-#include <fstream>
 #include <signal.h>
-#include <sstream>
-#include <thread>
 #include <unistd.h>
 #include <util.h>
-
+#include <fstream>
+#include <sstream>
+#include <thread>
 
 #include "common.h"
 #include "environment.h"
@@ -26,6 +25,8 @@ namespace micrantha
 
         namespace helper
         {
+            constexpr static const char *const TYPE_INTERNAL = "internal";
+
             bool is_valid_plugin_path(const std::string &path)
             {
                 if (path.empty()) {
@@ -37,13 +38,24 @@ namespace micrantha
                 return file_exists(manifest);
             }
 
-            bool is_plugin_support(const std::string &path)
+            bool is_plugin_internal(const std::string &path)
             {
-                if (path.empty() || path.length() < 4) {
+                if (path.empty()) {
                     return false;
                 }
 
-                return !strcasecmp(path.substr(path.length() - 7).c_str(), "support");
+                auto manifest = build_sys_path(path.c_str(), plugin::MANIFEST_FILE, NULL);
+                std::ifstream file;
+                std::ostringstream buf;
+
+                file.open(manifest);
+
+                file >> buf.rdbuf();
+                auto config = package::json_type::parse(buf.str().c_str());
+
+                auto type = config["type"];
+
+                return type.is_string() && type.get<std::string>() == TYPE_INTERNAL;
             }
 
             bool is_return_command(const std::string &line)
@@ -140,12 +152,21 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            auto entry = config["executable"];
+            auto entry = config["type"];
+
+            if (entry.is_string()) {
+                type_ = entry.get<std::string>();
+            }
+
+            entry = config["executable"];
 
             if (entry.is_string()) {
                 executablePath_ = build_sys_path(basePath_.c_str(), entry.get<std::string>().c_str(), NULL);
                 log_trace("plugin [%s] executable [%s]", name_.c_str(), executablePath_.c_str());
             } else {
+                if (type_ == helper::TYPE_INTERNAL) {
+                    return PREP_SUCCESS;
+                }
                 log_error("plugin [%s] has no executable", name_.c_str());
                 return PREP_FAILURE;
             }
@@ -154,12 +175,6 @@ namespace micrantha
 
             if (entry.is_string()) {
                 version_ = entry.get<std::string>();
-            }
-
-            entry = config["type"];
-
-            if (entry.is_string()) {
-                type_ = entry.get<std::string>();
             }
 
             return PREP_SUCCESS;
@@ -208,6 +223,11 @@ namespace micrantha
             return version_;
         }
 
+        bool plugin::is_internal() const
+        {
+            return type_ == helper::TYPE_INTERNAL;
+        }
+
         std::string plugin::plugin_name(const package &config) const
         {
             auto plugin = config.get_plugin_config(this);
@@ -244,7 +264,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = { plugin_name(config), config.version(), path };
+            std::vector<std::string> info = {plugin_name(config), config.version(), path};
 
             return execute("install", info);
         }
@@ -268,7 +288,7 @@ namespace micrantha
 
             make_temp_dir(buf, PATH_MAX);
 
-            std::vector<std::string> info = { buf, location };
+            std::vector<std::string> info = {buf, location};
 
             return execute("resolve", info);
         }
@@ -283,13 +303,13 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = { plugin_name(config), config.version(), path };
+            std::vector<std::string> info = {plugin_name(config), config.version(), path};
 
             return execute("remove", info);
         }
 
-        plugin::Result plugin::on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
-                             const std::string &installPath) const
+        plugin::Result plugin::on_build(const package &config, const std::string &sourcePath,
+                                        const std::string &buildPath, const std::string &installPath) const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -304,7 +324,7 @@ namespace micrantha
             auto envVars = environment::build_cpp_variables();
 
             std::vector<std::string> info(
-                { plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options() });
+                {plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()});
 
             info.insert(std::end(info), std::begin(envVars), std::end(envVars));
 
@@ -330,12 +350,12 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                const char *argv[] = { name_.c_str(), nullptr };
+                const char *argv[] = {name_.c_str(), nullptr};
 
                 // we are the child, so execute
                 execvp(executablePath_.c_str(), (char *const *)argv);
 
-                exit(PREP_FAILURE); // exec never returns
+                exit(PREP_FAILURE);  // exec never returns
             } else {
                 int status = 0;
                 std::vector<std::string> returnValues;
@@ -382,7 +402,7 @@ namespace micrantha
                     fd_set read_fd;
                     fd_set write_fd;
                     fd_set except_fd;
-                    char input  = 0;
+                    char input = 0;
 
                     FD_ZERO(&read_fd);
                     FD_ZERO(&write_fd);

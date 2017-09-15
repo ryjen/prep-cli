@@ -13,13 +13,13 @@ namespace micrantha
 
         extern const unsigned char default_plugins_zip[];
         extern const unsigned int default_plugins_size;
-        
+
         /**
          * represents a plugin
          */
         class plugin
         {
-          public:
+           public:
             /**
              * the plugin manifest file
              */
@@ -31,16 +31,23 @@ namespace micrantha
             typedef struct Result {
                 int code;
                 std::vector<std::string> values;
-                Result(int c) : code(c) {}
-                Result(int c, const std::vector<std::string> &r) : code(c), values(r) {}
-                bool operator==(int value) const { return code == value; }
+                Result(int c) : code(c)
+                {
+                }
+                Result(int c, const std::vector<std::string> &r) : code(c), values(r)
+                {
+                }
+                bool operator==(int value) const
+                {
+                    return code == value;
+                }
             } Result;
 
             plugin();
             plugin(const std::string &name);
             ~plugin();
             plugin(const plugin &other) = delete;
-            plugin(plugin &&other)      = default;
+            plugin(plugin &&other) = default;
             plugin &operator=(const plugin &other) = delete;
             plugin &operator=(plugin &&other) = default;
 
@@ -52,6 +59,7 @@ namespace micrantha
             std::string name() const;
             std::string type() const;
             std::string version() const;
+            bool is_internal() const;
 
             // callbacks
             Result on_load() const;
@@ -61,7 +69,7 @@ namespace micrantha
             Result on_install(const package &config, const std::string &path) const;
             Result on_remove(const package &config, const std::string &path) const;
             Result on_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
-                         const std::string &installPath) const;
+                            const std::string &installPath) const;
 
             /**
              * loads a plugin
@@ -70,11 +78,11 @@ namespace micrantha
              */
             int load(const std::string &path);
 
-          private:
-
+           private:
             std::string plugin_name(const package &config) const;
             std::string plugin_location(const package &config) const;
-            Result execute(const std::string &method, const std::vector<std::string> &input = std::vector<std::string>()) const;
+            Result execute(const std::string &method,
+                           const std::vector<std::string> &input = std::vector<std::string>()) const;
 
             // properties
             std::string name_;

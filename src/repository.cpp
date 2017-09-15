@@ -1,22 +1,22 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
 #include <dirent.h>
-#include <fstream>
 #include <fts.h>
-#include <iostream>
-#include <iterator>
 #include <libgen.h>
-#include <map>
 #include <pwd.h>
-#include <string>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <string>
 #ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 #include <curl/easy.h>
@@ -47,19 +47,19 @@ namespace micrantha
         namespace helper
         {
             extern bool is_valid_plugin_path(const std::string &path);
-            extern bool is_plugin_support(const std::string &path);
+            extern bool is_plugin_internal(const std::string &path);
         }
 
         const char *const repository::get_local_repo()
         {
-            char buf[BUFSIZ] = { 0 };
+            char buf[BUFSIZ] = {0};
 
             if (!getcwd(buf, BUFSIZ)) {
                 log_error("no current directory");
                 return nullptr;
             }
 
-            const char *prefix       = buf;
+            const char *prefix = buf;
             const char *current_path = build_sys_path(prefix, LOCAL_REPO_NAME, NULL);
 
             while (directory_exists(current_path) == 1) {
@@ -104,11 +104,11 @@ namespace micrantha
                 mkdir(path_.c_str(), 0700);
             }
 
-            char *temp          = getenv("PATH");
+            char *temp = getenv("PATH");
             std::string binPath = build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
 
             if (temp != NULL) {
-                char buf[BUFSIZ] = { 0 };
+                char buf[BUFSIZ] = {0};
 
                 strncpy(buf, temp, BUFSIZ);
 
@@ -133,8 +133,8 @@ namespace micrantha
         {
             const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, NULL);
 
-            struct dirent *d             = NULL;
-            DIR *dir                     = NULL;
+            struct dirent *d = NULL;
+            DIR *dir = NULL;
             const std::string pluginPath = get_plugin_path();
 
             if (!directory_exists(pluginPath.c_str())) {
@@ -171,15 +171,9 @@ namespace micrantha
 
                 const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, NULL);
 
-                bool is_plugin = helper::is_valid_plugin_path(globalPlugin);
-
-                if (!is_plugin && !helper::is_plugin_support(globalPlugin)) {
-                    continue;
-                }
-
                 const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, NULL);
 
-                if (is_plugin) {
+                if (helper::is_valid_plugin_path(globalPlugin) && !helper::is_plugin_internal(globalPlugin)) {
                     std::string buf;
 
                     if (!helper::is_valid_plugin_path(localPath)) {
@@ -317,8 +311,8 @@ namespace micrantha
         {
             DIR *dir;
             struct dirent *d_ent;
-            int rval               = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = { 0 };
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
             struct stat st;
             size_t count = 0;
             std::string metaDir;
@@ -377,18 +371,18 @@ namespace micrantha
 
         int repository::link_directory(const std::string &path) const
         {
-            FTS *file_system       = NULL;
-            FTSENT *child          = NULL;
-            FTSENT *parent         = NULL;
-            int rval               = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = { 0 };
+            FTS *file_system = NULL;
+            FTSENT *child = NULL;
+            FTSENT *parent = NULL;
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
 
             if (!directory_exists(path.c_str())) {
                 log_error("%s is not a directory", path.c_str());
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = { (char *const)path.c_str(), NULL };
+            char *const paths[] = {(char *const)path.c_str(), NULL};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -457,14 +451,13 @@ namespace micrantha
             return rval;
         }
 
-
         int repository::unlink_directory(const std::string &path) const
         {
-            FTS *file_system       = NULL;
-            FTSENT *child          = NULL;
-            FTSENT *parent         = NULL;
-            int rval               = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = { 0 };
+            FTS *file_system = NULL;
+            FTSENT *child = NULL;
+            FTSENT *parent = NULL;
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
             std::string installDir;
 
             if (!directory_exists(path.c_str())) {
@@ -472,7 +465,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = { (char *const)path.c_str(), NULL };
+            char *const paths[] = {(char *const)path.c_str(), NULL};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
 
@@ -559,7 +552,7 @@ namespace micrantha
             }
 
             struct dirent *d = NULL;
-            DIR *dir         = opendir(path.c_str());
+            DIR *dir = opendir(path.c_str());
 
             if (dir == NULL) {
                 log_errno(errno);
@@ -580,10 +573,9 @@ namespace micrantha
                 auto plugin = std::make_shared<micrantha::prep::plugin>(d->d_name);
 
                 switch (plugin->load(pluginPath)) {
-
                     case PREP_SUCCESS:
                         plugins_.push_back(plugin);
-                        if (plugin->type() != "internal") {
+                        if (!plugin->is_internal()) {
                             log_info("loaded plugin [%s] version [%s]", plugin->name().c_str(),
                                      plugin->version().c_str());
                         }
@@ -598,6 +590,13 @@ namespace micrantha
             }
 
             closedir(dir);
+
+            plugins_.sort([](const std::shared_ptr<plugin> &a, const std::shared_ptr<plugin> &b) {
+                if (a->is_internal()) {
+                    return true;
+                }
+                return false;
+            });
 
             for (auto &plugin : plugins_) {
                 if (plugin->on_load() == PREP_ERROR) {
@@ -678,7 +677,6 @@ namespace micrantha
             }
             return nullptr;
         }
-
 
         int repository::notify_plugins_build(const package &config, const std::string &sourcePath,
                                              const std::string &buildPath, const std::string &installPath)

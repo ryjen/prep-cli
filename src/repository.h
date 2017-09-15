@@ -1,9 +1,9 @@
 #ifndef MICRANTHA_PREP_REPOSITORY_H
 #define MICRANTHA_PREP_REPOSITORY_H
 
+#include <list>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "package_config.h"
 #include "plugin.h"
@@ -14,13 +14,13 @@ namespace micrantha
     {
         class repository
         {
-          public:
+           public:
 #ifdef _WIN32
             constexpr static const char *const UNKNOWN_INSTALL_FOLDER = "C:\\Windows\\Temp\\Unknown";
-            constexpr static const char *const GLOBAL_REPO            = "C:\\prep";
+            constexpr static const char *const GLOBAL_REPO = "C:\\prep";
 #else
             constexpr static const char *const UNKNOWN_INSTALL_FOLDER = "/tmp/unknown";
-            constexpr static const char *const GLOBAL_REPO            = "/usr/local/share/prep";
+            constexpr static const char *const GLOBAL_REPO = "/usr/local/share/prep";
 #endif
 
             /**
@@ -187,11 +187,11 @@ namespace micrantha
              */
             int load_plugins();
 
-          private:
+           private:
             int init_plugins(const options &opts, const std::string &path) const;
 
             // a list of plugins
-            std::vector<std::shared_ptr<plugin>> plugins_;
+            std::list<std::shared_ptr<plugin>> plugins_;
             // the repository path
             std::string path_;
         };

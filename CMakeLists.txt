@@ -28,6 +28,10 @@ endif()
 find_library(LibArchive_LIBRARY archive HINTS "/usr/local/opt/libarchive/lib")
 find_package(LibArchive)
 
+if (!LibArchive_FOUND)
+	message(FATAL "Could not find libarchive")
+endif()
+
 find_library(ICONV_LIBRARIES iconv)
 find_library(GIT2_LIBRARIES git2)
 
