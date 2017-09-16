@@ -46,12 +46,11 @@ namespace micrantha
 
             virtual int load(const std::string &path, const options &opts) = 0;
             json_type get_plugin_config(const plugin *plugin) const;
-
             int dependency_count(const std::string &package_name) const;
 
           protected:
             package();
-            package(const json_type &obj);
+            explicit package(const json_type &obj);
             package(const package &other);
             package &operator=(const package &other);
 
@@ -74,13 +73,13 @@ namespace micrantha
             friend class package_config;
 
           public:
-            ~package_dependency();
+            ~package_dependency() override;
             package_dependency(const package_dependency &other);
             package_dependency &operator=(const package_dependency &) = default;
-            int load(const std::string &path, const options &opts);
+            int load(const std::string &path, const options &opts) override;
 
           protected:
-            package_dependency(const json_type &obj);
+            explicit package_dependency(const json_type &obj);
         };
 
 
@@ -92,13 +91,12 @@ namespace micrantha
           public:
             package_config();
             package_config(const package_config &);
-            ~package_config();
+            ~package_config() override;
             package_config &operator=(const package_config &other);
-            int load(const std::string &path, const options &opts);
+            int load(const std::string &path, const options &opts) override;
 
           private:
             int resolve_package_file(const std::string &path, const std::string &filename, std::ifstream &file);
-            int download_package_file(const std::string &path, const std::string &url, std::ifstream &file);
         };
     }
 }

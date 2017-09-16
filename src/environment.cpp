@@ -1,12 +1,7 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <sstream>
 
-#include "common.h"
 #include "environment.h"
-#include "log.h"
 #include "repository.h"
 #include "util.h"
 
@@ -138,27 +133,6 @@ namespace micrantha
         std::vector<std::string> environment::build_cpp_variables()
         {
             return { build_cflags("CPPFLAGS"), build_ldflags("LDFLAGS"), build_path(), build_ldpath() };
-        }
-
-        int environment::execute(const char *command, const char *path)
-        {
-            char flags[4][BUFSIZ];
-
-            const char *args[] = { "/bin/sh", "-c", command, NULL };
-
-            strncpy(flags[0], build_cflags("CPPFLAGS").c_str(), BUFSIZ);
-            strncpy(flags[1], build_ldflags("LDFLAGS").c_str(), BUFSIZ);
-            strncpy(flags[2], build_path().c_str(), BUFSIZ);
-            strncpy(flags[3], build_ldpath().c_str(), BUFSIZ);
-
-            char *const envp[] = { flags[0], flags[1], flags[2], flags[3], NULL };
-
-            if (fork_command(args, path, envp)) {
-                log_error("unable to execute %s", command);
-                return PREP_FAILURE;
-            }
-
-            return PREP_SUCCESS;
         }
     }
 }

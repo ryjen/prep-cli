@@ -4,10 +4,7 @@
 #ifndef MICRANTHA_PREP_DECOMPRESSOR_H
 #define MICRANTHA_PREP_DECOMPRESSOR_H
 
-#ifdef HAVE_ARCHIVE_H
 #include <archive.h>
-#endif
-
 #include <string>
 
 namespace micrantha

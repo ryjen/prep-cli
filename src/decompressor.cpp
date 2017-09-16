@@ -1,15 +1,8 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#ifdef HAVE_ARCHIVE_ENTRY_H
+
 #include <archive_entry.h>
-#endif
 #include <cerrno>
 #include <cstdlib>
-#ifdef HAVE_LIBGEN_H
-#include <libgen.h>
-#endif
-#include <limits.h>
+#include <climits>
 
 #include "common.h"
 #include "decompressor.h"
@@ -20,7 +13,6 @@ namespace micrantha
 {
     namespace prep
     {
-#ifdef HAVE_LIBARCHIVE
         static int copy_data(struct archive *ar, struct archive *aw)
         {
             int r;
@@ -40,31 +32,26 @@ namespace micrantha
                 if (r != ARCHIVE_OK) {
                     return (r);
                 }
-                r = archive_write_data_block(aw, buff, size, offset);
+                r = static_cast<int>(archive_write_data_block(aw, buff, size, offset));
                 if (r != ARCHIVE_OK) {
                     printf("unable to write archive data block %d:%s", r, archive_error_string(aw));
                     return (r);
                 }
             }
         }
-#endif
 
         decompressor::decompressor(const std::string &path) : decompressor(path, path)
         {
         }
 
         decompressor::decompressor(const void *from, size_t size, const std::string &topath) : from_(from), fromSize_(size), type_(MEMORY), outPath_(topath)
-#ifdef HAVE_LIBARCHIVE
-            , in_(NULL), out_(NULL)
-#endif
+            , in_(nullptr), out_(nullptr)
         {
         }
 
         decompressor::decompressor(const std::string &path, const std::string &topath)
             : from_(path.c_str()), fromSize_(10240), type_(FILE), outPath_(topath)
-#ifdef HAVE_LIBARCHIVE
-              , in_(NULL), out_(NULL)
-#endif
+              , in_(nullptr), out_(nullptr)
         {
         }
 
@@ -75,34 +62,31 @@ namespace micrantha
 
         void decompressor::cleanup()
         {
-#ifdef HAVE_LIBARCHIVE
-            if (in_ != NULL) {
+            if (in_ != nullptr) {
 #if ARCHIVE_VERSION_NUMBER < 3000000
                 archive_read_close(in_);
 #else
                 archive_read_free(in_);
 #endif
-                in_ = NULL;
+                in_ = nullptr;
             }
 
-            if (out_ != NULL) {
+            if (out_ != nullptr) {
 #if ARCHIVE_VERSION_NUMBER < 3000000
                 archive_write_close(out_);
 #else
                 archive_write_free(out_);
 #endif
-                out_ = NULL;
+                out_ = nullptr;
             }
-#endif
         }
         int decompressor::decompress(bool ignoreErrors) {
-#ifdef HAVE_LIBARCHIVE
             int r;
             struct archive_entry *entry;
             char folderName[PATH_MAX + 1] = {0};
             char buf[PATH_MAX + 1] = {0};
 
-            if (in_ != NULL || out_ != NULL) {
+            if (in_ != nullptr || out_ != nullptr) {
                 log_errno(EINVAL);
                 return PREP_FAILURE;
             }
@@ -182,10 +166,6 @@ namespace micrantha
 
             cleanup();
             return PREP_SUCCESS;
-#else
-            log_error("libarchive not configured or installed");
-            return PREP_FAILURE;
-#endif
         }
     }
 }

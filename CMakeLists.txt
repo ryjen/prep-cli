@@ -17,7 +17,6 @@ create_package("a c/c++ package and project manager")
 
 set(PROJECT_LIBRARY "utensil")
 
-find_package(CURL)
 find_package(ZLIB)
 
 find_file(HAVE_ARCHIVE_H archive.h HINTS "/usr/local/opt/libarchive/include")
@@ -32,11 +31,6 @@ if (!LibArchive_FOUND)
 	message(FATAL "Could not find libarchive")
 endif()
 
-find_library(ICONV_LIBRARIES iconv)
-find_library(GIT2_LIBRARIES git2)
-
-find_file(HAVE_LIBGEN_H NAMES libgen.h)
-find_file(HAVE_CURL_CURL_H NAMES ${CURL_INCLUDE_DIRS})
 
 # add target for code coverage
 if(CODE_COVERAGE)
@@ -45,15 +39,10 @@ if(CODE_COVERAGE)
 	setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_SOURCE_DIR}/coverage)
 endif()
 
-# create config header
-include(CreateConfigHeader)
-create_config_header(src/config.h.in)
-
 # add directories
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(util)
-
 
 # Setup testing
 enable_testing()

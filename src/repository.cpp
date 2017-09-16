@@ -1,44 +1,22 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+
 #include <dirent.h>
 #include <fts.h>
-#include <libgen.h>
 #include <pwd.h>
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <map>
-#include <string>
-#ifdef HAVE_LIBCURL
-#include <curl/curl.h>
-#include <curl/easy.h>
-#endif
+
 #include "common.h"
 #include "decompressor.h"
 #include "log.h"
 #include "repository.h"
 #include "util.h"
-
-// for std::copy
-namespace std
-{
-    istream &operator>>(istream &is, pair<string, string> &ps)
-    {
-        return is >> ps.first >> ps.second;
-    }
-    ostream &operator<<(ostream &os, const pair<const string, string> &ps)
-    {
-        return os << ps.first << " " << ps.second;
-    }
-}
 
 namespace micrantha
 {
@@ -93,7 +71,7 @@ namespace micrantha
             if (!directory_exists(path_.c_str())) {
                 std::string buf;
 
-                printf("OK to create folder %s? (Y/n) ", path_.c_str());
+                printf("Create local repository %s? (Y/n) ", path_.c_str());
 
                 std::getline(std::cin, buf);
 
@@ -101,29 +79,38 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                mkdir(path_.c_str(), 0700);
+                auto lib = build_sys_path(path_.c_str(), "lib", nullptr);
+
+                mkpath(lib, 0700);
+            }
+
+            if (!directory_exists(GLOBAL_REPO)) {
+
+                auto lib = build_sys_path(GLOBAL_REPO, "lib", nullptr);
+
+                mkpath(lib, 0700);
             }
 
             char *temp = getenv("PATH");
             std::string binPath = build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
 
-            if (temp != NULL) {
+            if (temp != nullptr) {
                 char buf[BUFSIZ] = {0};
 
                 strncpy(buf, temp, BUFSIZ);
 
                 temp = strtok(buf, ":");
 
-                while (temp != NULL) {
+                while (temp != nullptr) {
                     if (binPath == temp) {
                         break;
                     }
 
-                    temp = strtok(NULL, ":");
+                    temp = strtok(nullptr, ":");
                 }
             }
 
-            if (temp == NULL) {
+            if (temp == nullptr) {
                 log_warn("%s is not added to your PATH", binPath.c_str());
             }
             return PREP_SUCCESS;
@@ -131,10 +118,10 @@ namespace micrantha
 
         int repository::validate_plugins(const options &opts) const
         {
-            const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, NULL);
+            const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, nullptr);
 
-            struct dirent *d = NULL;
-            DIR *dir = NULL;
+            struct dirent *d = nullptr;
+            DIR *dir = nullptr;
             const std::string pluginPath = get_plugin_path();
 
             if (!directory_exists(pluginPath.c_str())) {
@@ -146,7 +133,7 @@ namespace micrantha
 
             dir = opendir(globalPath.c_str());
 
-            if (dir == NULL) {
+            if (dir == nullptr) {
                 if (mkpath(globalPath.c_str(), 0777)) {
                     log_errno(errno);
                     return PREP_FAILURE;
@@ -158,26 +145,26 @@ namespace micrantha
 
                 dir = opendir(globalPath.c_str());
 
-                if (dir == NULL) {
+                if (dir == nullptr) {
                     log_errno(errno);
                     return PREP_FAILURE;
                 }
             }
 
-            while ((d = readdir(dir)) != NULL) {
+            while ((d = readdir(dir)) != nullptr) {
                 if (d->d_name[0] == '.') {
                     continue;
                 }
 
-                const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, NULL);
+                const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, nullptr);
 
-                const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, NULL);
+                const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, nullptr);
 
                 if (helper::is_valid_plugin_path(globalPlugin) && !helper::is_plugin_internal(globalPlugin)) {
                     std::string buf;
 
                     if (!helper::is_valid_plugin_path(localPath)) {
-                        printf("OK to add plugin %s? (Y/n) ", d->d_name);
+                        printf("Add plugin %s? (Y/n) ", d->d_name);
 
                         std::getline(std::cin, buf);
 
@@ -311,10 +298,9 @@ namespace micrantha
         {
             DIR *dir;
             struct dirent *d_ent;
-            int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
-            struct stat st;
-            size_t count = 0;
+            struct stat st = {};
+            int count = 0;
             std::string metaDir;
 
             if (path_.empty()) {
@@ -331,12 +317,12 @@ namespace micrantha
 
             dir = opendir(metaDir.c_str());
 
-            if (dir == NULL) {
+            if (dir == nullptr) {
                 log_error("unable to open file system [%s]", strerror(errno));
                 return 0;
             }
 
-            while ((d_ent = readdir(dir)) != NULL) {
+            while ((d_ent = readdir(dir)) != nullptr) {
                 if (d_ent->d_name[0] == '.') {
                     continue;
                 }
@@ -371,9 +357,8 @@ namespace micrantha
 
         int repository::link_directory(const std::string &path) const
         {
-            FTS *file_system = NULL;
-            FTSENT *child = NULL;
-            FTSENT *parent = NULL;
+            FTS *file_system = nullptr;
+            FTSENT *parent = nullptr;
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
 
@@ -382,17 +367,17 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = {(char *const)path.c_str(), NULL};
+            char *const paths[] = {(char *const)path.c_str(), nullptr};
 
-            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
+            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
-            if (file_system == NULL) {
+            if (file_system == nullptr) {
                 log_error("unable to open file system [%s]", strerror(errno));
                 return PREP_FAILURE;
             }
 
-            while ((parent = fts_read(file_system)) != NULL) {
-                struct stat st;
+            while ((parent = fts_read(file_system)) != nullptr) {
+                struct stat st = {};
 
                 // get the repo path
                 snprintf(buf, PATH_MAX, "%s%s", path_.c_str(), parent->fts_path + path.length());
@@ -453,9 +438,8 @@ namespace micrantha
 
         int repository::unlink_directory(const std::string &path) const
         {
-            FTS *file_system = NULL;
-            FTSENT *child = NULL;
-            FTSENT *parent = NULL;
+            FTS *file_system = nullptr;
+            FTSENT *parent = nullptr;
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
             std::string installDir;
@@ -465,19 +449,19 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = {(char *const)path.c_str(), NULL};
+            char *const paths[] = {(char *const)path.c_str(), nullptr};
 
-            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
+            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
-            if (file_system == NULL) {
+            if (file_system == nullptr) {
                 log_error("unable to open file system [%s]", strerror(errno));
                 return PREP_FAILURE;
             }
 
             size_t plength = path.length();
 
-            while ((parent = fts_read(file_system)) != NULL) {
-                struct stat st;
+            while ((parent = fts_read(file_system)) != nullptr) {
+                struct stat st = {};
 
                 if (parent->fts_info == FTS_D) {
                     log_debug("skipping directory %s", parent->fts_path);
@@ -523,9 +507,9 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            const char **args = (const char **)calloc(argc + 2, sizeof(const char *));
+            const auto **args = (const char **)calloc(argc + 2U, sizeof(const char *));
 
-            args[0] = build_sys_path(get_bin_path().c_str(), executable.c_str(), NULL);
+            args[0] = build_sys_path(get_bin_path().c_str(), executable.c_str(), nullptr);
 
             for (int i = 1; i < argc; i++) {
                 args[i] = argv[i - 1];
@@ -541,7 +525,6 @@ namespace micrantha
         int repository::load_plugins()
         {
             std::string path = get_plugin_path();
-            struct stat st;
 
             if (!directory_exists(path.c_str())) {
                 if (mkdir(path.c_str(), 0777)) {
@@ -551,20 +534,20 @@ namespace micrantha
                 return PREP_SUCCESS;
             }
 
-            struct dirent *d = NULL;
+            struct dirent *d = nullptr;
             DIR *dir = opendir(path.c_str());
 
-            if (dir == NULL) {
+            if (dir == nullptr) {
                 log_errno(errno);
                 return PREP_FAILURE;
             }
 
-            while ((d = readdir(dir)) != NULL) {
+            while ((d = readdir(dir)) != nullptr) {
                 if (d->d_name[0] == '.') {
                     continue;
                 }
 
-                auto pluginPath = build_sys_path(path.c_str(), d->d_name, NULL);
+                auto pluginPath = build_sys_path(path.c_str(), d->d_name, nullptr);
 
                 if (!helper::is_valid_plugin_path(pluginPath)) {
                     continue;
@@ -586,16 +569,14 @@ namespace micrantha
                     case PREP_ERROR:
                         log_trace("skipping non-plugin [%s]", d->d_name);
                         break;
+                    default:break;
                 }
             }
 
             closedir(dir);
 
             plugins_.sort([](const std::shared_ptr<plugin> &a, const std::shared_ptr<plugin> &b) {
-                if (a->is_internal()) {
-                    return true;
-                }
-                return false;
+                return a->is_internal();
             });
 
             for (auto &plugin : plugins_) {
@@ -611,7 +592,7 @@ namespace micrantha
         {
             log_trace("checking plugins for resolving [%s]...", config.name().c_str());
 
-            for (auto plugin : plugins_) {
+            for (const auto &plugin : plugins_) {
                 auto result = plugin->on_resolve(config);
                 if (result == PREP_SUCCESS) {
                     log_info("resolved [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
@@ -628,7 +609,7 @@ namespace micrantha
         {
             log_trace("checking plugins for resolving [%s]...", location.c_str());
 
-            for (auto plugin : plugins_) {
+            for (const auto &plugin : plugins_) {
                 auto result = plugin->on_resolve(location);
 
                 if (result == PREP_SUCCESS) {
@@ -646,7 +627,7 @@ namespace micrantha
         {
             log_trace("checking plugins for install of [%s]...", config.name().c_str());
 
-            for (auto plugin : plugins_) {
+            for (const auto &plugin : plugins_) {
                 if (plugin->on_install(config, path_) == PREP_SUCCESS) {
                     log_info("installed [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
                     return PREP_SUCCESS;
@@ -659,7 +640,7 @@ namespace micrantha
         {
             log_trace("checking plugins for removal of [%s]...", config.name().c_str());
 
-            for (auto plugin : plugins_) {
+            for (const auto &plugin : plugins_) {
                 if (plugin->on_remove(config, path_) == PREP_SUCCESS) {
                     log_info("removed [%s] from plugin [%s]", config.name().c_str(), plugin->name().c_str());
                     return PREP_SUCCESS;

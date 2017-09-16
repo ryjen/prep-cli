@@ -15,6 +15,8 @@ void print_help(char *exe)
     printf("Syntax: %s [-g -f] install <package url, git url, archive or directory>\n", exe);
     printf("      : %s [-g] remove <package>\n", exe);
     printf("      : %s [-g] update <package>\n", exe);
+    printf("      : %s [-g] link <package> [version]\n", exe);
+    printf("      : %s [-g] unlink <package>\n", exe);
     printf("      : %s run\n", exe);
     printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
@@ -23,7 +25,12 @@ void print_help(char *exe)
 int main(int argc, char *const argv[])
 {
     micrantha::prep::package_builder prep;
-    micrantha::prep::options options;
+    micrantha::prep::options options{
+            .package_file = repository::PACKAGE_FILE,
+            .global = false,
+            .location = ".",
+            .force_build = false
+    };
     const char *command;
     int option;
 
@@ -43,6 +50,7 @@ int main(int argc, char *const argv[])
         case 'h':
             print_help(argv[0]);
             return PREP_FAILURE;
+            default:break;
         }
     }
 
@@ -64,15 +72,10 @@ int main(int argc, char *const argv[])
 
     if (!strcmp(command, "install")) {
         micrantha::prep::package_config config;
-        char cwd[PATH_MAX];
 
         if (optind < 0 || optind >= argc) {
-            if (getcwd(cwd, sizeof(cwd))) {
-                options.location = cwd;
-            } else {
-                options.location = ".";
-            }
-
+            char cwd[PATH_MAX] = {0};
+            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
         } else {
             options.location = argv[optind++];
         }

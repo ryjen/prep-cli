@@ -16,8 +16,6 @@ namespace micrantha
             std::string build_ldpath();
 
             std::vector<std::string> build_cpp_variables();
-
-            int execute(const char *command, const char *path);
         }
     }
 }

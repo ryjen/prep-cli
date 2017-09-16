@@ -7,11 +7,12 @@ sub install_dependencies
 {
 	$CPAN::Config->{use_prompt_default} = true;
 
-    my $file = dirname($0) . "/../support/cpan_modules.txt";
+    my $file = dirname($0) . "/cpan_modules.txt";
 
     open my $fp, $file or die "could not open $file";
 
     while(my $line = <$fp>) {
+        chomp($line);
         CPAN::Shell->install($line);
     }
 

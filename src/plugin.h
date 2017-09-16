@@ -2,6 +2,7 @@
 #define MICRANTHA_PREP_PLUGIN_H
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace micrantha
@@ -31,10 +32,11 @@ namespace micrantha
             typedef struct Result {
                 int code;
                 std::vector<std::string> values;
+
                 Result(int c) : code(c)
                 {
                 }
-                Result(int c, const std::vector<std::string> &r) : code(c), values(r)
+                Result(int c, std::vector<std::string> r) : code(c), values(std::move(r))
                 {
                 }
                 bool operator==(int value) const
@@ -43,8 +45,7 @@ namespace micrantha
                 }
             } Result;
 
-            plugin();
-            plugin(const std::string &name);
+            explicit plugin(const std::string &name);
             ~plugin();
             plugin(const plugin &other) = delete;
             plugin(plugin &&other) = default;
@@ -90,7 +91,6 @@ namespace micrantha
             std::string version_;
             std::string basePath_;
             std::string type_;
-            std::vector<package_dependency> dependencies_;
         };
     }
 }

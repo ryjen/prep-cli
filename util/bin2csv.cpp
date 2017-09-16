@@ -3,8 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-    FILE *in = NULL, *out = NULL;
-    char buf[512] = { 0 };
+    FILE *in = nullptr, *out = nullptr;
     int b;
 
     if (argc < 3) {
@@ -14,14 +13,14 @@ int main(int argc, char *argv[])
 
     in = fopen(argv[1], "rb");
 
-    if (in == NULL) {
+    if (in == nullptr) {
         printf("Invalid file %s\n", argv[1]);
         return 1;
     }
 
     out = fopen(argv[2], "w");
 
-    if (out == NULL) {
+    if (out == nullptr) {
         printf("Invalid output file %s\n", argv[2]);
         return 1;
     }

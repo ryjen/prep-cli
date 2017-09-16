@@ -1,6 +1,6 @@
 {
 	"name": "prep",
-	"version": 1.0,
+	"version": "1.0",
 	"author": {
 		"name": "Ryan Jennings",
 		"email": "ryan@micrantha.com"
@@ -8,26 +8,6 @@
 	"build_system": ["cmake", "make"],
 	"executable": "prep",
 	"dependencies": [
-		{
-			"name": "libcurl",
-			"homebrew": {
-				"name": "curl"
-			},
-			"archive": {
-				"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2"
-			},
-			"build_system": ["autotools", "make"],
-			"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
-			"dependencies": [
-				{
-					"name": "libz",
-					"archive": {
-						"location": "http://zlib.net/zlib-1.2.8.tar.gz"
-					},
-					"build_system": ["cmake", "make"]
-				}
-			]
-		},
 		{
 			"name": "libarchive",
 			"archive": {
@@ -44,13 +24,6 @@
 					"build_options": "--without-python"
 				}
 			]
-		},
-		{
-			"name": "libgit2",
-			"archive": {
-				"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz"
-			},
-			"build_system": ["cmake", "make"]
 		}
 	]
 

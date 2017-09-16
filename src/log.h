@@ -28,17 +28,17 @@ namespace micrantha
 
         void set_log_level(const char *name);
 
-        void log_error(const char *const format, ...) __attribute__((format(printf, 1, 2)));
+        void log_error(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
         void log_errno(int errnum);
 
-        void log_warn(const char *const format, ...) __attribute__((format(printf, 1, 2)));
+        void log_warn(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
-        void log_info(const char *const format, ...) __attribute__((format(printf, 1, 2)));
+        void log_info(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
-        void log_debug(const char *const format, ...) __attribute__((format(printf, 1, 2)));
+        void log_debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
-        void log_trace(const char *const format, ...) __attribute__((format(printf, 1, 2)));
+        void log_trace(const char *format, ...) __attribute__((format(printf, 1, 2)));
     }
 }
 

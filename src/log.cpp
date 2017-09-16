@@ -1,23 +1,17 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+
 #include "log.h"
-#include <dlfcn.h>
-#include <execinfo.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+
+#include <cstdarg>
+#include <cstdio>
 
 namespace micrantha
 {
     namespace prep
     {
-        const char *LOG_LEVEL_NAMES[] = { "UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", NULL };
+        const char *LOG_LEVEL_NAMES[] = { "UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", nullptr };
 
         const char *LOG_LEVEL_COLOR[] = {
-            "", "\x1b[1;31m", "\x1b[1;33m", "\x1b[1;32m", "\x1b[1;36m", "\x1b[1;37m", NULL
+            "", "\x1b[1;31m", "\x1b[1;33m", "\x1b[1;32m", "\x1b[1;36m", "\x1b[1;37m", nullptr
         };
 
         LogLevel __current_log_level = LogInfo;
@@ -26,11 +20,11 @@ namespace micrantha
         {
             int i = 0;
 
-            if (name == NULL || *name == 0) {
+            if (name == nullptr || *name == 0) {
                 return;
             }
 
-            for (; LOG_LEVEL_NAMES[i] != NULL; i++) {
+            for (; LOG_LEVEL_NAMES[i] != nullptr; i++) {
                 if (!strcasecmp(name, LOG_LEVEL_NAMES[i])) {
                     __current_log_level = (LogLevel)i;
                 }

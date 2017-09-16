@@ -1,25 +1,13 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <dirent.h>
 #include <fstream>
 #include <fts.h>
 #include <iostream>
-#include <libgen.h>
-#include <sys/param.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
-#ifdef HAVE_LIBCURL
-#include <curl/curl.h>
-#include <curl/easy.h>
-#endif
-#include <pwd.h>
-#include <string>
 
 #include "common.h"
 #include "log.h"
@@ -87,20 +75,20 @@ namespace micrantha
         int remove_directory(const char *dir)
         {
             int ret      = PREP_SUCCESS;
-            FTS *ftsp    = NULL;
-            FTSENT *curr = NULL;
+            FTS *ftsp    = nullptr;
+            FTSENT *curr = nullptr;
 
             // Cast needed (in C) because fts_open() takes a "char * const *", instead
             // of a "const char * const *", which is only allowed in C++. fts_open()
             // does not modify the argument.
-            char *files[] = { (char *)dir, NULL };
+            char *files[] = { (char *)dir, nullptr };
 
             // FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
             //                in multithreaded programs
             // FTS_PHYSICAL - Don't follow symlinks. Prevents deletion of files outside
             //                of the specified directory
             // FTS_XDEV     - Don't cross filesystem boundaries
-            ftsp = fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, NULL);
+            ftsp = fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, nullptr);
 
             if (!ftsp) {
                 log_error("failed to open %s [%s]", dir, strerror(errno));
@@ -137,19 +125,18 @@ namespace micrantha
                         ret = PREP_FAILURE;
                     }
                     break;
+                    default:break;
                 }
             }
 
-            if (ftsp) {
-                fts_close(ftsp);
-            }
+            fts_close(ftsp);
 
             return ret;
         }
 
         int directory_exists(const char *path)
         {
-            struct stat s;
+            struct stat s{};
             int err = stat(path, &s);
             if (-1 == err) {
                 if (ENOENT == errno) {
@@ -171,7 +158,7 @@ namespace micrantha
 
         bool file_exists(const char *path)
         {
-            struct stat s;
+            struct stat s{};
             int err = stat(path, &s);
             if (-1 == err) {
                 if (ENOENT != errno) {
@@ -191,7 +178,7 @@ namespace micrantha
 
         bool file_executable(const char *path)
         {
-            struct stat s;
+            struct stat s{};
             int err = stat(path, &s);
             if (-1 == err) {
                 if (ENOENT != errno) {
@@ -201,7 +188,7 @@ namespace micrantha
                 return false;
             } else {
                 if (S_ISREG(s.st_mode)) {
-                    return s.st_mode & S_IEXEC;
+                    return (s.st_mode & S_IEXEC) != 0;
                 } else {
                     return false;
                 }
@@ -210,12 +197,12 @@ namespace micrantha
 
         int mkpath(const char *file_path, mode_t mode)
         {
-            char *p = NULL;
+            char *p = nullptr;
 
             if (!file_path || !*file_path) {
                 return PREP_FAILURE;
             }
-            for (p = const_cast<char *>(strchr(file_path + 1, '/')); p; p = strchr(p + 1, '/')) {
+            for (p = const_cast<char*>(strchr(file_path + 1, '/')); p; p = strchr(p + 1, '/')) {
                 *p = '\0';
                 if (mkdir(file_path, mode) == -1) {
                     if (errno != EEXIST) {
@@ -233,67 +220,9 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-#ifdef HAVE_LIBCURL
-        size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
-        {
-            size_t written = fwrite(ptr, size, nmemb, stream);
-            return written;
-        }
-#endif
-
-        int download_to_temp_file(const char *url, std::string &filename)
-        {
-#ifdef HAVE_LIBCURL
-            char temp[BUFSIZ + 1] = { 0 };
-            FILE *fp              = NULL;
-            int fd = -1, httpCode = 0;
-            CURLcode res;
-            CURL *curl = curl_easy_init();
-
-            if (curl == NULL || url == NULL || *url == '\0') {
-                return PREP_FAILURE;
-            }
-
-            log_debug("Downloading %s", url);
-
-            strncpy(temp, "/tmp/prep-XXXXXX", BUFSIZ);
-
-            if ((fd = mkstemp(temp)) < 0 || (fp = fdopen(fd, "wb")) == NULL) {
-                return PREP_FAILURE;
-            }
-
-            filename = temp;
-
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-            res = curl_easy_perform(curl);
-            curl_easy_cleanup(curl);
-            fclose(fp);
-
-            if (res != CURLE_OK) {
-                log_error("%s", curl_easy_strerror(res));
-                return PREP_FAILURE;
-            }
-
-            res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-
-            if (res != CURLE_OK || httpCode < 200 || httpCode >= 300) {
-                log_error("%d code from server", httpCode);
-                return PREP_FAILURE;
-            }
-
-            return PREP_SUCCESS;
-#else
-            log_error("libcurl not installed or configured");
-            return PREP_FAILURE;
-#endif
-        }
-
         int copy_file(const std::string &from, const std::string &to)
         {
-            struct stat fst, tst;
+            struct stat fst{}, tst{};
 
             if (stat(from.c_str(), &fst)) {
                 log_errno(errno);
@@ -336,12 +265,11 @@ namespace micrantha
 
         int copy_directory(const std::string &from, const std::string &to, bool overwrite)
         {
-            FTS *file_system       = NULL;
-            FTSENT *child          = NULL;
-            FTSENT *parent         = NULL;
+            FTS *file_system       = nullptr;
+            FTSENT *parent         = nullptr;
             int rval               = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = { 0 };
-            struct stat st;
+            struct stat st{};
 
             if (!directory_exists(from.c_str())) {
                 log_error("%s is not a directory", from.c_str());
@@ -355,16 +283,16 @@ namespace micrantha
                 }
             }
 
-            char *const paths[] = { (char *const)from.c_str(), NULL };
+            char *const paths[] = { (char *const)from.c_str(), nullptr };
 
-            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, NULL);
+            file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
-            if (file_system == NULL) {
+            if (file_system == nullptr) {
                 log_error("unable to open file system [%s]", strerror(errno));
                 return PREP_FAILURE;
             }
 
-            while ((parent = fts_read(file_system)) != NULL) {
+            while ((parent = fts_read(file_system)) != nullptr) {
                 // get the repo path
                 snprintf(buf, PATH_MAX, "%s%s", to.c_str(), parent->fts_path + from.length());
 
@@ -430,13 +358,13 @@ namespace micrantha
 
             va_start(args, start);
 
-            if (start != NULL) {
+            if (start != nullptr) {
                 strcat(buf, start);
             }
 
             const char *next = va_arg(args, const char *);
 
-            while (next != NULL) {
+            while (next != nullptr) {
 #ifdef _WIN32
                 if (buf[strlen(buf) - 1] != '\\')
                     strcat(buf, "\\");
@@ -456,15 +384,13 @@ namespace micrantha
 
         int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path)
         {
-            char buf[BUFSIZ] = { 0 };
-
             char *home = getenv("HOME");
 
             if (!home) {
                 return PREP_FAILURE;
             }
 
-            snprintf(buf, BUFSIZ, "%s/%s", home, shellrc);
+            auto buf = build_sys_path(home, shellrc, nullptr);
 
             if (!file_exists(buf)) {
                 return PREP_FAILURE;

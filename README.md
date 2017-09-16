@@ -6,6 +6,8 @@ Prep is a modular package manager for c/c++.  Plugins are used for dependency ma
 
 Prep tries to follow NPM style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory.
 
+Prep can manage paths for building and running.
+
 I am no longer maintaining this project, so I'm releasing to open source.
 
 plugins
@@ -16,6 +18,21 @@ Plugins can be written in any language that supports stdin/stdout. Input paramet
 The default plugins are currently written in Perl for prototyping purposes. Ideally this would be a compiled language.
 
 There are two types of plugins **resolver** plugins and **build** plugins.
+
+## plugin types:
+
+#### resolver
+
+resolves package locations
+
+#### build
+
+build system plugin
+
+#### internal
+
+runs internally but not a part of configuration
+
 
 ## plugin hooks:
 
@@ -130,26 +147,6 @@ This is what prep's configuration to build itself looks like:
 	"executable": "prep",
 	"dependencies": [
 		{
-			"name": "libcurl",
-			"homebrew": {
-				"name": "curl"
-			},
-			"archive": {
-				"location": "http://curl.haxx.se/download/curl-7.43.0.tar.bz2",
-				"build_system": ["autotools", "make"],
-				"build_options": "--without-libidn --without-ssl --enable-darwinssl --disable-ldap",
-			},
-			"dependencies": [
-				{
-					"name": "libz",
-					"archive": {
-						"location": "http://zlib.net/zlib-1.2.8.tar.gz",
-						"build_system": ["cmake", "make"]
-					}
-				}
-			]
-		},
-		{
 			"name": "libarchive",
 			"archive": {
 				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
@@ -165,13 +162,6 @@ This is what prep's configuration to build itself looks like:
 					}
 				}
 			]
-		},
-		{
-			"name": "libgit2",
-			"archive": {
-				"location": "https://github.com/libgit2/libgit2/archive/v0.23.1.tar.gz",
-				"build_system": ["cmake", "make"]
-			}
 		}
 	]
 }

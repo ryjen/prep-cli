@@ -22,12 +22,6 @@ namespace micrantha
             constexpr static const char *const UNKNOWN_INSTALL_FOLDER = "/tmp/unknown";
             constexpr static const char *const GLOBAL_REPO = "/usr/local/share/prep";
 #endif
-
-            /**
-             * stores a history of package downloads
-             */
-            constexpr static const char *const HISTORY_FILE = "history";
-
             /**
              * the repository name
              */

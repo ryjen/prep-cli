@@ -7,6 +7,8 @@ namespace micrantha
 {
     namespace prep
     {
+        package_builder::package_builder() = default;
+
         int package_builder::initialize(const options &opts)
         {
             if (repo_.initialize(opts)) {
@@ -99,7 +101,7 @@ namespace micrantha
 
         int package_builder::remove(package &config, options &opts, const char *package)
         {
-            // otherwise were removeing this package
+            // otherwise were removing this package
             if (!config.is_loaded()) {
                 std::string directory = repo_.get_meta_path(package);
 
@@ -179,7 +181,6 @@ namespace micrantha
 
             for (package_dependency &p : config.dependencies()) {
                 std::string package_dir;
-                char buf[PATH_MAX];
 
                 log_info("preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
 
@@ -209,7 +210,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            if (repo_.link_directory(installDir.c_str())) {
+            if (repo_.link_directory(installDir)) {
                 log_error("Unable to link package");
                 return PREP_FAILURE;
             }
@@ -224,9 +225,9 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            std::string packageInstall = repo_.get_install_path(config.name());
+            auto packageInstall = repo_.get_install_path(config.name());
 
-            return repo_.link_directory(packageInstall.c_str());
+            return repo_.link_directory(packageInstall);
         }
 
         int package_builder::unlink_package(const package &config) const
@@ -238,7 +239,7 @@ namespace micrantha
 
             std::string packageInstall = repo_.get_install_path(config.name());
 
-            return repo_.unlink_directory(packageInstall.c_str());
+            return repo_.unlink_directory(packageInstall);
         }
 
         int package_builder::execute(const package &config, int argc, char *const *argv) const
@@ -260,7 +261,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            return repo_.execute(config.executable().c_str(), argc, argv);
+            return repo_.execute(config.executable(), argc, argv);
         }
     }
 }

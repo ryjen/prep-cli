@@ -9,7 +9,7 @@ sub extract
 {
     my ($path, $location) = read_resolve_params;
 
-    if (length($location) == 0) {
+    if (not defined $path or length($path) == 0 or not defined $location or length($location) == 0) {
         return 1;
     }
 

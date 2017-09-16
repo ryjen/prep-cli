@@ -1,16 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+
 #include <sstream>
 #include <vector>
-#ifdef HAVE_CURL_CURL_H
-#include <curl/curl.h>
-#include <curl/easy.h>
-#endif
-#ifdef HAVE_LIBGEN_H
-#include <libgen.h>
-#endif
-
 
 #include "common.h"
 #include "log.h"
@@ -23,9 +13,7 @@ namespace micrantha
 {
     namespace prep
     {
-        package::package() : values_()
-        {
-        }
+        package::package() = default;
 
         package::package(const json_type &obj) : values_(obj)
         {
@@ -35,13 +23,13 @@ namespace micrantha
 
         void package::init_dependencies()
         {
-            auto deps = values_["dependencies"];
+            auto value = values_["dependencies"];
 
-            if (!deps.is_array()) {
+            if (!value.is_array()) {
                 return;
             }
 
-            for (auto &dep : deps) {
+            for (auto &dep : value) {
                 dependencies_.push_back(package_dependency(dep));
             }
         }
@@ -52,7 +40,7 @@ namespace micrantha
             int count = 0;
 
             for (const package_dependency &dep : dependencies()) {
-                if (!strcmp(dep.name().c_str(), package_name.c_str())) {
+                if (strcmp(dep.name().c_str(), package_name.c_str()) == 0) {
                     count++;
                 }
                 count += dep.dependency_count(package_name);
@@ -64,7 +52,7 @@ namespace micrantha
 
         void package::init_build_system()
         {
-            if (values_.count("build_system")) {
+            if (values_.count("build_system") > 0) {
                 std::vector<std::string> systems = values_["build_system"];
                 for (auto &system : systems) {
                     build_system_.push_back(system);
@@ -72,13 +60,7 @@ namespace micrantha
             }
         }
 
-        package::package(const package &other)
-            : values_(other.values_),
-              path_(other.path_),
-              dependencies_(other.dependencies_),
-              build_system_(other.build_system_)
-        {
-        }
+        package::package(const package &other) = default;
 
         package &package::operator=(const package &other)
         {
@@ -89,28 +71,15 @@ namespace micrantha
             return *this;
         }
 
-        package::~package()
-        {
-        }
+        package::~package() = default;
 
-        package_config::package_config()
-        {
-        }
+        package_config::package_config() = default;
 
-        package_config::package_config(const package_config &other) : package(other)
-        {
-        }
+        package_config::package_config(const package_config &other) = default;
 
-        package_config::~package_config()
-        {
-        }
+        package_config::~package_config() = default;
 
-        package_config &package_config::operator=(const package_config &other)
-        {
-            package::operator=(other);
-
-            return *this;
-        }
+        package_config &package_config::operator=(const package_config &other)= default;
 
         bool package::is_loaded() const
         {
@@ -123,52 +92,17 @@ namespace micrantha
         }
 
         int package_config::resolve_package_file(const std::string &path, const std::string &filename,
-                                                 std::ifstream &file)
-        {
-            char buf[PATH_MAX] = { 0 };
+                                                 std::ifstream &file) {
+            auto buf = build_sys_path(path.c_str(), filename.c_str(), NULL);
 
-            snprintf(buf, PATH_MAX, "%s/%s", path.c_str(), filename.c_str());
 
-            if (file_exists(buf)) {
-                file.open(buf);
-
-                return PREP_SUCCESS;
-            }
-
-            if (filename.find("://") != std::string::npos) {
-                return download_package_file(path, filename, file);
-            }
-
-            return PREP_FAILURE;
-        }
-
-        int package_config::download_package_file(const std::string &path, const std::string &url, std::ifstream &file)
-        {
-            std::string buffer;
-            char filename[PATH_MAX + 1] = { 0 };
-            char *fname                 = NULL;
-
-            log_debug("attempting download of %s", url.c_str());
-
-            if (download_to_temp_file(url.c_str(), buffer)) {
-                log_error("unable to download %s", url.c_str());
+            if (!file_exists(buf)) {
                 return PREP_FAILURE;
             }
 
-            strncpy(filename, url.c_str(), BUFSIZ);
+            file.open(buf);
 
-            fname = basename(filename);
-
-            snprintf(filename, PATH_MAX, "%s/%s", path.c_str(), fname);
-
-            if (rename(buffer.c_str(), filename)) {
-                log_error("unable to rename %s to %s", buffer.c_str(), filename);
-                return PREP_FAILURE;
-            }
-
-            file.open(filename);
-
-            return PREP_SUCCESS;
+            return file.is_open() ? PREP_SUCCESS : PREP_FAILURE;
         }
 
         int package_config::load(const std::string &path, const options &opts)
@@ -180,7 +114,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            if (resolve_package_file(path, opts.package_file, file)) {
+            if (resolve_package_file(path, opts.package_file, file) != PREP_SUCCESS) {
                 log_debug("unable to resolve %s/%s", path.c_str(), opts.package_file.c_str());
                 return PREP_FAILURE;
             }
@@ -194,8 +128,8 @@ namespace micrantha
 
             values_ = json_type::parse(os.str().c_str());
 
-            if (values_.size() == 0) {
-                printf("invalid configuration for %s\n", os.str().c_str());
+            if (values_.empty()) {
+                log_error("invalid configuration for %s\n", os.str().c_str());
                 return PREP_FAILURE;
             }
 
@@ -203,7 +137,7 @@ namespace micrantha
 
             init_build_system();
 
-            path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), nullptr);
+            path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
 
             log_info("Preparing package \033[1;35m%s\033[0m", name().c_str());
 
@@ -221,11 +155,11 @@ namespace micrantha
 
         std::string package::version() const
         {
-            auto vers = values_.find("version");
-            if (vers == values_.end()) {
+            auto value = values_.find("version");
+            if (value == values_.end()) {
                 return "";
             }
-            return *vers;
+            return *value;
         }
 
         std::vector<std::string> package::build_system() const
@@ -244,7 +178,11 @@ namespace micrantha
 
         std::string package::build_options() const
         {
-            return values_["build_options"];
+            auto value =  values_.find("build_options");
+            if (value == values_.end()) {
+                return "";
+            }
+            return *value;
         }
 
         std::string package::executable() const
@@ -264,7 +202,7 @@ namespace micrantha
 
         bool package::has_name() const
         {
-            return values_.count("name");
+            return values_.count("name") > 0;
         }
 
         package::json_type package::get_plugin_config(const plugin *plugin) const
@@ -285,13 +223,9 @@ namespace micrantha
         {
         }
 
-        package_dependency::package_dependency(const package_dependency &other) : package(other)
-        {
-        }
+        package_dependency::package_dependency(const package_dependency &other) = default;
 
-        package_dependency::~package_dependency()
-        {
-        }
+        package_dependency::~package_dependency() = default;
 
         int package_dependency::load(const std::string &path, const options &opts)
         {

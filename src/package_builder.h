@@ -12,6 +12,8 @@ namespace micrantha
         class package_builder
         {
           public:
+            package_builder();
+
             //! initializes this instance
             // @param opts the options to initialize with
             // @returns PREP_SUCESS or PREP_FAILURE if an error occured

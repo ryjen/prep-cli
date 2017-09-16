@@ -3,11 +3,6 @@
 use rlib '../support';
 use micrantha::prep::plugin qw(read_package_params);
 
-sub tap
-{
-    exec "brew", "tap", "homebrew/versions"
-}
-
 sub install
 {
     my ($package, $version) = read_package_params;
@@ -32,7 +27,6 @@ sub main
 {
     my $plugin = micrantha::prep::plugin->new();
 
-    $plugin->on_load(\&tap);
     $plugin->on_install(\&install);
     $plugin->on_remove(\&remove);
 

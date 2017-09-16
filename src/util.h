@@ -43,13 +43,6 @@ namespace micrantha
         bool file_executable(const char *path);
 
         /**
-         * downloads a url endpoint to a temporary file
-         * NOTE: required libcurl enabled
-         * @return PREP_SUCCESS or PREP_FAILURE upon error
-         */
-        int download_to_temp_file(const char *url, std::string &filename);
-
-        /**
          * makes a temporary directory and assigns the name to the buffer
          * @return the directory name
          */
