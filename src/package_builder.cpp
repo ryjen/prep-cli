@@ -7,9 +7,9 @@ namespace micrantha
 {
     namespace prep
     {
-        package_builder::package_builder() = default;
+        PackageBuilder::PackageBuilder() = default;
 
-        int package_builder::initialize(const options &opts)
+        int PackageBuilder::initialize(const Options &opts)
         {
             if (repo_.initialize(opts)) {
                 return PREP_FAILURE;
@@ -30,17 +30,15 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            force_build_ = opts.force_build;
-
             return PREP_SUCCESS;
         }
 
-        prep::repository *package_builder::repository()
+        Repository *PackageBuilder::repository()
         {
             return &repo_;
         }
 
-        void package_builder::add_path_to_shell() const
+        void PackageBuilder::add_path_to_shell() const
         {
             prompt_to_add_path_to_shell_rc(".zshrc", repo_.get_bin_path().c_str());
             if (prompt_to_add_path_to_shell_rc(".bash_profile", repo_.get_bin_path().c_str())) {
@@ -49,7 +47,7 @@ namespace micrantha
             prompt_to_add_path_to_shell_rc(".kshrc", repo_.get_bin_path().c_str());
         }
 
-        int package_builder::build_package(const package &config, const char *path)
+        int PackageBuilder::build_package(const Package &config, const Options &opts, const char *path)
         {
             std::string installPath, buildPath;
 
@@ -58,7 +56,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            if (!force_build_ && repo_.has_meta(config) == PREP_SUCCESS) {
+            if (!opts.force_build && repo_.has_meta(config) == PREP_SUCCESS) {
                 return PREP_SUCCESS;
             }
 
@@ -99,18 +97,17 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int package_builder::remove(package &config, options &opts, const char *package)
+        std::string PackageBuilder::get_package_directory(const std::string &name) const
+        {
+            return repo_.get_meta_path(name);
+        }
+
+        int PackageBuilder::remove(const Package &config, const Options &opts)
         {
             // otherwise were removing this package
             if (!config.is_loaded()) {
-                std::string directory = repo_.get_meta_path(package);
-
-                log_trace("resolving package %s...", directory.c_str());
-
-                if (config.load(directory, opts) == PREP_FAILURE) {
-                    log_error("unable to load package configuration");
-                    return PREP_FAILURE;
-                }
+                log_error("configuration not loaded");
+                return PREP_FAILURE;
             }
 
             // TODO: ensure we actually installed via plugin
@@ -118,10 +115,11 @@ namespace micrantha
                 return PREP_SUCCESS;
             }
 
+            // remove the directory structure
             return remove(config.name(), opts);
         }
 
-        int package_builder::remove(const std::string &package_name, options &opts)
+        int PackageBuilder::remove(const std::string &package_name, const Options &opts)
         {
             std::string installDir = repo_.get_install_path(package_name);
 
@@ -159,7 +157,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int package_builder::build(const package &config, options &opts, const char *path)
+        int PackageBuilder::build(const Package &config, const Options &opts, const char *path)
         {
             std::string installDir;
 
@@ -179,7 +177,7 @@ namespace micrantha
                 }
             }
 
-            for (package_dependency &p : config.dependencies()) {
+            for (const auto &p : config.dependencies()) {
                 std::string package_dir;
 
                 log_info("preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
@@ -188,7 +186,7 @@ namespace micrantha
                     continue;
                 }
 
-                auto callback = [&package_dir](const plugin::Result &result) { package_dir = result.values.front(); };
+                auto callback = [&package_dir](const Plugin::Result &result) { package_dir = result.values.front(); };
 
                 if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
                     log_error("[%s] could not resolve dependency [%s]", config.name().c_str(), p.name().c_str());
@@ -206,7 +204,7 @@ namespace micrantha
                 return PREP_SUCCESS;
             }
 
-            if (build_package(config, path)) {
+            if (build_package(config, opts, path)) {
                 return PREP_FAILURE;
             }
 
@@ -218,7 +216,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int package_builder::link_package(const package &config) const
+        int PackageBuilder::link_package(const Package &config) const
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");
@@ -230,7 +228,7 @@ namespace micrantha
             return repo_.link_directory(packageInstall);
         }
 
-        int package_builder::unlink_package(const package &config) const
+        int PackageBuilder::unlink_package(const Package &config) const
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");
@@ -242,7 +240,7 @@ namespace micrantha
             return repo_.unlink_directory(packageInstall);
         }
 
-        int package_builder::execute(const package &config, int argc, char *const *argv) const
+        int PackageBuilder::execute(const Package &config, int argc, char *const *argv) const
         {
             if (!config.is_loaded()) {
                 log_error("config is not loaded");

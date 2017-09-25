@@ -28,7 +28,7 @@ namespace micrantha
             extern bool is_plugin_internal(const std::string &path);
         }
 
-        const char *const repository::get_local_repo()
+        const char *const Repository::get_local_repo()
         {
             char buf[BUFSIZ] = {0};
 
@@ -51,7 +51,7 @@ namespace micrantha
             return current_path;
         }
 
-        int repository::initialize(const options &opts)
+        int Repository::initialize(const options &opts)
         {
             if (opts.global) {
                 path_ = GLOBAL_REPO;
@@ -62,7 +62,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int repository::validate() const
+        int Repository::validate() const
         {
             if (path_.empty()) {
                 return PREP_FAILURE;
@@ -85,7 +85,6 @@ namespace micrantha
             }
 
             if (!directory_exists(GLOBAL_REPO)) {
-
                 auto lib = build_sys_path(GLOBAL_REPO, "lib", nullptr);
 
                 mkpath(lib, 0700);
@@ -116,7 +115,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int repository::validate_plugins(const options &opts) const
+        int Repository::validate_plugins(const options &opts) const
         {
             const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, nullptr);
 
@@ -184,39 +183,39 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int repository::init_plugins(const options &opts, const std::string &path) const
+        int Repository::init_plugins(const options &opts, const std::string &path) const
         {
             decompressor unzip(default_plugins_zip, default_plugins_size, path);
 
-            return unzip.decompress(true);
+            return unzip.decompress();
         }
 
-        std::string repository::get_bin_path() const
+        std::string Repository::get_bin_path() const
         {
             return build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
         }
 
-        std::string repository::get_plugin_path() const
+        std::string Repository::get_plugin_path() const
         {
             return build_sys_path(path_.c_str(), PLUGIN_FOLDER, NULL);
         }
 
-        std::string repository::get_build_path(const std::string &package_name) const
+        std::string Repository::get_build_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, BUILD_FOLDER, package_name.c_str(), NULL);
         }
 
-        std::string repository::get_install_path(const std::string &package_name) const
+        std::string Repository::get_install_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, INSTALL_FOLDER, package_name.c_str(), NULL);
         }
 
-        std::string repository::get_meta_path(const std::string &package_name) const
+        std::string Repository::get_meta_path(const std::string &package_name) const
         {
             return build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, package_name.c_str(), NULL);
         }
 
-        int repository::save_meta(const package &config) const
+        int Repository::save_meta(const Package &config) const
         {
             if (path_.empty()) {
                 log_error("uninitialized repository path");
@@ -264,7 +263,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int repository::has_meta(const package &config) const
+        int Repository::has_meta(const Package &config) const
         {
             std::string metaDir =
                 build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, config.name().c_str(), NULL);
@@ -294,7 +293,7 @@ namespace micrantha
             return PREP_FAILURE;
         }
 
-        int repository::dependency_count(const std::string &package_name, const options &opts) const
+        int Repository::dependency_count(const std::string &package_name, const Options &opts) const
         {
             DIR *dir;
             struct dirent *d_ent;
@@ -345,7 +344,7 @@ namespace micrantha
                     continue;
                 }
 
-                package_config temp;
+                PackageConfig temp;
 
                 if (temp.load(buf, opts) == PREP_SUCCESS) {
                     count += temp.dependency_count(package_name);
@@ -355,7 +354,7 @@ namespace micrantha
             return count;
         }
 
-        int repository::link_directory(const std::string &path) const
+        int Repository::link_directory(const std::string &path) const
         {
             FTS *file_system = nullptr;
             FTSENT *parent = nullptr;
@@ -436,7 +435,7 @@ namespace micrantha
             return rval;
         }
 
-        int repository::unlink_directory(const std::string &path) const
+        int Repository::unlink_directory(const std::string &path) const
         {
             FTS *file_system = nullptr;
             FTSENT *parent = nullptr;
@@ -501,7 +500,7 @@ namespace micrantha
             return rval;
         }
 
-        int repository::execute(const std::string &executable, int argc, char *const *argv) const
+        int Repository::execute(const std::string &executable, int argc, char *const *argv) const
         {
             if (executable.empty()) {
                 return PREP_FAILURE;
@@ -522,7 +521,7 @@ namespace micrantha
             return rval;
         }
 
-        int repository::load_plugins()
+        int Repository::load_plugins()
         {
             std::string path = get_plugin_path();
 
@@ -553,7 +552,7 @@ namespace micrantha
                     continue;
                 }
 
-                auto plugin = std::make_shared<micrantha::prep::plugin>(d->d_name);
+                auto plugin = std::make_shared<Plugin>(d->d_name);
 
                 switch (plugin->load(pluginPath)) {
                     case PREP_SUCCESS:
@@ -569,17 +568,17 @@ namespace micrantha
                     case PREP_ERROR:
                         log_trace("skipping non-plugin [%s]", d->d_name);
                         break;
-                    default:break;
+                    default:
+                        break;
                 }
             }
 
             closedir(dir);
 
-            plugins_.sort([](const std::shared_ptr<plugin> &a, const std::shared_ptr<plugin> &b) {
-                return a->is_internal();
-            });
+            plugins_.sort(
+                [](const std::shared_ptr<Plugin> &a, const std::shared_ptr<Plugin> &b) { return a->is_internal(); });
 
-            for (auto &plugin : plugins_) {
+            for (const auto &plugin : plugins_) {
                 if (plugin->on_load() == PREP_ERROR) {
                     return PREP_FAILURE;
                 }
@@ -588,7 +587,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int repository::notify_plugins_resolve(const package &config, const resolver_callback &callback)
+        int Repository::notify_plugins_resolve(const Package &config, const resolver_callback &callback)
         {
             log_trace("checking plugins for resolving [%s]...", config.name().c_str());
 
@@ -605,7 +604,7 @@ namespace micrantha
             return PREP_FAILURE;
         }
 
-        int repository::notify_plugins_resolve(const std::string &location, const resolver_callback &callback)
+        int Repository::notify_plugins_resolve(const std::string &location, const resolver_callback &callback)
         {
             log_trace("checking plugins for resolving [%s]...", location.c_str());
 
@@ -623,7 +622,7 @@ namespace micrantha
             return PREP_FAILURE;
         }
 
-        int repository::notify_plugins_install(const package &config)
+        int Repository::notify_plugins_install(const Package &config)
         {
             log_trace("checking plugins for install of [%s]...", config.name().c_str());
 
@@ -636,7 +635,7 @@ namespace micrantha
             return PREP_FAILURE;
         }
 
-        int repository::notify_plugins_remove(const package &config)
+        int Repository::notify_plugins_remove(const Package &config)
         {
             log_trace("checking plugins for removal of [%s]...", config.name().c_str());
 
@@ -649,9 +648,9 @@ namespace micrantha
             return PREP_FAILURE;
         }
 
-        std::shared_ptr<plugin> repository::get_plugin_by_name(const std::string &name) const
+        std::shared_ptr<Plugin> Repository::get_plugin_by_name(const std::string &name) const
         {
-            for (auto &plugin : plugins_) {
+            for (const auto &plugin : plugins_) {
                 if (plugin->name() == name) {
                     return plugin;
                 }
@@ -659,10 +658,10 @@ namespace micrantha
             return nullptr;
         }
 
-        int repository::notify_plugins_build(const package &config, const std::string &sourcePath,
+        int Repository::notify_plugins_build(const Package &config, const std::string &sourcePath,
                                              const std::string &buildPath, const std::string &installPath)
         {
-            for (auto &name : config.build_system()) {
+            for (const auto &name : config.build_system()) {
                 auto plugin = get_plugin_by_name(name);
 
                 if (!plugin) {

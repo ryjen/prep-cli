@@ -13,15 +13,15 @@ namespace micrantha
 {
     namespace prep
     {
-        package::package() = default;
+        Package::Package() = default;
 
-        package::package(const json_type &obj) : values_(obj)
+        Package::Package(const json_type &obj) : values_(obj)
         {
             init_dependencies();
             init_build_system();
         }
 
-        void package::init_dependencies()
+        void Package::init_dependencies()
         {
             auto value = values_["dependencies"];
 
@@ -30,17 +30,16 @@ namespace micrantha
             }
 
             for (auto &dep : value) {
-                dependencies_.push_back(package_dependency(dep));
+                dependencies_.push_back(PackageDependency(dep));
             }
         }
 
-
-        int package::dependency_count(const std::string &package_name) const
+        int Package::dependency_count(const std::string &package_name) const
         {
             int count = 0;
 
-            for (const package_dependency &dep : dependencies()) {
-                if (strcmp(dep.name().c_str(), package_name.c_str()) == 0) {
+            for (const auto &dep : dependencies()) {
+                if (dep.name() == package_name) {
                     count++;
                 }
                 count += dep.dependency_count(package_name);
@@ -49,52 +48,51 @@ namespace micrantha
             return count;
         }
 
-
-        void package::init_build_system()
+        void Package::init_build_system()
         {
             if (values_.count("build_system") > 0) {
-                std::vector<std::string> systems = values_["build_system"];
+                auto systems = values_["build_system"];
                 for (auto &system : systems) {
                     build_system_.push_back(system);
                 }
             }
         }
 
-        package::package(const package &other) = default;
+        Package::Package(const Package &other) = default;
 
-        package &package::operator=(const package &other)
+        Package &Package::operator=(const Package &other)
         {
-            values_       = other.values_;
-            path_         = other.path_;
+            values_ = other.values_;
+            path_ = other.path_;
             dependencies_ = other.dependencies_;
             build_system_ = other.build_system_;
             return *this;
         }
 
-        package::~package() = default;
+        Package::~Package() = default;
 
-        package_config::package_config() = default;
+        PackageConfig::PackageConfig() = default;
 
-        package_config::package_config(const package_config &other) = default;
+        PackageConfig::PackageConfig(const PackageConfig &other) = default;
 
-        package_config::~package_config() = default;
+        PackageConfig::~PackageConfig() = default;
 
-        package_config &package_config::operator=(const package_config &other)= default;
+        PackageConfig &PackageConfig::operator=(const PackageConfig &other) = default;
 
-        bool package::is_loaded() const
+        bool Package::is_loaded() const
         {
             return !values_.is_null();
         }
 
-        std::vector<package_dependency> package::dependencies() const
+        std::vector<PackageDependency> Package::dependencies() const
         {
             return dependencies_;
         }
 
-        int package_config::resolve_package_file(const std::string &path, const std::string &filename,
-                                                 std::ifstream &file) {
+        int PackageConfig::resolve_package_file(const std::string &path, const std::string &filename,
+                                                std::ifstream &file)
+        {
             auto buf = build_sys_path(path.c_str(), filename.c_str(), NULL);
-
 
             if (!file_exists(buf)) {
                 return PREP_FAILURE;
@@ -105,7 +103,7 @@ namespace micrantha
             return file.is_open() ? PREP_SUCCESS : PREP_FAILURE;
         }
 
-        int package_config::load(const std::string &path, const options &opts)
+        int PackageConfig::load(const std::string &path, const Options &opts)
         {
             std::ifstream file;
             std::ostringstream os;
@@ -144,7 +142,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        std::string package::name() const
+        std::string Package::name() const
         {
             auto name = values_.find("name");
             if (name == values_.end()) {
@@ -153,7 +151,7 @@ namespace micrantha
             return *name;
         }
 
-        std::string package::version() const
+        std::string Package::version() const
         {
             auto value = values_.find("version");
             if (value == values_.end()) {
@@ -162,12 +160,12 @@ namespace micrantha
             return *value;
         }
 
-        std::vector<std::string> package::build_system() const
+        std::vector<std::string> Package::build_system() const
         {
             return build_system_;
         }
 
-        std::string package::location() const
+        std::string Package::location() const
         {
             auto loc = values_.find("location");
             if (loc == values_.end()) {
@@ -176,36 +174,36 @@ namespace micrantha
             return *loc;
         }
 
-        std::string package::build_options() const
+        std::string Package::build_options() const
         {
-            auto value =  values_.find("build_options");
+            auto value = values_.find("build_options");
             if (value == values_.end()) {
                 return "";
             }
             return *value;
         }
 
-        std::string package::executable() const
+        std::string Package::executable() const
         {
             return values_["executable"];
         }
 
-        std::string package::path() const
+        std::string Package::path() const
         {
             return path_;
         }
 
-        bool package::has_path() const
+        bool Package::has_path() const
         {
             return !path_.empty();
         }
 
-        bool package::has_name() const
+        bool Package::has_name() const
         {
             return values_.count("name") > 0;
         }
 
-        package::json_type package::get_plugin_config(const plugin *plugin) const
+        Package::json_type Package::get_plugin_config(const Plugin *plugin) const
         {
             if (plugin == nullptr) {
                 return json_type();
@@ -219,15 +217,15 @@ namespace micrantha
             return *config;
         }
 
-        package_dependency::package_dependency(const package::json_type &obj) : package(obj)
+        PackageDependency::PackageDependency(const Package::json_type &obj) : Package(obj)
         {
         }
 
-        package_dependency::package_dependency(const package_dependency &other) = default;
+        PackageDependency::PackageDependency(const PackageDependency &other) = default;
 
-        package_dependency::~package_dependency() = default;
+        PackageDependency::~PackageDependency() = default;
 
-        int package_dependency::load(const std::string &path, const options &opts)
+        int PackageDependency::load(const std::string &path, const Options &opts)
         {
             return PREP_SUCCESS;
         }

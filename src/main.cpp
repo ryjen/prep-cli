@@ -1,6 +1,6 @@
 
-#include <iostream>
 #include <unistd.h>
+#include <iostream>
 #include <vector>
 
 #include "common.h"
@@ -24,33 +24,29 @@ void print_help(char *exe)
 
 int main(int argc, char *const argv[])
 {
-    micrantha::prep::package_builder prep;
-    micrantha::prep::options options{
-            .package_file = repository::PACKAGE_FILE,
-            .global = false,
-            .location = ".",
-            .force_build = false
-    };
+    PackageBuilder prep;
+    Options options{.package_file = Repository::PACKAGE_FILE, .global = false, .location = ".", .force_build = false};
     const char *command;
     int option;
 
     while ((option = getopt(argc, argv, "hgfp:l:")) != EOF) {
         switch (option) {
-        case 'g':
-            options.global = true;
-            break;
-        case 'p':
-            options.package_file = optarg;
-            break;
-        case 'f':
-            options.force_build = true;
-        case 'l':
-            micrantha::prep::set_log_level(optarg);
-            break;
-        case 'h':
-            print_help(argv[0]);
-            return PREP_FAILURE;
-            default:break;
+            case 'g':
+                options.global = true;
+                break;
+            case 'p':
+                options.package_file = optarg;
+                break;
+            case 'f':
+                options.force_build = true;
+            case 'l':
+                micrantha::prep::set_log_level(optarg);
+                break;
+            case 'h':
+                print_help(argv[0]);
+                return PREP_FAILURE;
+            default:
+                break;
         }
     }
 
@@ -60,7 +56,7 @@ int main(int argc, char *const argv[])
         }
 
     } catch (const std::exception &e) {
-        micrantha::prep::log_error(e.what());
+        log_error(e.what());
         return PREP_FAILURE;
     }
 
@@ -71,7 +67,7 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "install")) {
-        micrantha::prep::package_config config;
+        PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
             char cwd[PATH_MAX] = {0};
@@ -80,18 +76,16 @@ int main(int argc, char *const argv[])
             options.location = argv[optind++];
         }
 
-        auto callback = [&options](const plugin::Result &result) {
-            options.location = result.values.front();
-        };
+        auto callback = [&options](const Plugin::Result &result) { options.location = result.values.front(); };
 
         if (!directory_exists(options.location.c_str()) &&
             prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
-            micrantha::prep::log_error("%s is not a valid prep package", options.location.c_str());
+            log_error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 
         if (config.load(options.location, options) == PREP_FAILURE) {
-            micrantha::prep::log_error("unable to load config at %s", options.location.c_str());
+            log_error("unable to load config at %s", options.location.c_str());
             return PREP_FAILURE;
         }
 
@@ -99,48 +93,52 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "remove")) {
-        micrantha::prep::package_config config;
+        PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            micrantha::prep::log_error("Remove which package?");
+            log_error("Remove which package?");
             return PREP_FAILURE;
         }
 
-        return prep.remove(config, options, argv[optind]);
+        auto directory = prep.get_package_directory(argv[optind]);
+
+        if (config.load(directory, options) == PREP_FAILURE) {
+            log_error("unable to load config for %s", argv[optind]);
+            return PREP_FAILURE;
+        }
+
+        return prep.remove(config, options);
     }
 
     if (!strcmp(command, "setpath")) {
-
         prep.add_path_to_shell();
 
         return PREP_SUCCESS;
     }
 
     if (!strcmp(command, "unlink")) {
-
-        micrantha::prep::package_config config;
+        PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            micrantha::prep::log_error("Unlink which package?");
+            log_error("Unlink which package?");
             return PREP_FAILURE;
         }
         if (config.load(argv[optind], options) == PREP_FAILURE) {
-            micrantha::prep::log_error("unable to load config at %s", argv[optind]);
+            log_error("unable to load config at %s", argv[optind]);
             return PREP_FAILURE;
         }
 
         return prep.unlink_package(config);
     }
     if (!strcmp(command, "link")) {
-
-        micrantha::prep::package_config config;
+        PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            micrantha::prep::log_error("Link which package?");
+            log_error("Link which package?");
             return PREP_FAILURE;
         }
         if (config.load(argv[optind], options) == PREP_FAILURE) {
-            micrantha::prep::log_error("unable to load config at %s", argv[optind]);
+            log_error("unable to load config at %s", argv[optind]);
             return PREP_FAILURE;
         }
 
@@ -151,7 +149,7 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "run")) {
-        micrantha::prep::package_config config;
+        PackageConfig config;
         char cwd[PATH_MAX];
 
         if (getcwd(cwd, sizeof(cwd))) {
@@ -159,9 +157,7 @@ int main(int argc, char *const argv[])
         } else {
             options.location = ".";
         }
-        auto callback = [&options](const plugin::Result &result) {
-            options.location = result.values.front();
-        };
+        auto callback = [&options](const Plugin::Result &result) { options.location = result.values.front(); };
 
         if (prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
             micrantha::prep::log_error("%s is not a valid prep package", options.location.c_str());

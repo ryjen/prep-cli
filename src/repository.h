@@ -1,3 +1,4 @@
+
 #ifndef MICRANTHA_PREP_REPOSITORY_H
 #define MICRANTHA_PREP_REPOSITORY_H
 
@@ -12,7 +13,10 @@ namespace micrantha
 {
     namespace prep
     {
-        class repository
+        /**
+         * a representation of a repository.  can be local or global
+         */
+        class Repository
         {
            public:
 #ifdef _WIN32
@@ -70,7 +74,7 @@ namespace micrantha
             /**
              * a callback for resolving plugins
              */
-            typedef std::function<void(const plugin::Result &result)> resolver_callback;
+            typedef std::function<void(const Plugin::Result &result)> resolver_callback;
 
             /**
              * gets the user local repository on the system
@@ -90,23 +94,23 @@ namespace micrantha
             /**
              * saves meta data for a package
              */
-            int save_meta(const package &config) const;
+            int save_meta(const Package &config) const;
 
             /**
              * tests for meta data on a package
              */
-            int has_meta(const package &config) const;
+            int has_meta(const Package &config) const;
 
             /**
              * counts the dependencies for a package name in the entire repository
              */
-            int dependency_count(const std::string &package_name, const options &opts) const;
+            int dependency_count(const std::string &package_name, const Options &opts) const;
 
             /**
              * initializes the repository with the options
              * @return PREP_SUCCESS or PREP_FAILURE upon error
              */
-            int initialize(const options &opts);
+            int initialize(const Options &opts);
 
             /**
              * install path property
@@ -137,7 +141,7 @@ namespace micrantha
              * validates the plugins
              * @return PREP_SUCCESS or PREP_FAILURE if any plugin invalid
              */
-            int validate_plugins(const options &opts) const;
+            int validate_plugins(const Options &opts) const;
 
             /**
              * executes a binary from the repository bin path
@@ -147,12 +151,12 @@ namespace micrantha
             /**
              * runs the install callback on plugins for a config
              */
-            int notify_plugins_install(const package &config);
+            int notify_plugins_install(const Package &config);
 
             /**
              * runs the resolve callback on plugins for a config
              */
-            int notify_plugins_resolve(const package &config, const resolver_callback &callback = nullptr);
+            int notify_plugins_resolve(const Package &config, const resolver_callback &callback = nullptr);
 
             /**
              * runs the resolve callback on plugins for a config
@@ -162,18 +166,18 @@ namespace micrantha
             /**
              * runs the remove callback on plugins for a config
              */
-            int notify_plugins_remove(const package &config);
+            int notify_plugins_remove(const Package &config);
 
             /**
              * runs the build callback on plugins for a config
              */
-            int notify_plugins_build(const package &config, const std::string &sourcePath, const std::string &buildPath,
+            int notify_plugins_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
                                      const std::string &installPath);
 
             /**
              * gets a plugin by name
              */
-            std::shared_ptr<plugin> get_plugin_by_name(const std::string &name) const;
+            std::shared_ptr<Plugin> get_plugin_by_name(const std::string &name) const;
 
             /**
              * loads the plugins
@@ -182,10 +186,16 @@ namespace micrantha
             int load_plugins();
 
            private:
-            int init_plugins(const options &opts, const std::string &path) const;
+            /**
+             * initializes / loads the plugins
+             * @param opts the command line options
+             * @param path the repository path
+             * @return PREP_SUCCESS if successful, otherwise PREP_FAILURE
+             */
+            int init_plugins(const Options &opts, const std::string &path) const;
 
             // a list of plugins
-            std::list<std::shared_ptr<plugin>> plugins_;
+            std::list<std::shared_ptr<Plugin>> plugins_;
             // the repository path
             std::string path_;
         };

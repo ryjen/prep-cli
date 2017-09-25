@@ -11,29 +11,45 @@ namespace micrantha
 {
     namespace prep
     {
+        /**
+         * used to decompress a file or memory
+         */
         class decompressor
         {
-          public:
+           public:
+            /* constructors */
             decompressor(const void *buf, size_t size, const std::string &topath);
             decompressor(const std::string &path);
             decompressor(const std::string &path, const std::string &topath);
             ~decompressor();
 
-            int decompress(bool ignoreErrors = false);
-
-          private:
-            typedef enum { FILE, MEMORY } Type;
-            void cleanup();
+            // disable copying
             decompressor &operator=(const decompressor &other) = delete;
             decompressor(const decompressor &other) = delete;
 
+            /**
+             * performs the decompression
+             * @return PREP_SUCCESS if decompressed, otherwise PREP_FAILURE
+             */
+            int decompress();
+
+           private:
+            // types of decompression
+            typedef enum { FILE, MEMORY } Type;
+
+            // utility method
+            void cleanup();
+
+            // internal library structures
             struct archive *in_;
             struct archive *out_;
 
             const void *from_;
-            size_t fromSize_;
-            Type type_;
             std::string outPath_;
+            // memory or file block size
+            size_t size_;
+            // type of input
+            Type type_;
         };
     }
 }

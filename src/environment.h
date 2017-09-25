@@ -10,11 +10,33 @@ namespace micrantha
     {
         namespace environment
         {
+            /**
+             * creates CFLAGS for building using specified var name (CXXFLAGS, CPPFLAGS, CFLAGS, etc)
+             * @param varName the name of the variable to append preps cflags with
+             * @return the build flags with preps build flags
+             */
             std::string build_cflags(const std::string &varName);
+
+            /**
+             * creates LDFLAGS for linking using the specified var name
+             * @param varName the name of the variable to append preps link flags with
+             * @return the link flags with preps link flags
+             */
             std::string build_ldflags(const std::string &varName);
+
+            /**
+             * creates the bin path with preps bin path
+             */
             std::string build_path();
+
+            /**
+             * creates the link path with preps link path
+             */
             std::string build_ldpath();
 
+            /**
+             * creates a vector of build variables (build, link, and paths)
+             */
             std::vector<std::string> build_cpp_variables();
         }
     }

@@ -1,4 +1,7 @@
+#latest cmake for C++11 flag
 cmake_minimum_required (VERSION 3.1)
+
+#use c++11
 set(CMAKE_CXX_STANDARD 11)
 
 # add options for testing
@@ -8,29 +11,28 @@ option(MEMORY_CHECK "Enable testing for memory leaks." OFF)
 # define project name
 project (prep VERSION 0.1)
 
-# set path to custom modules
+# set path to custom cmake modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-# create the package config install
+# create the package config
 include(CreatePackage)
 create_package("a c/c++ package and project manager")
 
+# define the library name
 set(PROJECT_LIBRARY "utensil")
 
-find_package(ZLIB)
+if (APPLE)
+	
+# osx has its own libarchive but without headers
+# set the pkg config path to prefer the homebrew installation
+set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libarchive/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 
-find_file(HAVE_ARCHIVE_H archive.h HINTS "/usr/local/opt/libarchive/include")
-if (HAVE_ARCHIVE_H)
-    set(LibArchive_INCLUDE_DIR "/usr/local/opt/libarchive/include")
-    find_file(HAVE_ARCHIVE_ENTRY_H NAMES archive_entry.h HINTS ${LibArchive_INCLUDE_DIR})
-endif()
-find_library(LibArchive_LIBRARY archive HINTS "/usr/local/opt/libarchive/lib")
-find_package(LibArchive)
-
-if (!LibArchive_FOUND)
-	message(FATAL "Could not find libarchive")
 endif()
 
+find_package(PkgConfig REQUIRED)
+
+# find a libarchive.  hint to a homebrew installation for the header files
+pkg_search_module(LibArchive REQUIRED libarchive)
 
 # add target for code coverage
 if(CODE_COVERAGE)

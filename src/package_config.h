@@ -1,33 +1,41 @@
 #ifndef MICRANTHA_PREP_PACKAGE_CONFIG_H
 #define MICRANTHA_PREP_PACKAGE_CONFIG_H
 
-#include "json.hpp"
 #include <fstream>
 #include <string>
 #include <vector>
+#include "json.hpp"
 
 namespace micrantha
 {
     namespace prep
     {
-        typedef struct options{
+        /**
+         * options passed from the command line
+         */
+        typedef struct options {
+            // use global repository
             bool global;
+            // the package file/name
             std::string package_file;
+            // the package location
             std::string location;
+            // forces a build
             bool force_build;
-        } options;
+        } Options;
 
-        class package_dependency;
-        class plugin;
+        // forward declarations
+        class PackageDependency;
+        class Plugin;
 
         /**
-         * a package
+         * a abstract package
          */
-        class package
+        class Package
         {
-          public:
+           public:
             typedef nlohmann::json json_type;
-            virtual ~package();
+            virtual ~Package();
 
             /* properties */
             std::string name() const;
@@ -36,7 +44,7 @@ namespace micrantha
             std::string build_options() const;
             std::string path() const;
             virtual std::string location() const;
-            std::vector<package_dependency> dependencies() const;
+            std::vector<PackageDependency> dependencies() const;
             std::string executable() const;
 
             /* validators */
@@ -44,58 +52,82 @@ namespace micrantha
             bool has_name() const;
             bool is_loaded() const;
 
-            virtual int load(const std::string &path, const options &opts) = 0;
-            json_type get_plugin_config(const plugin *plugin) const;
+            /**
+             * loads a package
+             * @param path the path to the package
+             * @opts options specified from command line
+             * @return PREP_SUCCESS if loaded, otherwise PREP_FAILURE
+             */
+            virtual int load(const std::string &path, const Options &opts) = 0;
+
+            /**
+             * gets the plugin specific configuration defined the package configuration
+             * @param plugin the plugin to get configuration for
+             * @return the JSON configuration
+             */
+            json_type get_plugin_config(const Plugin *plugin) const;
+
+            /**
+             * counts the number of dependencies for a package in the configuration
+             * @package_name the name of the dependency
+             * @return the number of dependencies
+             */
             int dependency_count(const std::string &package_name) const;
 
-          protected:
-            package();
-            explicit package(const json_type &obj);
-            package(const package &other);
-            package &operator=(const package &other);
+           protected:
+            /* constructors */
+            Package();
+            explicit Package(const json_type &obj);
+            Package(const Package &other);
+            Package &operator=(const Package &other);
 
+            /* initializers */
             void init_dependencies();
             void init_build_system();
 
             json_type values_;
             std::string path_;
-            std::vector<package_dependency> dependencies_;
+            std::vector<PackageDependency> dependencies_;
             std::vector<std::string> build_system_;
-            friend class plugin;
+            friend class Plugin;
         };
 
         /**
          * configuration for a package dependency
          */
-        class package_dependency : public package
+        class PackageDependency : public Package
         {
-            friend class package;
-            friend class package_config;
+            friend class Package;
+            friend class PackageConfig;
 
-          public:
-            ~package_dependency() override;
-            package_dependency(const package_dependency &other);
-            package_dependency &operator=(const package_dependency &) = default;
-            int load(const std::string &path, const options &opts) override;
+           public:
+            ~PackageDependency() override;
+            PackageDependency(const PackageDependency &other);
+            PackageDependency &operator=(const PackageDependency &) = default;
 
-          protected:
-            explicit package_dependency(const json_type &obj);
+            int load(const std::string &path, const Options &opts) override;
+
+           protected:
+            explicit PackageDependency(const json_type &obj);
         };
-
 
         /**
          * configuration for a package
          */
-        class package_config : public package
+        class PackageConfig : public Package
         {
-          public:
-            package_config();
-            package_config(const package_config &);
-            ~package_config() override;
-            package_config &operator=(const package_config &other);
-            int load(const std::string &path, const options &opts) override;
+           public:
+            PackageConfig();
+            PackageConfig(const PackageConfig &);
+            ~PackageConfig() override;
+            PackageConfig &operator=(const PackageConfig &other);
 
-          private:
+            /**
+             * override for packages
+             */
+            int load(const std::string &path, const Options &opts) override;
+
+           private:
             int resolve_package_file(const std::string &path, const std::string &filename, std::ifstream &file);
         };
     }

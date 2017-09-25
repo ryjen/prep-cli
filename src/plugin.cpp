@@ -25,6 +25,9 @@ namespace micrantha
 
         namespace helper
         {
+            constexpr static const char *const HOOK_NAMES[] = {"load",   "unload",  "install",
+                                                               "remove", "resolve", "build"};
+
             constexpr static const char *const TYPE_INTERNAL = "internal";
 
             bool is_valid_plugin_path(const std::string &path)
@@ -33,7 +36,7 @@ namespace micrantha
                     return false;
                 }
 
-                auto manifest = build_sys_path(path.c_str(), plugin::MANIFEST_FILE, NULL);
+                auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
 
                 return file_exists(manifest);
             }
@@ -44,14 +47,14 @@ namespace micrantha
                     return false;
                 }
 
-                auto manifest = build_sys_path(path.c_str(), plugin::MANIFEST_FILE, NULL);
+                auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
                 std::ifstream file;
                 std::ostringstream buf;
 
                 file.open(manifest);
 
                 file >> buf.rdbuf();
-                auto config = package::json_type::parse(buf.str().c_str());
+                auto config = Package::json_type::parse(buf.str().c_str());
 
                 auto type = config["type"];
 
@@ -60,7 +63,7 @@ namespace micrantha
 
             bool is_return_command(const std::string &line)
             {
-                return line.length() > 7 && line.substr(0, 7) == "RETURN ";
+                return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
             }
 
             ssize_t write_line(int fd, const std::string &line)
@@ -118,16 +121,16 @@ namespace micrantha
             }
         }
 
-        plugin::plugin(const std::string &name) : name_(name)
+        Plugin::Plugin(const std::string &name) : name_(name)
         {
         }
 
-        plugin::~plugin()
+        Plugin::~Plugin()
         {
             on_unload();
         }
 
-        int plugin::load(const std::string &path)
+        int Plugin::load(const std::string &path)
         {
             basePath_ = path;
 
@@ -145,7 +148,7 @@ namespace micrantha
 
             file >> buf.rdbuf();
 
-            auto config = package::json_type::parse(buf.str().c_str());
+            auto config = Package::json_type::parse(buf.str().c_str());
 
             if (config.size() == 0) {
                 log_error("invalid configuration for plugin [%s]", name_.c_str());
@@ -180,55 +183,55 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        bool plugin::is_enabled() const
+        bool Plugin::is_enabled() const
         {
             return !executablePath_.empty();
         }
 
-        plugin::Result plugin::on_load() const
+        Plugin::Result Plugin::on_load() const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
             }
 
-            return execute("load");
+            return execute(LOAD);
         }
 
-        plugin::Result plugin::on_unload() const
+        Plugin::Result Plugin::on_unload() const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
             }
 
-            return execute("unload");
+            return execute(UNLOAD);
         }
 
-        bool plugin::is_valid() const
+        bool Plugin::is_valid() const
         {
             return is_enabled() && file_executable(executablePath_.c_str());
         }
 
-        std::string plugin::name() const
+        std::string Plugin::name() const
         {
             return name_;
         }
 
-        std::string plugin::type() const
+        std::string Plugin::type() const
         {
             return type_;
         }
 
-        std::string plugin::version() const
+        std::string Plugin::version() const
         {
             return version_;
         }
 
-        bool plugin::is_internal() const
+        bool Plugin::is_internal() const
         {
             return type_ == helper::TYPE_INTERNAL;
         }
 
-        std::string plugin::plugin_name(const package &config) const
+        std::string Plugin::plugin_name(const Package &config) const
         {
             auto plugin = config.get_plugin_config(this);
 
@@ -241,7 +244,7 @@ namespace micrantha
             return config.name();
         }
 
-        std::string plugin::plugin_location(const package &config) const
+        std::string Plugin::plugin_location(const Package &config) const
         {
             auto plugin = config.get_plugin_config(this);
 
@@ -254,7 +257,7 @@ namespace micrantha
             return "";
         }
 
-        plugin::Result plugin::on_install(const package &config, const std::string &path) const
+        Plugin::Result Plugin::on_install(const Package &config, const std::string &path) const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -266,15 +269,15 @@ namespace micrantha
 
             std::vector<std::string> info = {plugin_name(config), config.version(), path};
 
-            return execute("install", info);
+            return execute(INSTALL, info);
         }
 
-        plugin::Result plugin::on_resolve(const package &config) const
+        Plugin::Result Plugin::on_resolve(const Package &config) const
         {
             return on_resolve(plugin_location(config));
         }
 
-        plugin::Result plugin::on_resolve(const std::string &location) const
+        Plugin::Result Plugin::on_resolve(const std::string &location) const
         {
             char buf[PATH_MAX];
 
@@ -290,10 +293,10 @@ namespace micrantha
 
             std::vector<std::string> info = {buf, location};
 
-            return execute("resolve", info);
+            return execute(RESOLVE, info);
         }
 
-        plugin::Result plugin::on_remove(const package &config, const std::string &path) const
+        Plugin::Result Plugin::on_remove(const Package &config, const std::string &path) const
         {
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -305,10 +308,10 @@ namespace micrantha
 
             std::vector<std::string> info = {plugin_name(config), config.version(), path};
 
-            return execute("remove", info);
+            return execute(REMOVE, info);
         }
 
-        plugin::Result plugin::on_build(const package &config, const std::string &sourcePath,
+        Plugin::Result Plugin::on_build(const Package &config, const std::string &sourcePath,
                                         const std::string &buildPath, const std::string &installPath) const
         {
             if (!is_valid()) {
@@ -328,14 +331,16 @@ namespace micrantha
 
             info.insert(std::end(info), std::begin(envVars), std::end(envVars));
 
-            return execute("build", info);
+            return execute(BUILD, info);
         }
 
-        plugin::Result plugin::execute(const std::string &method, const std::vector<std::string> &info) const
+        Plugin::Result Plugin::execute(const Hooks &hook, const std::vector<std::string> &info) const
         {
             int master = 0;
 
-            log_trace("executing [%s] on plugin [%s]", method.c_str(), name_.c_str());
+            auto method = helper::HOOK_NAMES[hook];
+
+            log_trace("executing [%s] on plugin [%s]", method, name_.c_str());
 
             pid_t pid = forkpty(&master, NULL, NULL, NULL);
 

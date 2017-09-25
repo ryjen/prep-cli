@@ -1,8 +1,8 @@
 
 #include <archive_entry.h>
 #include <cerrno>
-#include <cstdlib>
 #include <climits>
+#include <cstdlib>
 
 #include "common.h"
 #include "decompressor.h"
@@ -44,14 +44,13 @@ namespace micrantha
         {
         }
 
-        decompressor::decompressor(const void *from, size_t size, const std::string &topath) : from_(from), fromSize_(size), type_(MEMORY), outPath_(topath)
-            , in_(nullptr), out_(nullptr)
+        decompressor::decompressor(const void *from, size_t size, const std::string &topath)
+            : from_(from), size_(size), type_(MEMORY), outPath_(topath), in_(nullptr), out_(nullptr)
         {
         }
 
         decompressor::decompressor(const std::string &path, const std::string &topath)
-            : from_(path.c_str()), fromSize_(10240), type_(FILE), outPath_(topath)
-              , in_(nullptr), out_(nullptr)
+            : from_(path.c_str()), size_(10240), type_(FILE), outPath_(topath), in_(nullptr), out_(nullptr)
         {
         }
 
@@ -80,7 +79,8 @@ namespace micrantha
                 out_ = nullptr;
             }
         }
-        int decompressor::decompress(bool ignoreErrors) {
+        int decompressor::decompress()
+        {
             int r;
             struct archive_entry *entry;
             char folderName[PATH_MAX + 1] = {0};
@@ -101,14 +101,14 @@ namespace micrantha
 #endif
             switch (type_) {
                 case FILE:
-                    if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), 10240))) {
+                    if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), size_))) {
                         log_error("unable to open file %d: %s\n", r, archive_error_string(in_));
                         cleanup();
                         return PREP_FAILURE;
                     }
                     break;
                 case MEMORY:
-                    if ((r = archive_read_open_memory(in_, from_, fromSize_))) {
+                    if ((r = archive_read_open_memory(in_, from_, size_))) {
                         log_error("unable to open memory archive %d: %s\n", r, archive_error_string(in_));
                         cleanup();
                         return PREP_FAILURE;
@@ -121,7 +121,7 @@ namespace micrantha
             // check the first entry for a directory
             r = archive_read_next_header(in_, &entry);
 
-            if (!ignoreErrors && r < ARCHIVE_OK) {
+            if (r < ARCHIVE_OK) {
                 log_error("error extracting %d:%s\n", r, archive_error_string(in_));
                 cleanup();
                 return PREP_SUCCESS;

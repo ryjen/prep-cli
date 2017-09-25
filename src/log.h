@@ -28,6 +28,10 @@ namespace micrantha
 
         void set_log_level(const char *name);
 
+        /*
+         * TODO: remove usage of C-style variadic args
+         */
+
         void log_error(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
         void log_errno(int errnum);
