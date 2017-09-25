@@ -2,10 +2,27 @@
 
 use File::Basename;
 use CPAN;
+use CPAN::FirstTime;
 
+##
+# initializes cpan and the required modules for plugins
+#
 sub install_dependencies
 {
-	$CPAN::Config->{use_prompt_default} = true;
+
+    # get the path to the library
+    my $libpath = $Config{privlib} || $ENV{HOME} . "/.cpan";
+
+    if ( ! -d $libpath ) {
+
+        $ENV{PERL_MM_USE_DEFAULT}=1;
+        $ENV{PERL_MM_NONINTERACTIVE}=1;
+        $ENV{AUTOMATED_TESTING}=1;
+
+        CPAN::FirstTime::init("$libpath/CPAN/Config.pm");
+
+        CPAN::Config->commit("$libpath/CPAN/MyConfig.pm");
+    }
 
     my $file = dirname($0) . "/cpan_modules.txt";
 

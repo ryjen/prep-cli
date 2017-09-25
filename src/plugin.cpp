@@ -119,6 +119,9 @@ namespace micrantha
                 char ch;
 
                 totRead = 0;
+
+                buf.clear();
+
                 for (;;) {
                     numRead = read(fd, &ch, 1);
 
@@ -419,6 +422,7 @@ namespace micrantha
                     fd_set write_fd;
                     fd_set except_fd;
                     char input = 0;
+                    std::string line;
 
                     FD_ZERO(&read_fd);
                     FD_ZERO(&write_fd);
@@ -435,8 +439,6 @@ namespace micrantha
 
                     // if we have something to read from child...
                     if (FD_ISSET(master, &read_fd)) {
-                        std::string line;
-
                         // read a line
                         int n = helper::read_line(master, line);
 
@@ -458,7 +460,7 @@ namespace micrantha
 
                     // if we have something to read on stdin...
                     if (FD_ISSET(STDIN_FILENO, &read_fd)) {
-                        int n = read(STDIN_FILENO, &input, 1);
+                        int n = helper::read_line(STDIN_FILENO, line);
 
                         if (n <= 0) {
                             if (n < 0) {
@@ -466,8 +468,9 @@ namespace micrantha
                             }
                             break;
                         }
+
                         // send it to the child
-                        if (write(master, &input, 1) < 0) {
+                        if (helper::write_line(master, line) < 0) {
                             log_errno(errno);
                             break;
                         }

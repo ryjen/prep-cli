@@ -212,7 +212,8 @@ TODO
 - consider sqlite storage
 - test suite
 - convert plugins to compiled language
-- plugin return values was patched, not designed.  might need a better specification.
+- plugin communication needs a better specification.  default parameters might be needed
+- plugins may need to be interactive, currently not supported.
 
 
 Building
