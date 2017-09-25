@@ -4,9 +4,7 @@ Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.  Yes, the core is written in C++ in the form of ```libutensil``` and ```prep``` binary, but the majority of the work is done by plugins.
 
-Prep tries to follow node style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory (.prep).
-
-Prep can manage paths for building and running.  Prep follows a policy of not changing anything on your system without express permission.
+Prep tries to follow node style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory (.prep).   Prep will manage paths and flags for building and running.
 
 I no longer have time to maintain this project, so I'm releasing to open source.
 
