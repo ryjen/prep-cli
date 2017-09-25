@@ -81,7 +81,7 @@ Output may be in the form of a command.  Currently one or more return values can
 
 ```RETURN <value>\n``` 
 
-Any other output by the plugin is forwarded to prep's output (This can be spammy, might need a verbose mode).
+Any other output by the plugin is forwarded to prep's output when in verbose mode.
 
 ## current plugins:
 
