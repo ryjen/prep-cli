@@ -10,32 +10,32 @@ sub extract
     my ($path, $location) = read_resolve_params;
 
     if (not defined $path or length($path) == 0 or not defined $location or length($location) == 0) {
-        return 1;
+        return PREP_FAILURE;
     }
 
     my $file = File::Fetch->new( uri => $location );
 
     if (!$file) {
-        return 1;
+        return PREP_FAILURE;
     }
 
     my $archive = $file->fetch( to => $path );
 
     if (!$archive) {
         print "Unable to fetch $location to $path\n";
-        return 1;
+        return PREP_FAILURE;
     }
 
     my $ae = Archive::Extract->new( archive => $archive );
 
     if (!$ae->extract( to => $path )) {
         print "Unable to extract $archive to $path\n";
-        return 1;
+        return PREP_FAILURE;
     }
 
     write_return_value($ae->extract_path);
 
-    return 0;
+    return PREP_SUCCESS;
 }
 
 sub main

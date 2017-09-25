@@ -12,7 +12,7 @@ sub clone
 
     write_return_value($path);
     
-    return 0;
+    return PREP_SUCCESS;
 }
 
 sub main

@@ -27,6 +27,7 @@ namespace micrantha
         class Plugin
         {
            public:
+            // types of hooks a plugin supports
             typedef enum { LOAD, UNLOAD, INSTALL, REMOVE, RESOLVE, BUILD } Hooks;
 
             /**
@@ -36,6 +37,7 @@ namespace micrantha
 
             /**
              * a return value for executing a plugin.  has a code and a list of return values.
+             * purposefully implicit constructors for flexible return values
              */
             typedef struct Result {
                 int code;
@@ -73,7 +75,7 @@ namespace micrantha
             std::string version() const;
             bool is_internal() const;
 
-            // callbacks
+            // callbacks for the different hooks
             Result on_load() const;
             Result on_unload() const;
             Result on_resolve(const std::string &location) const;
@@ -106,7 +108,7 @@ namespace micrantha
             std::string plugin_location(const Package &config) const;
 
             /**
-             * executes this plugin
+             * executes this plugin.  this is where the magic happens
              * @param method the type of hook being executed
              * @param input the list of input arguments
              * @return a result value.  The result code may contain PREP_SUCCESS if successful, PREP_ERROR if an

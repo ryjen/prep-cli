@@ -30,6 +30,7 @@ namespace micrantha
 
             constexpr static const char *const TYPE_INTERNAL = "internal";
 
+            // test a plugin path for a manifest file
             bool is_valid_plugin_path(const std::string &path)
             {
                 if (path.empty()) {
@@ -41,6 +42,7 @@ namespace micrantha
                 return file_exists(manifest);
             }
 
+            // test a plugin path to see if its type is internal
             bool is_plugin_internal(const std::string &path)
             {
                 if (path.empty()) {
@@ -61,11 +63,13 @@ namespace micrantha
                 return type.is_string() && type.get<std::string>() == TYPE_INTERNAL;
             }
 
+            // test input for a return command
             bool is_return_command(const std::string &line)
             {
                 return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
             }
 
+            // writes a line to a file descriptor
             ssize_t write_line(int fd, const std::string &line)
             {
                 ssize_t n1 = write(fd, line.c_str(), line.length());
@@ -83,6 +87,31 @@ namespace micrantha
                 return n1 + n2;
             }
 
+            // writes a header to the parent process, resulting as input to child process
+            int write_header(int master, const std::string &method, const std::vector<std::string> &info)
+            {
+                // write the hook method to the plugin (child)
+                if (write_line(master, method) < 0) {
+                    return PREP_FAILURE;
+                }
+
+                // for each additional argument...
+                for (auto &i : info) {
+                    // write to the child
+                    if (write_line(master, i) < 0) {
+                        return PREP_FAILURE;
+                    }
+                }
+
+                // write the header terminator
+                if (write_line(master, "END") < 0) {
+                    return PREP_FAILURE;
+                }
+
+                return PREP_SUCCESS;
+            }
+
+            // reads a line from a file descriptor
             ssize_t read_line(int fd, std::string &buf)
             {
                 ssize_t numRead; /* # of bytes fetched by last read() */
@@ -342,14 +371,18 @@ namespace micrantha
 
             log_trace("executing [%s] on plugin [%s]", method, name_.c_str());
 
+            // fork a psuedo terminal
             pid_t pid = forkpty(&master, NULL, NULL, NULL);
 
             if (pid < 0) {
+                // respond to error
                 log_errno(errno);
-                return PREP_FAILURE;
+                return PREP_ERROR;
             }
 
+            // if we're the child process...
             if (pid == 0) {
+                // set the current directory to the plugin path
                 if (chdir(basePath_.c_str())) {
                     log_error("unable to change directory [%s]", basePath_.c_str());
                     return PREP_FAILURE;
@@ -357,49 +390,27 @@ namespace micrantha
 
                 const char *argv[] = {name_.c_str(), nullptr};
 
-                // we are the child, so execute
+                // execute the plugin in this process
                 execvp(executablePath_.c_str(), (char *const *)argv);
 
                 exit(PREP_FAILURE);  // exec never returns
             } else {
+                // otherwise we are the parent process...
                 int status = 0;
                 std::vector<std::string> returnValues;
-
                 struct termios tios;
+
+                // set some terminal flags to remove local echo
                 tcgetattr(master, &tios);
                 tios.c_lflag &= ~(ECHO | ECHONL);
                 tcsetattr(master, TCSAFLUSH, &tios);
 
-                // sleep(1);
-
-                // write the method to the child
-                if (helper::write_line(master, method) < 0) {
+                if (helper::write_header(master, method, info) == PREP_FAILURE) {
                     log_errno(errno);
                     if (kill(pid, SIGKILL) < 0) {
                         log_errno(errno);
                     }
-                    return PREP_FAILURE;
-                }
-
-                // for each additional information string
-                for (auto &i : info) {
-                    // write to the child
-                    if (helper::write_line(master, i) < 0) {
-                        log_errno(errno);
-                        if (kill(pid, SIGKILL) < 0) {
-                            log_errno(errno);
-                        }
-                        return PREP_FAILURE;
-                    }
-                }
-
-                // write the header terminator
-                if (helper::write_line(master, "END") < 0) {
-                    log_errno(errno);
-                    if (kill(pid, SIGKILL) < 0) {
-                        log_errno(errno);
-                    }
-                    return PREP_FAILURE;
+                    return PREP_ERROR;
                 }
 
                 // start the io loop with child
@@ -436,7 +447,7 @@ namespace micrantha
                             break;
                         }
 
-                        // if the line is a command, add it, else print it
+                        // if the line is a return value, add it, else print it
                         if (helper::is_return_command(line)) {
                             returnValues.push_back(line.substr(7));
                         } else if (helper::write_line(STDOUT_FILENO, line) < 0) {
@@ -466,15 +477,20 @@ namespace micrantha
                 // wait for the child to exit
                 waitpid(pid, &status, 0);
 
+                // check exit status of child
                 if (WIFEXITED(status)) {
+                    // convert the exit status to a return value
                     int rval = WEXITSTATUS(status);
+                    // typically rval will be the return status of the command the plugin executes
                     rval = rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
                     return {rval, returnValues};
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 
+                    // log signals
                     log_error("child process signal %d", sig);
 
+                    // and core dump
                     if (WCOREDUMP(status)) {
                         log_error("child produced core dump");
                     }

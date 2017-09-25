@@ -1,27 +1,24 @@
 
-prep
+Prep
 ====
 
-Prep is a modular package manager for c/c++.  Plugins are used for dependency management and build systems.  
+Prep is a modular package manager and build tool for c/c++ projects.  Yes, the core is written in C++ in the form of ```libutensil``` and ```prep``` binary, but the majority of the work is done by plugins.
 
-Prep tries to follow NPM style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory (.prep).
+Prep tries to follow node style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory (.prep).
 
-Prep can manage paths for building and running.  Nothing is changed on your system without express permission.
-
-Upon install, prep will want to initialize the global repository with plugins.  The plugins will then be available for local repositories. Eventually prep will be able to dynamically install plugins as well (See TODO).
+Prep can manage paths for building and running.  Prep follows a policy of not changing anything on your system without express permission.
 
 I no longer have time to maintain this project, so I'm releasing to open source.
 
-plugins
+Plugins
 =======
 
 Plugins can be written in **any language that supports stdin/stdout**. Input parameters are read one line at a time on stdin.  All output is forwarded back to prep.
 
-Output may be in the form of a command.  For example ```RETURN <value>\n``` which specifies a return value for the plugin (a file path for **resolver** plugins).  More than one return value can be sent with successive commands.
-
 The plugins are forked to run in a seperate pseudo terminal. (See TODO for security)
 
-The default plugins are currently written in Perl for prototyping purposes. Ideally this would be a compiled language.
+The default plugins are currently written in Perl for prototyping purposes, so right now there is a dependency on perl.  Ideally, they'd be compiled when prep is built.
+
 
 ## plugin types:
 
@@ -36,7 +33,6 @@ build system plugin for compiling
 #### internal
 
 Internal plugins are executed before any other plugin and cannot be specified in configuration.
-
 
 
 ## plugin hooks:
@@ -67,8 +63,27 @@ parameters: [**package, version**]
 
 occurs when a package wants to be built. Only affects plugins of type "build".
 
-parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value... END**]
+parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value...**]
 
+
+## plugin input header:
+
+A plugin will always recieve a header on stdin:
+
+```
+<required hook>\n
+<optional hook parameter>\n
+<optional hook parameter>\n
+END\n
+```
+
+## plugin output commands:
+
+Output may be in the form of a command.  Currently one or more return values can be specified by a plugin by writing to stdout.
+
+```RETURN <value>\n``` 
+
+Any other output by the plugin is forwarded to prep's output.
 
 ## current plugins:
 
@@ -91,7 +106,7 @@ Plugins should contain a **manifest.json** to describe the type of plugin and ho
 }
 ```
 
-repository structure
+Repository Structure
 ====================
 
 A repository by default is a **.prep** folder in the current directory.  By specifying the **-g** option, **/usr/local/share/prep** will be used instead.
@@ -108,10 +123,10 @@ Under the repository:
 
 **/kitchen/build** : a separate directory for compiling
 
-packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include**, etc.
+packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep setpath```
 
 
-configuration
+Configuration
 =============
 
 The configuration for a project is simple a **package.json** file containing the json.  The fields are as follows:
@@ -134,7 +149,6 @@ the name of the executable or library to build
 #### dependencies
 an array of this configuration type objects defining each dependency.  Dependencies can be resolved using **resolver** plugins. Dependencies can also have dependencies. 
 
----
 ##### &lt;plugin&gt;
 A plugin can define its own options to override.  For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
 
@@ -147,9 +161,7 @@ A plugin can define its own options to override.  For example if the **homebrew*
 }
 ```
 
----
-
-### example:
+### Example configuration:
 This is what prep's configuration to build itself looks like:
 
 ```JSON
@@ -188,7 +200,7 @@ This is what prep's configuration to build itself looks like:
 
 TODO
 ====
-- package repository website/api (ipfs?)
+- website/api for plugins and and configurations for common dependencies
 - parse archive versions from filename
 - store md5 hash of configs in meta to detect changes
 - a way to rebuild a dependency or all dependencies
@@ -200,5 +212,17 @@ TODO
 - consider sqlite storage
 - test suite
 - convert plugins to compiled language
+- plugin return values was patched, not designed.  might need a better specification.
 
+
+Building
+========
+
+Just make sure you do a ```git submodule update --init --recursive``` and have libarchive and perl installed
+
+Contributing
+============
+
+Create an issue/feature, fork, build, send pull request.  Upon approval add your name to AUTHORS.
+Also looking for maintainers.
 
