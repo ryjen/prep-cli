@@ -12,11 +12,11 @@ using namespace micrantha::prep;
 
 void print_help(char *exe)
 {
-    printf("Syntax: %s [-g -f] install <package url, git url, archive or directory>\n", exe);
-    printf("      : %s [-g] remove <package>\n", exe);
-    printf("      : %s [-g] update <package>\n", exe);
-    printf("      : %s [-g] link <package> [version]\n", exe);
-    printf("      : %s [-g] unlink <package>\n", exe);
+    printf("Syntax: %s [-g -f -v] install <package url, git url, archive or directory>\n", exe);
+    printf("      : %s [-g -v] remove <package>\n", exe);
+    printf("      : %s [-g -v] update <package>\n", exe);
+    printf("      : %s [-g -v] link <package> [version]\n", exe);
+    printf("      : %s [-g -v] unlink <package>\n", exe);
     printf("      : %s run\n", exe);
     printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
@@ -25,11 +25,15 @@ void print_help(char *exe)
 int main(int argc, char *const argv[])
 {
     PackageBuilder prep;
-    Options options{.package_file = Repository::PACKAGE_FILE, .global = false, .location = ".", .force_build = false};
+    Options options{.package_file = Repository::PACKAGE_FILE,
+                    .global = false,
+                    .location = ".",
+                    .force_build = false,
+                    .verbose = false};
     const char *command;
     int option;
 
-    while ((option = getopt(argc, argv, "hgfp:l:")) != EOF) {
+    while ((option = getopt(argc, argv, "vhgfp:l:")) != EOF) {
         switch (option) {
             case 'g':
                 options.global = true;
@@ -39,6 +43,10 @@ int main(int argc, char *const argv[])
                 break;
             case 'f':
                 options.force_build = true;
+                break;
+            case 'v':
+                options.verbose = true;
+                break;
             case 'l':
                 micrantha::prep::set_log_level(optarg);
                 break;

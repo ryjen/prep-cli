@@ -10,8 +10,8 @@ namespace micrantha
     {
         const char *LOG_LEVEL_NAMES[] = {"UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", nullptr};
 
-        const char *LOG_LEVEL_COLOR[] = {"",           "\x1b[1;31m", "\x1b[1;33m", "\x1b[1;32m",
-                                         "\x1b[1;36m", "\x1b[1;37m", nullptr};
+        const char *LOG_LEVEL_COLOR[] = {"",           "\033[1;31m", "\033[1;33m", "\033[1;32m",
+                                         "\033[1;36m", "\033[1;37m", nullptr};
 
         LogLevel __current_log_level = LogInfo;
 

@@ -71,6 +71,7 @@ namespace micrantha
             if (!directory_exists(path_.c_str())) {
                 std::string buf;
 
+                // TODO: save no result, add an non-interactive flag
                 printf("Create local repository %s? (Y/n) ", path_.c_str());
 
                 std::getline(std::cin, buf);
@@ -133,6 +134,7 @@ namespace micrantha
             dir = opendir(globalPath.c_str());
 
             if (dir == nullptr) {
+                // TODO: confirm global path with user
                 if (mkpath(globalPath.c_str(), 0777)) {
                     log_errno(errno);
                     return PREP_FAILURE;
@@ -155,6 +157,7 @@ namespace micrantha
                     continue;
                 }
 
+                // TODO: if the user declined creating a global path, install the default plugins from binary
                 const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, nullptr);
 
                 const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, nullptr);
@@ -280,12 +283,12 @@ namespace micrantha
 
             if (!config.version().empty()) {
                 if (strcmp(info.c_str(), config.version().c_str()) >= 0) {
-                    log_warn("      using cached version of %s (%s)", config.name().c_str(), info.c_str());
+                    log_warn("using cached version of %s (%s)", config.name().c_str(), info.c_str());
                     return PREP_SUCCESS;
                 }
             } else if (!config.location().empty()) {
                 if (!strcmp(info.c_str(), config.location().c_str())) {
-                    log_warn("      using cached version of %s (%s)", config.name().c_str(), info.c_str());
+                    log_warn("using cached version of %s (%s)", config.name().c_str(), info.c_str());
                     return PREP_SUCCESS;
                 }
             }
@@ -521,7 +524,7 @@ namespace micrantha
             return rval;
         }
 
-        int Repository::load_plugins()
+        int Repository::load_plugins(const Options &opts)
         {
             std::string path = get_plugin_path();
 
@@ -556,6 +559,7 @@ namespace micrantha
 
                 switch (plugin->load(pluginPath)) {
                     case PREP_SUCCESS:
+                        plugin->set_verbose(opts.verbose);
                         plugins_.push_back(plugin);
                         if (!plugin->is_internal()) {
                             log_info("loaded plugin [%s] version [%s]", plugin->name().c_str(),

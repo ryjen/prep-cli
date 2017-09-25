@@ -22,6 +22,8 @@ namespace micrantha
             std::string location;
             // forces a build
             bool force_build;
+            // display plugin output
+            bool verbose;
         } Options;
 
         // forward declarations

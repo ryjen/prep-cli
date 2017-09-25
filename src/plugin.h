@@ -74,6 +74,8 @@ namespace micrantha
             std::string type() const;
             std::string version() const;
             bool is_internal() const;
+            bool is_verbose() const;
+            Plugin &set_verbose(bool value);
 
             // callbacks for the different hooks
             Result on_load() const;
@@ -123,6 +125,7 @@ namespace micrantha
             std::string version_;
             std::string basePath_;
             std::string type_;
+            bool verbose_;
         };
     }
 }

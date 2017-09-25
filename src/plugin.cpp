@@ -162,6 +162,17 @@ namespace micrantha
             on_unload();
         }
 
+        bool Plugin::is_verbose() const
+        {
+            return verbose_;
+        }
+
+        Plugin &Plugin::set_verbose(bool value)
+        {
+            verbose_ = value;
+            return *this;
+        }
+
         int Plugin::load(const std::string &path)
         {
             basePath_ = path;
@@ -452,7 +463,7 @@ namespace micrantha
                         // if the line is a return value, add it, else print it
                         if (helper::is_return_command(line)) {
                             returnValues.push_back(line.substr(7));
-                        } else if (helper::write_line(STDOUT_FILENO, line) < 0) {
+                        } else if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
                             log_errno(errno);
                             break;
                         }

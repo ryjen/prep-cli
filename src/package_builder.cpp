@@ -25,7 +25,7 @@ namespace micrantha
                 }
             }
 
-            if (repo_.load_plugins() == PREP_FAILURE) {
+            if (repo_.load_plugins(opts) == PREP_FAILURE) {
                 log_error("unable to load plugins");
                 return PREP_FAILURE;
             }
@@ -166,6 +166,10 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
+            if (!opts.force_build && repo_.has_meta(config) == PREP_SUCCESS) {
+                return PREP_SUCCESS;
+            }
+
             log_trace("Building from [%s]", path);
 
             installDir = repo_.get_install_path(config.name());
@@ -200,10 +204,6 @@ namespace micrantha
                 }
             }
 
-            if (repo_.has_meta(config) == PREP_SUCCESS) {
-                return PREP_SUCCESS;
-            }
-
             if (build_package(config, opts, path)) {
                 return PREP_FAILURE;
             }
@@ -212,6 +212,8 @@ namespace micrantha
                 log_error("Unable to link package");
                 return PREP_FAILURE;
             }
+
+            log_info("built package \033[1;35m%s\033[0m", config.name().c_str());
 
             return PREP_SUCCESS;
         }

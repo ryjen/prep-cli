@@ -183,7 +183,7 @@ namespace micrantha
              * loads the plugins
              * @return PREP_SUCCESS or PREP_FAILURE upon error
              */
-            int load_plugins();
+            int load_plugins(const Options &opts);
 
            private:
             /**
