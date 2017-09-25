@@ -11,7 +11,7 @@ I no longer have time to maintain this project, so I'm releasing to open source.
 Plugins
 =======
 
-Plugins can be written in **any language that supports stdin/stdout**. Input parameters are read one line at a time on stdin.  All output is forwarded back to prep.
+Plugins can be written in **any language that supports stdin/stdout** using the following "crap point oh" version of a specification for communication. 
 
 The plugins are forked to run in a seperate pseudo terminal. (See TODO for security)
 
@@ -210,8 +210,8 @@ TODO
 - consider sqlite storage
 - test suite
 - convert plugins to compiled language
-- plugin communication needs a better specification.  default parameters might be needed
-- plugins may need to be interactive, currently not supported.
+- plugin communication will for sure need a better specification
+- plugins may need to be interactive, currently not supported
 
 
 Building
