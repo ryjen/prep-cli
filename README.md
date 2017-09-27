@@ -4,7 +4,7 @@ Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.  Yes, the core is written in C++ in the form of ```libutensil``` and ```prep``` binary, but the majority of the work is done by plugins.
 
-Prep tries to follow node style repositories meaning there is a ***global repository*** (/usr/local/share/prep) and a ***current repository*** in the local directory (.prep).   Prep will manage paths and flags for building and running.
+*Prep will manage dependencies, paths and flags for building and running c/c++ projects.* (value proposition)
 
 I no longer have time to maintain this project, so I'm releasing to open source.
 
@@ -107,7 +107,7 @@ Plugins should contain a **manifest.json** to describe the type of plugin and ho
 Repository Structure
 ====================
 
-A repository by default is a **.prep** folder in the current directory.  By specifying the **-g** option, **/usr/local/share/prep** will be used instead.
+A repository by default is a **.prep** folder in the current directory.  By specifying the **-g** option, **/usr/local/share/prep** will be used instead (Inspired by node).
 
 Under the repository:
 
@@ -147,7 +147,7 @@ the name of the executable or library to build
 #### dependencies
 an array of this configuration type objects defining each dependency.  Dependencies can be resolved using **resolver** plugins. Dependencies can also have dependencies. 
 
-##### &lt;plugin&gt;
+#### &lt;plugin&gt;
 A plugin can define its own options to override.  For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
 
 ```JSON
@@ -202,7 +202,6 @@ TODO
 - parse archive versions from filename
 - store md5 hash of configs in meta to detect changes
 - a way to rebuild a dependency or all dependencies
-- a way to rebuild a package
 - secure plugins (enforce digital signature?, chroot?)
 - a way to install new plugins
 - consider RPATH flags
