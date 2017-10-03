@@ -135,7 +135,7 @@ namespace micrantha
              * validates the repository
              * @return PREP_SUCCESS or PREP_FAILURE if not valid
              */
-            int validate() const;
+            int validate(const Options &opts) const;
 
             /**
              * validates the plugins

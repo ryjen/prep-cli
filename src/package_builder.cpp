@@ -11,18 +11,14 @@ namespace micrantha
 
         int PackageBuilder::initialize(const Options &opts)
         {
+            log_info("Initializing...");
+            
             if (repo_.initialize(opts)) {
                 return PREP_FAILURE;
             }
 
-            if (repo_.validate() == PREP_FAILURE) {
+            if (repo_.validate(opts) == PREP_FAILURE) {
                 return PREP_FAILURE;
-            }
-
-            if (!opts.global) {
-                if (repo_.validate_plugins(opts) == PREP_FAILURE) {
-                    return PREP_FAILURE;
-                }
             }
 
             if (repo_.load_plugins(opts) == PREP_FAILURE) {

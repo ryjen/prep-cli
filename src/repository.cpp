@@ -62,7 +62,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int Repository::validate() const
+        int Repository::validate(const Options &opts) const
         {
             if (path_.empty()) {
                 return PREP_FAILURE;
@@ -81,12 +81,6 @@ namespace micrantha
                 }
 
                 auto lib = build_sys_path(path_.c_str(), "lib", nullptr);
-
-                mkpath(lib, 0700);
-            }
-
-            if (!directory_exists(GLOBAL_REPO)) {
-                auto lib = build_sys_path(GLOBAL_REPO, "lib", nullptr);
 
                 mkpath(lib, 0700);
             }
@@ -110,16 +104,19 @@ namespace micrantha
                 }
             }
 
-            if (temp == nullptr) {
+            if (temp == nullptr && opts.verbose) {
                 log_warn("%s is not added to your PATH", binPath.c_str());
             }
+
+            if (validate_plugins(opts) == PREP_FAILURE) {
+                return PREP_FAILURE;
+            }
+
             return PREP_SUCCESS;
         }
 
         int Repository::validate_plugins(const options &opts) const
         {
-            const std::string globalPath = build_sys_path(GLOBAL_REPO, PLUGIN_FOLDER, nullptr);
-
             struct dirent *d = nullptr;
             DIR *dir = nullptr;
             const std::string pluginPath = get_plugin_path();
@@ -129,27 +126,17 @@ namespace micrantha
                     log_errno(errno);
                     return PREP_FAILURE;
                 }
+
+                if (init_plugins(opts, pluginPath) == PREP_FAILURE) {
+                    return PREP_FAILURE;
+                }
             }
 
-            dir = opendir(globalPath.c_str());
+            dir = opendir(pluginPath.c_str());
 
             if (dir == nullptr) {
-                // TODO: confirm global path with user
-                if (mkpath(globalPath.c_str(), 0777)) {
-                    log_errno(errno);
-                    return PREP_FAILURE;
-                }
-
-                if (init_plugins(opts, globalPath) == PREP_FAILURE) {
-                    return PREP_FAILURE;
-                }
-
-                dir = opendir(globalPath.c_str());
-
-                if (dir == nullptr) {
-                    log_errno(errno);
-                    return PREP_FAILURE;
-                }
+                log_errno(errno);
+                return PREP_FAILURE;
             }
 
             while ((d = readdir(dir)) != nullptr) {
@@ -157,27 +144,11 @@ namespace micrantha
                     continue;
                 }
 
-                // TODO: if the user declined creating a global path, install the default plugins from binary
-                const std::string globalPlugin = build_sys_path(globalPath.c_str(), d->d_name, nullptr);
-
                 const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, nullptr);
 
-                if (helper::is_valid_plugin_path(globalPlugin) && !helper::is_plugin_internal(globalPlugin)) {
-                    std::string buf;
-
-                    if (!helper::is_valid_plugin_path(localPath)) {
-                        printf("Add plugin %s? (Y/n) ", d->d_name);
-
-                        std::getline(std::cin, buf);
-
-                        if (!buf.empty() && buf[0] != 10 && toupper(buf[0]) != 'Y') {
-                            continue;
-                        }
-                    }
-                }
-
-                if (copy_directory(globalPlugin, localPath, false)) {
-                    log_error("unable to copy [%s] to [%s]", globalPlugin.c_str(), localPath.c_str());
+                if (!helper::is_valid_plugin_path(localPath)) {
+                   log_error("Plugin %s is invalid!", d->d_name);
+                    return PREP_FAILURE;
                 }
             }
 
@@ -529,10 +500,6 @@ namespace micrantha
             std::string path = get_plugin_path();
 
             if (!directory_exists(path.c_str())) {
-                if (mkdir(path.c_str(), 0777)) {
-                    log_errno(errno);
-                    return PREP_FAILURE;
-                }
                 return PREP_SUCCESS;
             }
 
