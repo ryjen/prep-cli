@@ -4,7 +4,7 @@ Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.  Yes, the core is written in C++ in the form of ```libutensil``` and ```prep``` binary, but the majority of the work is done by plugins.
 
-*Prep will manage dependencies, paths and flags for building and running c/c++ projects.* (value proposition)
+**Prep will manage dependencies, paths and flags for building and running c/c++ projects.**
 
 I no longer have time to maintain this project, so I'm releasing to open source.
 
@@ -77,11 +77,26 @@ END\n
 
 ## plugin output commands:
 
-Output may be in the form of a command.  Currently one or more return values can be specified by a plugin by writing to stdout.
+A plugin may send a command over stdout.
 
-```RETURN <value>\n``` 
 
-Any other output by the plugin is forwarded to prep's output when in verbose mode.
+##### RETURN:
+
+Specifies one or more return values.
+
+```
+RETURN <value>\n
+```
+
+
+##### ECHO:
+
+```
+ECHO <message>\n
+```
+
+
+Any other **output** by the plugin is forwarded to prep's output when in **verbose mode**.
 
 ## current plugins:
 
