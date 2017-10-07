@@ -37,29 +37,29 @@ Internal plugins are executed before any other plugin and cannot be specified in
 
 When writing a plugin, you have several **hooks** that will be sent over stdin.  Depending on what you need to do you can react to one or more of them.
 
-#### load
+#### LOAD
 
-occurs when a plugin is loaded for custom initialization
+Occurs when a plugin is loaded for custom initialization
 
-#### unload
+#### UNLOAD
 
-occurs when a plugin is unloaded for custom cleanup
+Occurs when a plugin is unloaded for custom cleanup
 
-#### install
+#### INSTALL
 
-occurs when a dependency wants to be installed.  Only affects plugins of type "resolver".
-
-parameters: [**package, version**]
-
-#### remove
-
-occurs when a dependency wants to be removed.  Only affects plugins of type "resolver".
+Occurs when a dependency wants to be installed.  Only affects plugins of type "resolver".
 
 parameters: [**package, version**]
 
-#### build
+#### REMOVE
 
-occurs when a package wants to be built. Only affects plugins of type "build".
+Occurs when a dependency wants to be removed.  Only affects plugins of type "resolver".
+
+parameters: [**package, version**]
+
+#### BUILD
+
+Occurs when a package wants to be built. Only affects plugins of type "build".
 
 parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value...**]
 
