@@ -63,7 +63,6 @@ namespace micrantha
          * builds a platform independent directory path given directory names
          */
         const char *build_sys_path(const char *start, ...) __attribute__((format(printf, 1, 2)));
-
     }
 }
 

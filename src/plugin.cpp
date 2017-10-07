@@ -74,6 +74,7 @@ namespace micrantha
                 return PREP_SUCCESS;
             }
 
+
             // reads a line from a file descriptor
             ssize_t read_line(int fd, std::string &buf)
             {
@@ -127,7 +128,7 @@ namespace micrantha
                     }
 
                     if (is_echo_command(line)) {
-                        log_info(line.substr(5).c_str());
+                        log::info(line.substr(5).c_str());
                         return true;
                     }
 
@@ -184,7 +185,7 @@ namespace micrantha
             auto config = Package::json_type::parse(buf.str().c_str());
 
             if (config.size() == 0) {
-                log_error("invalid configuration for plugin [%s]", name_.c_str());
+                log::error("invalid configuration for plugin [", name_, "]");
                 return PREP_FAILURE;
             }
 
@@ -204,10 +205,10 @@ namespace micrantha
 
             if (entry.is_string()) {
                 executablePath_ = build_sys_path(basePath_.c_str(), entry.get<std::string>().c_str(), NULL);
-                log_trace("plugin [%s] executable [%s]", name_.c_str(), executablePath_.c_str());
+                log::trace("plugin [", name_, "] executable [", executablePath_, "]");
             } else {
                 if (type_ != helper::TYPE_INTERNAL) {
-                    log_error("plugin [%s] has no executable", name_.c_str());
+                    log::error("plugin [", name_, "] has no executable");
                     return PREP_FAILURE;
                 }
             }
@@ -354,7 +355,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            log_debug("Running [%s] for \x1b[1;35m%s\x1b[0m", name().c_str(), config.name().c_str());
+            log::debug("Running [", name(), "] for ", config.name());
 
             auto envVars = environment::build_cpp_variables();
 
@@ -374,14 +375,14 @@ namespace micrantha
 
             auto method = helper::HOOK_NAMES[hook];
 
-            log_trace("executing [%s] on plugin [%s]", method, name_.c_str());
+            log::trace("executing [", method, "] on plugin [", name_, "]");
 
             // fork a psuedo terminal
             pid_t pid = forkpty(&master, NULL, NULL, NULL);
 
             if (pid < 0) {
                 // respond to error
-                log_errno(errno);
+                log::perror(errno);
                 return PREP_ERROR;
             }
 
@@ -389,7 +390,7 @@ namespace micrantha
             if (pid == 0) {
                 // set the current directory to the plugin path
                 if (chdir(basePath_.c_str())) {
-                    log_error("unable to change directory [%s]", basePath_.c_str());
+                    log::error("unable to change directory [", basePath_, "]");
                     return PREP_FAILURE;
                 }
 
@@ -411,9 +412,9 @@ namespace micrantha
                 tcsetattr(master, TCSAFLUSH, &tios);
 
                 if (helper::write_header(master, method, info) == PREP_FAILURE) {
-                    log_errno(errno);
+                    log::perror(errno);
                     if (kill(pid, SIGKILL) < 0) {
-                        log_errno(errno);
+                        log::perror(errno);
                     }
                     return PREP_ERROR;
                 }
@@ -435,7 +436,7 @@ namespace micrantha
                     // wait for something to happen
                     if (select(master + 1, &read_fd, &write_fd, &except_fd, nullptr) < 0) {
                         if (errno != EINTR) {
-                            log_errno(errno);
+                            log::perror(errno);
                         }
                         break;
                     }
@@ -447,7 +448,7 @@ namespace micrantha
 
                         if (n <= 0) {
                             if (n < 0) {
-                                log_errno(errno);
+                                log::perror(errno);
                             }
                             break;
                         }
@@ -455,7 +456,7 @@ namespace micrantha
                         // if the line is a return value, add it, else print it
                         if (!interpreter.interpret(line)) {
                             if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
-                                log_errno(errno);
+                                log::perror(errno);
                                 break;
                             }
                         }
@@ -467,14 +468,14 @@ namespace micrantha
 
                         if (n <= 0) {
                             if (n < 0) {
-                                log_errno(errno);
+                                log::perror(errno);
                             }
                             break;
                         }
 
                         // send it to the child
                         if (helper::write_line(master, line) < 0) {
-                            log_errno(errno);
+                            log::perror(errno);
                             break;
                         }
                     }
@@ -494,18 +495,18 @@ namespace micrantha
                     int sig = WTERMSIG(status);
 
                     // log signals
-                    log_error("child process signal %d", sig);
+                    log::error("child process signal ", sig);
 
                     // and core dump
                     if (WCOREDUMP(status)) {
-                        log_error("child produced core dump");
+                        log::error("child produced core dump");
                     }
                 } else if (WIFSTOPPED(status)) {
                     int sig = WSTOPSIG(status);
 
-                    log_error("child process stopped signal %d", sig);
+                    log::error("child process stopped signal ", sig);
                 } else {
-                    log_error("child process did not exit cleanly");
+                    log::error("child process did not exit cleanly");
                 }
             }
 

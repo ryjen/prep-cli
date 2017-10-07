@@ -2,47 +2,105 @@
 #define MICRANTHA_PREP_LOG_H
 
 #include <cstring>
+#include <ostream>
+#include <cerrno>
 
-#ifndef __attribute__
-#define __attribute__(x)
-#endif
+#include "vt100.h"
 
-namespace micrantha
-{
-    namespace prep
-    {
-        typedef enum {
-            /*! logging is disabled */
-            LogNone = 0,
-            /*! only error messages will be logged */
-            LogError = 1,
-            /*! warnings and errors will be logged */
-            LogWarn = 2,
-            /*! info, warning, and error messages will be logged */
-            LogInfo = 3,
-            /*! debug, info, warning and error messages will be logged */
-            LogDebug = 4,
-            /*! trace, debug, info, warning and error messages will be logged */
-            LogTrace = 5
-        } LogLevel;
+namespace micrantha {
+    namespace prep {
+        namespace log {
 
-        void set_log_level(const char *name);
+            namespace level {
+                typedef enum {
+                    /*! logging is disabled */
+                            None = 0,
+                    /*! only error messages will be logged */
+                            Error = 1,
+                    /*! warnings and errors will be logged */
+                            Warn = 2,
+                    /*! info, warning, and error messages will be logged */
+                            Info = 3,
+                    /*! debug, info, warning and error messages will be logged */
+                            Debug = 4,
+                    /*! trace, debug, info, warning and error messages will be logged */
+                            Trace = 5
+                } Type;
 
-        /*
-         * TODO: remove usage of C-style variadic args
-         */
+                void set(const char *name);
 
-        void log_error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+                bool valid(Type value);
 
-        void log_errno(int errnum);
+                std::ostream &format(level::Type value);
+            }
 
-        void log_warn(const char *format, ...) __attribute__((format(printf, 1, 2)));
+            namespace output {
+                std::ostream &print(std::ostream &os);
 
-        void log_info(const char *format, ...) __attribute__((format(printf, 1, 2)));
+                template<class A0, class ...Args>
+                std::ostream &print(std::ostream &os, const A0 &a0, const Args &...args) {
+                    os << a0;
+                    return print(os, args...);
+                }
 
-        void log_debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
+                template<class ...Args>
+                std::ostream &print(std::ostream &os, const Args &...args) {
+                    return print(os, args...);
+                }
+            }
 
-        void log_trace(const char *format, ...) __attribute__((format(printf, 1, 2)));
+            using namespace level;
+
+            template<class ...Args>
+            void info(const Args &...args) {
+                if (!valid(Info)) {
+                    return;
+                }
+                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
+                output::print(format(Info), args..., "\n");
+            }
+
+            template<class ...Args>
+            void debug(const Args &...args) {
+                if (!valid(Debug)) {
+                    return;
+                }
+                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
+                output::print(format(Debug), args..., "\n");
+            }
+
+            template<class ...Args>
+            void error(const Args &...args) {
+                if (!valid(Error)) {
+                    return;
+                }
+                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
+                output::print(format(Error), args..., "\n");
+            }
+
+            template<class ...Args>
+            void warn(const Args &...args) {
+                if (!valid(Warn)) {
+                    return;
+                }
+                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
+                output::print(format(Warn), args..., "\n");
+            }
+
+            template<class ...Args>
+            void trace(const Args &...args) {
+                if (!valid(Trace)) {
+                    return;
+                }
+                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
+                output::print(format(Trace), args..., "\n");
+            }
+
+            template<class ...Args>
+            void perror(const Args &...args) {
+                error(std::to_string(errno), ": ", strerror(errno));
+            }
+        }
     }
 }
 

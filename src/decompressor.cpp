@@ -87,7 +87,7 @@ namespace micrantha
             char buf[PATH_MAX + 1] = {0};
 
             if (in_ != nullptr || out_ != nullptr) {
-                log_errno(EINVAL);
+                log::perror(EINVAL);
                 return PREP_FAILURE;
             }
 
@@ -102,14 +102,14 @@ namespace micrantha
             switch (type_) {
                 case FILE:
                     if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), size_))) {
-                        log_error("unable to open file %d: %s\n", r, archive_error_string(in_));
+                        log::error("unable to open file ", r, ": ", archive_error_string(in_));
                         cleanup();
                         return PREP_FAILURE;
                     }
                     break;
                 case MEMORY:
                     if ((r = archive_read_open_memory(in_, from_, size_))) {
-                        log_error("unable to open memory archive %d: %s\n", r, archive_error_string(in_));
+                        log::error("unable to open memory archive ", r, ": ", archive_error_string(in_));
                         cleanup();
                         return PREP_FAILURE;
                     }
@@ -122,7 +122,7 @@ namespace micrantha
             r = archive_read_next_header(in_, &entry);
 
             if (r < ARCHIVE_OK) {
-                log_error("error extracting %d:%s\n", r, archive_error_string(in_));
+                log::error("error extracting ", r, ": ", archive_error_string(in_));
                 cleanup();
                 return PREP_SUCCESS;
             }
@@ -135,11 +135,11 @@ namespace micrantha
 
             while (r == ARCHIVE_OK) {
                 if (archive_write_header(out_, entry) != ARCHIVE_OK) {
-                    log_error("unable to write header from decompression %d:%s", r, archive_error_string(in_));
+                    log::error("unable to write header from decompression ", r, ": ", archive_error_string(in_));
                 } else {
                     copy_data(in_, out_);
                     if (archive_write_finish_entry(out_) != ARCHIVE_OK) {
-                        log_error("unable finish archive write %d:%s\n", r, archive_error_string(out_));
+                        log::error("unable finish archive write ", r, ": ", archive_error_string(out_));
                         cleanup();
                         return PREP_FAILURE;
                     }
@@ -154,12 +154,12 @@ namespace micrantha
 
                     archive_entry_set_pathname(entry, buf);
 
-                    log_debug("extracting %s", buf);
+                    log::debug("extracting ", buf);
                 }
             }
 
             if (r < ARCHIVE_OK) {
-                log_error("unable to extracting %d: %s\n", r, archive_error_string(in_));
+                log::error("unable to extracting ", r, ": ", archive_error_string(in_));
                 cleanup();
                 return PREP_FAILURE;
             }

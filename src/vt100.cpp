@@ -6,17 +6,19 @@
 
 #include <sstream>
 #include <iostream>
+#include <sys/termios.h>
+#include <unistd.h>
 
 #include "log.h"
 
-namespace micrantha
-{
-    namespace prep
-    {
+namespace micrantha {
+    namespace prep {
+
 
         namespace internal {
             // indicates good terminal support
             bool valid_term;
+            int rows = 0, cols = 0;
 
             // tests a TERM value for validity
             bool init(const char *term) {
@@ -24,9 +26,9 @@ namespace micrantha
                 if (term == nullptr) {
                     return false;
                 }
-                log_trace("found %s terminal", term);
+                log::trace("found ", term, " terminal");
                 std::string test(term);
-                for(const auto &term : term_names) {
+                for (const auto &term : term_names) {
                     if (term.find("xterm") != std::string::npos) {
                         return true;
                     }
@@ -96,11 +98,56 @@ namespace micrantha
         // other terminal codes
         namespace vt100 {
 
+            namespace output {
+                std::ostream &print(std::ostream &os) {
+                    return os;
+                }
+
+                std::mutex &get_mutex() {
+                    static std::mutex m;
+                    return m;
+                }
+            }
             namespace cursor {
+
                 void set(int rows, int cols) {
-                    if (internal::valid_term) {
+                    if (internal::valid_term && rows > 0 && cols > 0) {
                         std::cout << "\033[" << rows << ";" << cols << "H" << std::flush;
                     }
+                }
+
+                void get(int *row, int *col) {
+                    if (!internal::valid_term) {
+                        return;
+                    }
+
+                    struct termios ttystate, ttysave;
+
+                    tcgetattr(STDIN_FILENO, &ttystate);
+                    ttysave = ttystate;
+                    //turn off canonical mode and echo
+                    ttystate.c_lflag &= ~(ICANON | ECHO);
+                    //minimum of number input read.
+                    ttystate.c_cc[VMIN] = 1;
+                    ttystate.c_cc[VTIME] = 2;
+
+                    //set the terminal attributes.
+                    tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
+
+                    std::cout << cursor::REPORT << std::flush;
+
+                    fscanf(stdin, "\033[%d;%dR", row, col);
+
+                    tcsetattr(STDIN_FILENO, TCSANOW, &ttysave);
+
+                };
+
+                Savepoint::Savepoint() {
+                    std::cout << SAVE << std::flush;
+                }
+
+                Savepoint::~Savepoint() {
+                    std::cout << RESTORE << std::flush;
                 }
             }
 
@@ -109,14 +156,18 @@ namespace micrantha
                 internal::valid_term = term != nullptr && internal::init(term);
 
                 if (internal::valid_term) {
+
+                    cursor::Savepoint savepoint;
+
                     // find the screen height by setting the cursor to a extreme value
-                    cursor::set(99999, 0);
-                    // and then saving the actual cursor position
-                    std::cout << cursor::SAVE << std::flush;
+                    cursor::set(99999, 99999);
+
+                    cursor::get(&internal::rows, &internal::cols);
                 }
             }
 
-            Progress::Progress() noexcept : alive_(true), bg_(std::bind(&Progress::run, this)) {
+            Progress::Progress() noexcept : alive_(true), row_(0),
+                                            bg_(std::bind(&Progress::run, this)) {
 
             }
 
@@ -129,17 +180,32 @@ namespace micrantha
             }
 
             void Progress::reset() {
-                if (internal::valid_term) {
-                    // restore the cursor to the progress indicator
-                    std::cout << cursor::RESTORE << std::flush;
-                    // and erase the line
-                    std::cout << cursor::ERASE_LINE << std::flush;
+                if (!internal::valid_term) {
+                    return;
                 }
+
+                cursor::Savepoint savepoint;
+
+                // restore the cursor to the progress indicator
+                cursor::set(row_ - 1, 1);
+
+                // and erase the line
+                std::cout << " " << std::flush;
+
             }
 
             void Progress::run() {
+                if (!internal::valid_term) {
+                    return;
+                }
+
+                int col = 0;
+
+                cursor::get(&row_, &col);
+
                 using namespace std::chrono_literals;
-                while(internal::valid_term && alive_) {
+
+                while (internal::valid_term && alive_) {
                     update();
                     std::this_thread::sleep_for(100ms);
                 }
@@ -154,11 +220,15 @@ namespace micrantha
                 frame %= FRAME_SIZE;
 
                 if (internal::valid_term) {
+
+                    cursor::Savepoint savepoint;
+
                     // set the cursor to the saved position
-                    std::cout << cursor::RESTORE << std::flush;
+                    cursor::set(row_ - 1, 1);
+
                     // send the frame and move the cursor back one character to print again
                     std::cout << color::colorize({color::attr::BOLD, color::fg::GREEN}, FRAMES[frame], true)
-                              << cursor::BACK << std::flush;
+                              << std::flush;
                 }
             }
         }

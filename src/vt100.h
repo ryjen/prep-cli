@@ -8,6 +8,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace micrantha {
     namespace prep {
@@ -15,12 +16,42 @@ namespace micrantha {
         // do some fun stuff with output
         namespace vt100 {
 
+            namespace output {
+                std::ostream& print(std::ostream& os);
+
+                template<class A0, class ...Args>
+                std::ostream &
+                print(std::ostream &os, const A0 &a0, const Args &...args) {
+                    os << a0;
+                    return print(os, args...);
+                }
+
+                template<class ...Args>
+                std::ostream &
+                print(std::ostream &os, const Args &...args) {
+                    return print(os, args...);
+                }
+
+                std::mutex &get_mutex();
+            }
+
+            template <class ...Args>
+            std::ostream&
+            print(const Args& ...args)
+            {
+                std::lock_guard<std::mutex> _(output::get_mutex());
+                return output::print(std::cout, args...);
+            }
+
             // cursor related
             namespace cursor {
                 constexpr static const char *const BACK = "\033[1D";
                 constexpr static const char *const SAVE = "\0337";
                 constexpr static const char *const RESTORE = "\0338";
-                constexpr static const char *const ERASE_LINE = "\033[2K";
+                constexpr static const char *const ERASE = "\033[1K";
+                constexpr static const char *const REPORT = "\033[6n";
+                constexpr static const char *const UP = "\033[1A";
+                constexpr static const char *const DOWN = "\033[1B";
 
                 /**
                  * sets the cursor position
@@ -28,6 +59,27 @@ namespace micrantha {
                  * @param cols
                  */
                 void set(int rows, int cols);
+
+                /**
+                 * gets the cursor position
+                 * NOTE: may be blocking
+                 * @param rows
+                 * @param cols
+                 */
+                void get(int &rows, int &cols);
+
+                /**
+                 * RAII class to save and restore a cursor in scope
+                 */
+                class Savepoint {
+                public:
+                    Savepoint();
+                    ~Savepoint();
+                    Savepoint(const Savepoint &) = delete;
+                    Savepoint(Savepoint &&) = delete;
+                    Savepoint &operator=(const Savepoint&) = delete;
+                    Savepoint &operator=(Savepoint &&) = delete;
+                };
             }
 
             /**
@@ -48,6 +100,10 @@ namespace micrantha {
 
                 Progress(Progress &&) = delete;
 
+                Progress &operator=(const Progress &) = delete;
+
+                Progress &operator=(Progress &&) = delete;
+
             private:
                 void update();
 
@@ -56,6 +112,7 @@ namespace micrantha {
                 void run();
 
                 bool alive_;
+                int row_;
                 std::thread bg_;
             };
         }

@@ -62,7 +62,7 @@ int main(int argc, char *const argv[])
                 options.verbose = true;
                 break;
             case 'l':
-                micrantha::prep::set_log_level(optarg);
+                log::level::set(optarg);
                 break;
             case 'h':
                 print_help(argv[0]);
@@ -80,7 +80,7 @@ int main(int argc, char *const argv[])
         }
 
     } catch (const std::exception &e) {
-        log_error(e.what());
+        log::error(e.what());
         return PREP_FAILURE;
     }
 
@@ -101,7 +101,7 @@ int main(int argc, char *const argv[])
         }
 
     } catch (const std::exception &e) {
-        log_error(e.what());
+        log::error(e.what());
         return PREP_FAILURE;
     }
 
@@ -119,12 +119,12 @@ int main(int argc, char *const argv[])
 
         if (!directory_exists(options.location.c_str()) &&
             prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
-            log_error("%s is not a valid prep package", options.location.c_str());
+            log::error(options.location, " is not a valid prep package");
             return PREP_FAILURE;
         }
 
         if (config.load(options.location, options) == PREP_FAILURE) {
-            log_error("unable to load config at %s", options.location.c_str());
+            log::error("unable to load config at ", options.location);
             return PREP_FAILURE;
         }
 
@@ -135,14 +135,14 @@ int main(int argc, char *const argv[])
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            log_error("Remove which package?");
+            log::error("Remove which package?");
             return PREP_FAILURE;
         }
 
         auto directory = prep.get_package_directory(argv[optind]);
 
         if (config.load(directory, options) == PREP_FAILURE) {
-            log_error("unable to load config for %s", argv[optind]);
+            log::error("unable to load config for ", argv[optind]);
             return PREP_FAILURE;
         }
 
@@ -154,11 +154,11 @@ int main(int argc, char *const argv[])
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            log_error("Unlink which package?");
+            log::error("Unlink which package?");
             return PREP_FAILURE;
         }
         if (config.load(argv[optind], options) == PREP_FAILURE) {
-            log_error("unable to load config at %s", argv[optind]);
+            log::error("unable to load config at ", argv[optind]);
             return PREP_FAILURE;
         }
 
@@ -168,11 +168,11 @@ int main(int argc, char *const argv[])
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            log_error("Link which package?");
+            log::error("Link which package?");
             return PREP_FAILURE;
         }
         if (config.load(argv[optind], options) == PREP_FAILURE) {
-            log_error("unable to load config at %s", argv[optind]);
+            log::error("unable to load config at ", argv[optind]);
             return PREP_FAILURE;
         }
 
@@ -180,7 +180,7 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "check")) {
-        log_error("Not Implemented.");
+        log::error("Not Implemented.");
         return PREP_FAILURE;
     }
 
@@ -193,11 +193,11 @@ int main(int argc, char *const argv[])
         } else {
             options.location = ".";
         }
-        
+
         auto callback = [&options](const Plugin::Result &result) { options.location = result.values.front(); };
 
         if (prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
-            micrantha::prep::log_error("%s is not a valid prep package", options.location.c_str());
+            micrantha::prep::log::error("%s is not a valid prep package", options.location.c_str());
             return PREP_FAILURE;
         }
 

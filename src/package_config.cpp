@@ -113,12 +113,12 @@ namespace micrantha
             }
 
             if (resolve_package_file(path, opts.package_file, file) != PREP_SUCCESS) {
-                log_debug("unable to resolve %s/%s", path.c_str(), opts.package_file.c_str());
+                log::debug("unable to resolve ", path, "/", opts.package_file);
                 return PREP_FAILURE;
             }
 
             if (!file.is_open()) {
-                log_error("unable to open %s", opts.package_file.c_str());
+                log::error("unable to open ", opts.package_file);
                 return PREP_FAILURE;
             }
 
@@ -127,7 +127,7 @@ namespace micrantha
             values_ = json_type::parse(os.str().c_str());
 
             if (values_.empty()) {
-                log_error("invalid configuration for %s\n", os.str().c_str());
+                log::error("invalid configuration for ", os.str());
                 return PREP_FAILURE;
             }
 

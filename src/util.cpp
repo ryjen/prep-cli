@@ -27,13 +27,13 @@ namespace micrantha {
             pid_t pid = fork();
 
             if (pid == -1) {
-                log_errno(errno);
+                log::perror(errno);
                 return EXIT_FAILURE;
             }
 
             if (pid == 0) {
                 if (chdir(directory)) {
-                    log_error("unable to change directory [%s]", directory);
+                    log::perror("unable to change directory [%s]", directory);
                     return EXIT_FAILURE;
                 }
 
@@ -51,17 +51,17 @@ namespace micrantha {
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 
-                    log_error("child process signal %d", sig);
+                    log::perror("child process signal %d", sig);
 
                     if (WCOREDUMP(status)) {
-                        log_error("child produced core dump");
+                        log::perror("child produced core dump");
                     }
                 } else if (WIFSTOPPED(status)) {
                     int sig = WSTOPSIG(status);
 
-                    log_error("child process stopped signal %d", sig);
+                    log::perror("child process stopped signal %d", sig);
                 } else {
-                    log_error("child process did not exit cleanly");
+                    log::perror("child process did not exit cleanly");
                 }
             }
 
@@ -86,7 +86,7 @@ namespace micrantha {
             ftsp = fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, nullptr);
 
             if (!ftsp) {
-                log_error("failed to open %s [%s]", dir, strerror(errno));
+                log::perror("failed to open %s [%s]", dir, strerror(errno));
                 return PREP_FAILURE;
             }
 
@@ -95,7 +95,7 @@ namespace micrantha {
                     case FTS_NS:
                     case FTS_DNR:
                     case FTS_ERR:
-                        log_error("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
+                        log::perror("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
                         break;
 
                     case FTS_DC:
@@ -116,7 +116,7 @@ namespace micrantha {
                     case FTS_SLNONE:
                     case FTS_DEFAULT:
                         if (remove(curr->fts_accpath) < 0) {
-                            log_error("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
+                            log::perror("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
                             ret = PREP_FAILURE;
                         }
                         break;
@@ -139,7 +139,7 @@ namespace micrantha {
                     /* does not exist */
                     return 0;
                 } else {
-                    log_error("%s [%s]", strerror(errno), path);
+                    log::perror("%s [%s]", strerror(errno), path);
                     exit(1);
                 }
             } else {
@@ -220,7 +220,7 @@ namespace micrantha {
             }, tst{};
 
             if (stat(from.c_str(), &fst)) {
-                log_errno(errno);
+                log::perror(errno);
                 return PREP_FAILURE;
             }
 
@@ -242,17 +242,17 @@ namespace micrantha {
             dst.close();
 
             if (stat(to.c_str(), &tst)) {
-                log_errno(errno);
+                log::perror(errno);
                 return PREP_FAILURE;
             }
 
             if (chown(to.c_str(), fst.st_uid, fst.st_gid)) {
-                log_errno(errno);
+                log::perror(errno);
                 return PREP_FAILURE;
             }
 
             if (chmod(to.c_str(), fst.st_mode)) {
-                log_errno(errno);
+                log::perror(errno);
                 return PREP_FAILURE;
             }
             return PREP_SUCCESS;
@@ -267,13 +267,13 @@ namespace micrantha {
             };
 
             if (!directory_exists(from.c_str())) {
-                log_error("%s is not a directory", from.c_str());
+                log::perror("%s is not a directory", from.c_str());
                 return PREP_FAILURE;
             }
 
             if (!directory_exists(to.c_str())) {
                 if (mkdir(to.c_str(), 0777)) {
-                    log_errno(errno);
+                    log::perror(errno);
                     return PREP_FAILURE;
                 }
             }
@@ -283,7 +283,7 @@ namespace micrantha {
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
             if (file_system == nullptr) {
-                log_error("unable to open file system [%s]", strerror(errno));
+                log::perror("unable to open file system [%s]", strerror(errno));
                 return PREP_FAILURE;
             }
 
@@ -295,9 +295,9 @@ namespace micrantha {
                 if (parent->fts_info == FTS_D) {
                     if (stat(buf, &st) == 0) {
                         if (S_ISDIR(st.st_mode)) {
-                            log_trace("directory %s already exists", buf);
+                            log::trace("directory ", buf, " already exists");
                         } else {
-                            log_error("non-directory file already found for %s", buf);
+                            log::perror("non-directory file already found for %s", buf);
                             rval = PREP_FAILURE;
                         }
                         continue;
@@ -305,7 +305,7 @@ namespace micrantha {
 
                     // doesn't exist, create the repo path directory
                     if (mkdir(buf, 0777)) {
-                        log_error("Could not create %s [%s]", buf, strerror(errno));
+                        log::perror("Could not create %s [%s]", buf, strerror(errno));
                         rval = PREP_FAILURE;
                         break;
                     }
@@ -314,21 +314,21 @@ namespace micrantha {
                 }
 
                 if (parent->fts_info != FTS_F) {
-                    log_debug("skipping non-regular file %s", buf);
+                    log::debug("skipping non-regular file ", buf);
                     continue;
                 }
 
                 if (!overwrite) {
                     if (stat(buf, &st) == 0) {
-                        log_debug("skipping existing regular file file %s", buf);
+                        log::debug("skipping existing regular file file ", buf);
                         continue;
                     }
                 }
 
-                log_debug("copying [%s] to [%s]", parent->fts_path, buf);
+                log::debug("copying [", parent->fts_path, "] to [", buf, "]");
 
                 if (copy_file(parent->fts_path, buf) == PREP_FAILURE) {
-                    log_error("unable to link [%s]", strerror(errno));
+                    log::perror("unable to link [", strerror(errno), "]");
                     rval = PREP_FAILURE;
                     break;
                 }

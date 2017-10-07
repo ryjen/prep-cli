@@ -26,7 +26,7 @@ namespace micrantha
             char buf[BUFSIZ] = { 0 };
 
             if (!getcwd(buf, BUFSIZ)) {
-                log_error("no current directory");
+                log::error("no current directory");
                 return nullptr;
             }
 
@@ -98,7 +98,7 @@ namespace micrantha
             }
 
             if (temp == nullptr && opts.verbose) {
-                log_warn("%s is not added to your PATH", binPath.c_str());
+                log::warn(binPath, " is not added to your PATH");
             }
 
             return PREP_SUCCESS;
@@ -110,7 +110,7 @@ namespace micrantha
 
             if (!directory_exists(pluginPath.c_str())) {
                 if (mkpath(pluginPath.c_str(), 0777)) {
-                    log_errno(errno);
+                    log::perror(errno);
                     return PREP_FAILURE;
                 }
 
@@ -157,12 +157,12 @@ namespace micrantha
         int Repository::save_meta(const Package &config) const
         {
             if (path_.empty()) {
-                log_error("uninitialized repository path");
+                log::error("uninitialized repository path");
                 return PREP_FAILURE;
             }
 
             if (!config.has_name()) {
-                log_error("configuration has no name");
+                log::error("configuration has no name");
                 return PREP_FAILURE;
             }
 
@@ -171,7 +171,7 @@ namespace micrantha
 
             if (!directory_exists(metaDir.c_str())) {
                 if (mkpath(metaDir.c_str(), 0777)) {
-                    log_errno(errno);
+                    log::perror(errno);
                     return PREP_FAILURE;
                 }
             }
@@ -179,7 +179,7 @@ namespace micrantha
             std::ofstream out(build_sys_path(metaDir.c_str(), VERSION_FILE, NULL));
 
             if (!out.is_open()) {
-                log_error("unable to save version for %s", config.name().c_str());
+                log::error("unable to save version for ", config.name());
                 return PREP_FAILURE;
             }
 
@@ -192,10 +192,10 @@ namespace micrantha
             out.close();
 
             if (config.has_path()) {
-                log_trace("copying %s to %s...", config.path().c_str(), metaDir.c_str());
+                log::trace("copying ", config.path(), " to ", metaDir, "...");
 
                 if (copy_file(config.path(), build_sys_path(metaDir.c_str(), PACKAGE_FILE, NULL))) {
-                    log_error("no unable to copy package file %s", config.path().c_str());
+                    log::error("no unable to copy package file ", config.path());
                 }
             }
 
@@ -240,21 +240,21 @@ namespace micrantha
             std::string metaDir;
 
             if (path_.empty()) {
-                log_error("No repository path defined!");
+                log::error("No repository path defined!");
                 return PREP_FAILURE;
             }
 
             metaDir = build_sys_path(path_.c_str(), KITCHEN_FOLDER, META_FOLDER, NULL);
 
             if (!directory_exists(metaDir.c_str())) {
-                log_error("%s is not a directory", metaDir.c_str());
+                log::error(metaDir, " is not a directory");
                 return 0;
             }
 
             dir = opendir(metaDir.c_str());
 
             if (dir == nullptr) {
-                log_error("unable to open file system [%s]", strerror(errno));
+                log::error("unable to open file system [", strerror(errno), "]" );
                 return 0;
             }
 
@@ -272,12 +272,12 @@ namespace micrantha
 
                 // and check if it already exists
                 if (stat(buf, &st)) {
-                    log_debug("%s doesn't exist??, skipping", buf, strerror(errno));
+                    log::debug(buf, " doesn't exist??, skipping ", strerror(errno));
                     continue;
                 }
 
                 if (!S_ISDIR(st.st_mode)) {
-                    log_debug("Not a directory [%s]", buf);
+                    log::debug("Not a directory [", buf, "]");
                     continue;
                 }
 
@@ -299,7 +299,7 @@ namespace micrantha
             char buf[PATH_MAX + 1] = { 0 };
 
             if (!directory_exists(path.c_str())) {
-                log_error("%s is not a directory", path.c_str());
+                log::error(path, " is not a directory");
                 return PREP_FAILURE;
             }
 
@@ -308,7 +308,7 @@ namespace micrantha
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
             if (file_system == nullptr) {
-                log_error("unable to open file system [%s]", strerror(errno));
+                log::error("unable to open file system [", strerror(errno), "]");
                 return PREP_FAILURE;
             }
 
@@ -322,9 +322,9 @@ namespace micrantha
                 if (parent->fts_info == FTS_D) {
                     if (stat(buf, &st) == 0) {
                         if (S_ISDIR(st.st_mode)) {
-                            log_trace("directory %s already exists", buf);
+                            log::trace("directory ", buf, " already exists");
                         } else {
-                            log_error("non-directory file already found for %s", buf);
+                            log::error("non-directory file already found for ", buf);
                             rval = PREP_FAILURE;
                         }
                         continue;
@@ -332,7 +332,7 @@ namespace micrantha
 
                     // doesn't exist, create the repo path directory
                     if (mkdir(buf, 0777)) {
-                        log_error("Could not create %s [%s]", buf, strerror(errno));
+                        log::error("Could not create ", buf, " [", strerror(errno), "]");
                         rval = PREP_FAILURE;
                         break;
                     }
@@ -341,27 +341,27 @@ namespace micrantha
                 }
 
                 if (parent->fts_info != FTS_F) {
-                    log_debug("skipping non-regular file %s", buf);
+                    log::debug("skipping non-regular file ", buf);
                     continue;
                 }
 
                 if (lstat(buf, &st) == 0) {
                     if (!S_ISLNK(st.st_mode)) {
-                        log_error("File already exists and is not a link");
+                        log::error("File already exists and is not a link");
                         rval = PREP_FAILURE;
                         break;
                     }
 
                     if (unlink(buf)) {
-                        log_error("unable to unlink existing [%s]", strerror(errno));
+                        log::error("unable to unlink existing [", strerror(errno), "]");
                         continue;
                     }
                 }
 
-                log_debug("linking [%s] to [%s]", parent->fts_path, buf);
+                log::debug("linking [", parent->fts_path, "] to [", buf, "]");
 
                 if (symlink(parent->fts_path, buf)) {
-                    log_error("unable to link [%s]", strerror(errno));
+                    log::error("unable to link [", strerror(errno), "]");
                     rval = PREP_FAILURE;
                     break;
                 }
@@ -381,7 +381,7 @@ namespace micrantha
             std::string installDir;
 
             if (!directory_exists(path.c_str())) {
-                log_error("%s does not exist.", path.c_str());
+                log::error(path, " does not exist.");
                 return PREP_FAILURE;
             }
 
@@ -390,7 +390,7 @@ namespace micrantha
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
             if (file_system == nullptr) {
-                log_error("unable to open file system [%s]", strerror(errno));
+                log::error("unable to open file system [", strerror(errno), "]");
                 return PREP_FAILURE;
             }
 
@@ -400,7 +400,7 @@ namespace micrantha
                 struct stat st = {};
 
                 if (parent->fts_info == FTS_D) {
-                    log_debug("skipping directory %s", parent->fts_path);
+                    log::debug("skipping directory ", parent->fts_path);
                     continue;
                 }
 
@@ -408,25 +408,25 @@ namespace micrantha
                 snprintf(buf, PATH_MAX, "%s%s", path_.c_str(), parent->fts_path + plength);
 
                 if (lstat(buf, &st)) {
-                    log_debug("%s not found (%s), skipping", buf, strerror(errno));
+                    log::debug(buf, " not found (", strerror(errno), "), skipping");
                     continue;
                 }
 
                 if (S_ISDIR(st.st_mode)) {
-                    log_debug("skipping directory %s", buf);
+                    log::debug("skipping directory ", buf);
                     continue;
                 }
 
                 if (!S_ISLNK(st.st_mode)) {
-                    log_error("%s is not a link, skipping", buf);
+                    log::error(buf, " is not a link, skipping");
                     rval = PREP_FAILURE;
                     continue;
                 }
 
-                log_debug("unlinking [%s]", buf);
+                log::debug("unlinking [", buf, "]");
 
                 if (unlink(buf)) {
-                    log_error("unable to unlink [%s]", strerror(errno));
+                    log::error("unable to unlink [", strerror(errno), "]");
                     rval = PREP_FAILURE;
                     break;
                 }
@@ -470,11 +470,11 @@ namespace micrantha
             DIR *dir         = opendir(path.c_str());
 
             if (dir == nullptr) {
-                log_errno(errno);
+                log::perror(errno);
                 return PREP_FAILURE;
             }
 
-            log_info("loading plugins");
+            log::info("loading plugins");
 
             while ((d = readdir(dir)) != nullptr) {
                 if (d->d_name[0] == '.') {
@@ -490,15 +490,14 @@ namespace micrantha
                     plugin->set_verbose(opts.verbose);
                     plugins_.push_back(plugin);
                     if (!plugin->is_internal()) {
-                        log_trace("loaded plugin %s version [%s]", color::m(plugin->name()).c_str(),
-                                 color::y(plugin->version()).c_str());
+                        log::trace("loaded plugin ",color::m(plugin->name())," version [",color::y(plugin->version()),"]");
                     }
                     break;
                 case PREP_FAILURE:
-                    log_warn("unable to load plugin [%s]", d->d_name);
+                    log::warn("unable to load plugin [",d->d_name,"]" );
                     break;
                 case PREP_ERROR:
-                    log_trace("skipping non-plugin [%s]", d->d_name);
+                    log::trace("skipping non-plugin [", d->d_name, "]");
                     break;
                 default:
                     break;
@@ -511,8 +510,9 @@ namespace micrantha
                 [](const std::shared_ptr<Plugin> &a, const std::shared_ptr<Plugin> &b) { return a->is_internal(); });
 
             for (const auto &plugin : plugins_) {
-                    log_info("initializing %s [%s]", color::m(plugin->name()).c_str(),
-                             color::y(plugin->version()).c_str());
+                vt100::Progress progress;
+
+                    log::info("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
                 if (plugin->on_load() == PREP_ERROR) {
                     return PREP_FAILURE;
                 }
@@ -523,13 +523,12 @@ namespace micrantha
 
         int Repository::notify_plugins_resolve(const Package &config, const resolver_callback &callback)
         {
-            log_trace("checking plugins for resolving [%s]...", config.name().c_str());
+            log::trace("checking plugins for resolving [", config.name(), "]...");
 
             for (const auto &plugin : plugins_) {
                 auto result = plugin->on_resolve(config);
                 if (result == PREP_SUCCESS) {
-                    log_info("resolved %s from plugin %s", color::m(config.name()).c_str(),
-                             color::c(plugin->name()).c_str());
+                    log::info("resolved ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     if (callback) {
                         callback(result);
                     }
@@ -541,14 +540,13 @@ namespace micrantha
 
         int Repository::notify_plugins_resolve(const std::string &location, const resolver_callback &callback)
         {
-            log_trace("checking plugins for resolving [%s]...", location.c_str());
+            log::trace("checking plugins for resolving [", location, "]...");
 
             for (const auto &plugin : plugins_) {
                 auto result = plugin->on_resolve(location);
 
                 if (result == PREP_SUCCESS) {
-                    log_info("resolved %s from plugin %s", color::m(location).c_str(),
-                             color::c(plugin->name()).c_str());
+                    log::info("resolved ", color::m(location), " from plugin ", color::c(plugin->name()));
                     if (callback) {
                         callback(result);
                     }
@@ -560,12 +558,11 @@ namespace micrantha
 
         int Repository::notify_plugins_install(const Package &config)
         {
-            log_trace("checking plugins for install of [%s]...", config.name().c_str());
+            log::trace("checking plugins for install of [", config.name(), "]...");
 
             for (const auto &plugin : plugins_) {
                 if (plugin->on_install(config, path_) == PREP_SUCCESS) {
-                    log_info("installed %s from plugin %s", color::m(config.name()).c_str(),
-                             color::c(plugin->name()).c_str());
+                    log::info("installed ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     return PREP_SUCCESS;
                 }
             }
@@ -574,12 +571,11 @@ namespace micrantha
 
         int Repository::notify_plugins_remove(const Package &config)
         {
-            log_trace("checking plugins for removal of [%s]...", config.name().c_str());
+            log::trace("checking plugins for removal of [", config.name(), "]...");
 
             for (const auto &plugin : plugins_) {
                 if (plugin->on_remove(config, path_) == PREP_SUCCESS) {
-                    log_info("removed %s from plugin %s", color::m(config.name()).c_str(),
-                             color::c(plugin->name()).c_str());
+                    log::info("removed ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     return PREP_SUCCESS;
                 }
             }
@@ -603,11 +599,11 @@ namespace micrantha
                 auto plugin = get_plugin_by_name(name);
 
                 if (!plugin) {
-                    log_error("No plugin [%s] found", name.c_str());
+                    log::error("No plugin [", name, "] found");
                     return PREP_FAILURE;
                 }
 
-                log_info("Building %s with %s", color::m(config.name()).c_str(), color::c(plugin->name()).c_str());
+                log::info("Building ", color::m(config.name()), " with ", color::c(plugin->name()));
 
                 if (plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
                     return PREP_FAILURE;

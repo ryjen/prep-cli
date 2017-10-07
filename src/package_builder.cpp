@@ -31,7 +31,7 @@ namespace micrantha
             }
 
             if (repo_.load_plugins(opts) == PREP_FAILURE) {
-                log_error("unable to load plugins");
+                log::error("unable to load plugins");
                 return PREP_FAILURE;
             }
 
@@ -59,7 +59,7 @@ namespace micrantha
             std::string installPath, buildPath;
 
             if (!config.is_loaded()) {
-                log_error("config not loaded");
+                log::error("config not loaded");
                 return PREP_FAILURE;
             }
 
@@ -70,34 +70,34 @@ namespace micrantha
             buildPath = repo_.get_build_path(config.name());
 
             if (!directory_exists(buildPath.c_str())) {
-                log_trace("Creating [%s]", buildPath.c_str());
+                log::trace("Creating [", buildPath, "]");
                 if (mkpath(buildPath.c_str(), 0777)) {
-                    log_errno(errno);
+                    log::perror(errno);
                     return PREP_FAILURE;
                 }
             }
 
-            log_trace("Setting build output to [%s]", buildPath.c_str());
+            log::trace("Setting build output to [", buildPath, "]");
 
             installPath = repo_.get_install_path(config.name());
 
             if (!directory_exists(installPath.c_str())) {
-                log_trace("Creating %s...", installPath.c_str());
+                log::trace("Creating ", installPath, "...");
                 if (mkpath(installPath.c_str(), 0777)) {
-                    log_errno(errno);
+                    log::perror(errno);
                     return PREP_FAILURE;
                 }
             }
 
-            log_trace("Installing to [%s]", installPath.c_str());
+            log::trace("Installing to [", installPath, "]");
 
             if (repo_.notify_plugins_build(config, path, buildPath, installPath) == PREP_FAILURE) {
-                log_error("unable to build [%s]", config.name().c_str());
+                log::error("unable to build [", config.name(), "]");
                 return PREP_FAILURE;
             }
 
             if (repo_.save_meta(config)) {
-                log_error("unable to save meta data");
+                log::error("unable to save meta data");
                 return PREP_FAILURE;
             }
 
@@ -113,7 +113,7 @@ namespace micrantha
         {
             // otherwise were removing this package
             if (!config.is_loaded()) {
-                log_error("configuration not loaded");
+                log::error("configuration not loaded");
                 return PREP_FAILURE;
             }
 
@@ -131,35 +131,35 @@ namespace micrantha
             std::string installDir = repo_.get_install_path(package_name);
 
             if (!directory_exists(installDir.c_str())) {
-                log_info("%s is not installed", package_name.c_str());
+                log::info(color::m(package_name), " is not installed");
                 return PREP_SUCCESS;
             }
 
             int depCount = repo_.dependency_count(package_name, opts);
 
             if (depCount > 0) {
-                log_warn("%d packages depend on %s", depCount, package_name.c_str());
+                log::warn(depCount, " packages depend on ", package_name);
                 return PREP_FAILURE;
             }
 
             if (repo_.unlink_directory(installDir.c_str())) {
-                log_error("unable to unlink package %s", package_name.c_str());
+                log::error("unable to unlink package ", package_name);
                 return PREP_FAILURE;
             }
 
             if (remove_directory(installDir.c_str())) {
-                log_error("unable to remove package %s", installDir.c_str());
+                log::error("unable to remove package ", installDir);
                 return PREP_FAILURE;
             }
 
             installDir = repo_.get_meta_path(package_name);
 
             if (remove_directory(installDir.c_str())) {
-                log_error("unable to remove meta package %s", installDir.c_str());
+                log::error("unable to remove meta package ", installDir);
                 return PREP_FAILURE;
             }
 
-            log_info("%s package removed.", package_name.c_str());
+            log::info(color::m(package_name), " package removed.");
 
             return PREP_SUCCESS;
         }
@@ -169,17 +169,16 @@ namespace micrantha
             std::string installDir;
 
             if (!config.is_loaded()) {
-                log_error("config is not loaded");
+                log::error("config is not loaded");
                 return PREP_FAILURE;
             }
 
             vt100::Progress progress;
 
-            log_info("preparing package %s [%s]", color::m(config.name()).c_str(), color::y(config.version()).c_str());
+            log::info("preparing package ", color::m(config.name()), " [", color::y(config.version()), "]");
 
             if (!opts.force_build && repo_.has_meta(config) == PREP_SUCCESS) {
-                log_warn("used cached version of %s [%s]", color::m(config.name()).c_str(),
-                         color::y(config.version()).c_str());
+                log::warn("used cached version of ", color::m(config.name()), color::y(config.version()));
                 return PREP_SUCCESS;
             }
 
@@ -187,7 +186,7 @@ namespace micrantha
 
             if (!directory_exists(installDir.c_str())) {
                 if (mkpath(installDir.c_str(), 0777)) {
-                    log_error("could not create [%s] (%s)", installDir.c_str(), strerror(errno));
+                    log::error("could not create [", installDir, "] (", strerror(errno), ")");
                     return PREP_FAILURE;
                 }
             }
@@ -195,8 +194,8 @@ namespace micrantha
             for (const auto &p : config.dependencies()) {
                 std::string package_dir;
 
-                log_info("preparing %s dependency %s [%s]", color::m(config.name()).c_str(),
-                         color::c(p.name()).c_str(), color::y(p.version()).c_str());
+                log::info("preparing ", color::m(config.name()), " dependency ", color::c(p.name()), " [",
+                          color::y(p.version()), "]");
 
                 if (repo_.notify_plugins_install(p) == PREP_SUCCESS) {
                     continue;
@@ -205,12 +204,12 @@ namespace micrantha
                 auto callback = [&package_dir](const Plugin::Result &result) { package_dir = result.values.front(); };
 
                 if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
-                    log_error("[%s] could not resolve dependency [%s]", config.name().c_str(), p.name().c_str());
+                    log::error("[", config.name(), "] could not resolve dependency [", p.name(), "]");
                     return PREP_FAILURE;
                 }
 
                 if (build(p, opts, package_dir.c_str())) {
-                    log_error("unable to build dependency %s", p.name().c_str());
+                    log::error("unable to build dependency ", p.name());
                     remove_directory(package_dir.c_str());
                     return PREP_FAILURE;
                 }
@@ -221,11 +220,11 @@ namespace micrantha
             }
 
             if (repo_.link_directory(installDir)) {
-                log_error("Unable to link package");
+                log::error("Unable to link package");
                 return PREP_FAILURE;
             }
 
-            log_info("built package %s [%s]", color::m(config.name()).c_str(), color::y(config.version()).c_str());
+            log::info("built package ", color::m(config.name()), " [", color::y(config.version()), "]");
 
             return PREP_SUCCESS;
         }
@@ -233,7 +232,7 @@ namespace micrantha
         int PackageBuilder::link_package(const Package &config) const
         {
             if (!config.is_loaded()) {
-                log_error("config is not loaded");
+                log::error("config is not loaded");
                 return PREP_FAILURE;
             }
 
@@ -245,7 +244,7 @@ namespace micrantha
         int PackageBuilder::unlink_package(const Package &config) const
         {
             if (!config.is_loaded()) {
-                log_error("config is not loaded");
+                log::error("config is not loaded");
                 return PREP_FAILURE;
             }
 
@@ -257,19 +256,19 @@ namespace micrantha
         int PackageBuilder::execute(const Package &config, int argc, char *const *argv) const
         {
             if (!config.is_loaded()) {
-                log_error("config is not loaded");
+                log::error("config is not loaded");
                 return PREP_FAILURE;
             }
 
             if (config.executable().empty()) {
-                log_error("config has no executable defined");
+                log::error("config has no executable defined");
                 return PREP_FAILURE;
             }
 
             auto executable = build_sys_path(repo_.get_bin_path().c_str(), config.executable().c_str(), NULL);
 
             if (!file_executable(executable)) {
-                log_error("%s is not executable", executable);
+                log::error(executable, " is not executable");
                 return PREP_FAILURE;
             }
 
