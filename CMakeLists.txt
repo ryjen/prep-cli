@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 3.1)
 
 #use c++11
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 # add options for testing
 option(CODE_COVERAGE "Enable code coverage testing." OFF)
@@ -33,6 +33,12 @@ find_package(PkgConfig REQUIRED)
 
 # find a libarchive.  hint to a homebrew installation for the header files
 pkg_search_module(LibArchive REQUIRED libarchive)
+
+find_program(ZIP_EXECUTABLE zip)
+
+if (NOT ZIP_EXECUTABLE)
+	message(FATAL "A zip program required")
+endif()
 
 # add target for code coverage
 if(CODE_COVERAGE)

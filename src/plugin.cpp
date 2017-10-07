@@ -30,44 +30,6 @@ namespace micrantha
 
             constexpr static const char *const TYPE_INTERNAL = "internal";
 
-            // test a plugin path for a manifest file
-            bool is_valid_plugin_path(const std::string &path)
-            {
-                if (path.empty()) {
-                    return false;
-                }
-
-                auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
-
-                return file_exists(manifest);
-            }
-
-            // test a plugin path to see if its type is internal
-            bool is_plugin_internal(const std::string &path)
-            {
-                if (path.empty()) {
-                    return false;
-                }
-
-                auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
-                std::ifstream file;
-                std::ostringstream buf;
-
-                file.open(manifest);
-
-                file >> buf.rdbuf();
-                auto config = Package::json_type::parse(buf.str().c_str());
-
-                auto type = config["type"];
-
-                return type.is_string() && type.get<std::string>() == TYPE_INTERNAL;
-            }
-
-            // test input for a return command
-            bool is_return_command(const std::string &line)
-            {
-                return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
-            }
 
             // writes a line to a file descriptor
             ssize_t write_line(int fd, const std::string &line)
@@ -151,6 +113,40 @@ namespace micrantha
 
                 return totRead;
             }
+
+            class Interpreter
+            {
+            public:
+                std::vector<std::string> returns;
+
+                bool interpret(const std::string &line) {
+                    if (is_return_command(line)) {
+                        returns.push_back(line.substr(7));
+                        return true;
+                    }
+
+                    if (is_echo_command(line)) {
+                        log_info(line.substr(5).c_str());
+                        return true;
+                    }
+
+                    return false;
+                }
+            private:
+
+                // test input for a return command
+                static bool is_return_command(const std::string &line)
+                {
+                    return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
+                }
+
+                // test input for a echo command
+                static bool is_echo_command(const std::string &line)
+                {
+                    return line.length() > 5 && !strcasecmp(line.substr(0, 5).c_str(), "ECHO ");
+                }
+            };
+
         }
 
         Plugin::Plugin(const std::string &name) : name_(name)
@@ -179,15 +175,13 @@ namespace micrantha
 
             std::string manifest = build_sys_path(path.c_str(), MANIFEST_FILE, NULL);
 
-            // skip folders with no manifest
-            if (!file_exists(manifest.c_str())) {
+            std::ifstream file(manifest);
+
+            if (!file.is_open()) {
                 return PREP_ERROR;
             }
 
-            std::ifstream file;
             std::ostringstream buf;
-
-            file.open(manifest);
 
             file >> buf.rdbuf();
 
@@ -204,23 +198,22 @@ namespace micrantha
                 type_ = entry.get<std::string>();
             }
 
+            entry = config["version"];
+
+            if (entry.is_string()) {
+                version_ = entry.get<std::string>();
+            }
+
             entry = config["executable"];
 
             if (entry.is_string()) {
                 executablePath_ = build_sys_path(basePath_.c_str(), entry.get<std::string>().c_str(), NULL);
                 log_trace("plugin [%s] executable [%s]", name_.c_str(), executablePath_.c_str());
             } else {
-                if (type_ == helper::TYPE_INTERNAL) {
-                    return PREP_SUCCESS;
+                if (type_ != helper::TYPE_INTERNAL) {
+                    log_error("plugin [%s] has no executable", name_.c_str());
+                    return PREP_FAILURE;
                 }
-                log_error("plugin [%s] has no executable", name_.c_str());
-                return PREP_FAILURE;
-            }
-
-            entry = config["version"];
-
-            if (entry.is_string()) {
-                version_ = entry.get<std::string>();
             }
 
             return PREP_SUCCESS;
@@ -411,12 +404,12 @@ namespace micrantha
             } else {
                 // otherwise we are the parent process...
                 int status = 0;
-                std::vector<std::string> returnValues;
+                helper::Interpreter interpreter;
                 struct termios tios;
 
                 // set some terminal flags to remove local echo
                 tcgetattr(master, &tios);
-                tios.c_lflag &= ~(ECHO | ECHONL);
+                tios.c_lflag &= ~(ECHO | ECHONL|ECHOCTL);
                 tcsetattr(master, TCSAFLUSH, &tios);
 
                 if (helper::write_header(master, method, info) == PREP_FAILURE) {
@@ -432,7 +425,6 @@ namespace micrantha
                     fd_set read_fd;
                     fd_set write_fd;
                     fd_set except_fd;
-                    char input = 0;
                     std::string line;
 
                     FD_ZERO(&read_fd);
@@ -443,8 +435,10 @@ namespace micrantha
                     FD_SET(STDIN_FILENO, &read_fd);
 
                     // wait for something to happen
-                    if (select(master + 1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
-                        log_errno(errno);
+                    if (select(master + 1, &read_fd, &write_fd, &except_fd, nullptr) < 0) {
+                        if (errno != EINTR) {
+                            log_errno(errno);
+                        }
                         break;
                     }
 
@@ -461,11 +455,11 @@ namespace micrantha
                         }
 
                         // if the line is a return value, add it, else print it
-                        if (helper::is_return_command(line)) {
-                            returnValues.push_back(line.substr(7));
-                        } else if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
-                            log_errno(errno);
-                            break;
+                        if (!interpreter.interpret(line)) {
+                            if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
+                                log_errno(errno);
+                                break;
+                            }
                         }
                     }
 
@@ -497,7 +491,7 @@ namespace micrantha
                     int rval = WEXITSTATUS(status);
                     // typically rval will be the return status of the command the plugin executes
                     rval = rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
-                    return {rval, returnValues};
+                    return {rval, interpreter.returns};
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 

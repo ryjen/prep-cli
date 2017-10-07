@@ -137,8 +137,6 @@ namespace micrantha
 
             path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
 
-            log_info("preparing package \033[1;35m%s\033[0m", name().c_str());
-
             return PREP_SUCCESS;
         }
 

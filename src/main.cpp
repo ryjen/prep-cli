@@ -2,11 +2,14 @@
 #include <unistd.h>
 #include <iostream>
 #include <vector>
+#include <clocale>
+#include <getopt.h>
 
 #include "common.h"
 #include "log.h"
 #include "package_builder.h"
 #include "util.h"
+#include "vt100.h"
 
 using namespace micrantha::prep;
 
@@ -18,6 +21,7 @@ void print_help(char *exe)
     printf("      : %s [-g -v] link <package> [version]\n", exe);
     printf("      : %s [-g -v] unlink <package>\n", exe);
     printf("      : %s run\n", exe);
+    printf("      : %s path\n", exe);
     printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
 }
@@ -32,8 +36,18 @@ int main(int argc, char *const argv[])
                     .verbose = false};
     const char *command;
     int option;
+    int option_index = 0;
+    static struct option args[] = {
+            {"global",  no_argument,       0,  'g' },
+            {"package", required_argument, 0,  'p' },
+            {"force",   no_argument,       0,  'f' },
+            {"verbose", no_argument,       0,  'v' },
+            {"log",     required_argument, 0,  'l' },
+            {"help",    no_argument,       0,   0  },
+            {0,         0,                 0,   0  }
+    };
 
-    while ((option = getopt(argc, argv, "vhgfp:l:")) != EOF) {
+    while ((option = getopt_long(argc, argv, "vhgfp:l:", args, &option_index)) != EOF) {
         switch (option) {
             case 'g':
                 options.global = true;
@@ -57,6 +71,8 @@ int main(int argc, char *const argv[])
                 break;
         }
     }
+
+    vt100::init();
 
     try {
         if (prep.initialize(options)) {
@@ -118,8 +134,8 @@ int main(int argc, char *const argv[])
         return prep.remove(config, options);
     }
 
-    if (!strcmp(command, "setpath")) {
-        prep.add_path_to_shell();
+    if (!strcmp(command, "path")) {
+        prep.export_path();
 
         return PREP_SUCCESS;
     }

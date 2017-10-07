@@ -1,3 +1,5 @@
 {
-    "type": "internal"
+    "executable": "main",
+    "type": "internal",
+    "version": "1.0"
 }

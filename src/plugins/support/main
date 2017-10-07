@@ -13,6 +13,8 @@ sub install_dependencies
     # get the path to the library
     my $libpath = $Config{privlib} || $ENV{HOME} . "/.cpan";
 
+    print "ECHO checking CPAN modules\n";
+
     if ( ! -d $libpath ) {
 
         $ENV{PERL_MM_USE_DEFAULT}=1;

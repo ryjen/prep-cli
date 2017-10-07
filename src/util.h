@@ -1,8 +1,8 @@
 #ifndef MICRANTHA_PREP_UTIL_H
 #define MICRANTHA_PREP_UTIL_H
 
-#include <sys/stat.h>
 #include <string>
+#include <sys/stat.h>
 
 namespace micrantha
 {
@@ -64,11 +64,6 @@ namespace micrantha
          */
         const char *build_sys_path(const char *start, ...) __attribute__((format(printf, 1, 2)));
 
-        /**
-         * updates various common shell config files to add prep to the path
-         * @return PREP_SUCESS or PREP_FAILURE
-         */
-        int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path);
     }
 }
 

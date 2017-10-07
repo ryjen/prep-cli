@@ -190,6 +190,7 @@ This is what prep's configuration to build itself looks like:
 	"dependencies": [
 		{
 			"name": "libarchive",
+			"version": "3.1.2",
 			"archive": {
 				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
 				"build_system": ["autotools", "make"]
@@ -213,19 +214,19 @@ This is what prep's configuration to build itself looks like:
 
 TODO
 ====
-- website/api for plugins and and configurations for common dependencies
-- parse archive versions from filename
-- store md5 hash of configs in meta to detect changes
-- a way to rebuild a dependency or all dependencies
-- secure plugins (enforce digital signature?, chroot?)
-- a way to install new plugins
-- consider RPATH flags
-- dependencies might be better as a tree rather than a list
-- consider sqlite storage
-- test suite
-- convert plugins to compiled language
-- plugin communication will for sure need a better specification
-- plugins may need to be interactive, currently not supported
+- [ ] website/api for plugins and and configurations for common dependencies
+- [ ] parse archive versions from filename
+- [ ] store md5 hash of configs in meta to detect changes
+- [ ] a way to rebuild a dependency or all dependencies
+- [ ] secure plugins (enforce digital signature?, chroot?)
+- [ ] a way to install new plugins
+- [ ] consider RPATH flags
+- [ ] dependencies might be better as a tree rather than a list
+- [ ] consider sqlite storage
+- [ ] test suite
+- [ ] convert plugins to compiled language
+- [ ] plugin communication will for sure need a better specification
+- [ ] plugins may need to be interactive, currently not supported
 
 
 Building
