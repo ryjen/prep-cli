@@ -42,18 +42,18 @@ namespace micrantha {
                     }
                 }
 
-                std::ostream &format(Type level) {
-                    std::cout << "  ";
+                std::string format(Type level) {
+                    std::string buf("  ");
 
                     if (internal::valid_term) {
-                        std::cout << COLORS[level];
+                        buf += COLORS[level];
                     }
-                    std::cout << NAMES[level];
+                    buf += NAMES[level];
                     if (internal::valid_term) {
-                        std::cout << color::CLEAR;
+                        buf += color::CLEAR;
                     }
-                    std::cout << ": ";
-                    return std::cout;
+                    buf += ": ";
+                    return buf;
                 }
             }
         }

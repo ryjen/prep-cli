@@ -47,10 +47,10 @@ namespace micrantha
         {
             auto envVars = environment::build_cpp_variables();
 
-            std::cout << std::endl << color::g("ENV") << ":\n\n";
+            vt100::print("\n", color::g("ENV"), ":\n\n");
 
             for(const auto &entry : envVars) {
-                std::cout << color::c(entry.first) << "=" << color::w(entry.second) << std::endl << std::endl;
+               vt100::print(color::c(entry.first), "=", color::w(entry.second), "\n\n");
             }
         }
 
@@ -178,7 +178,7 @@ namespace micrantha
             log::info("preparing package ", color::m(config.name()), " [", color::y(config.version()), "]");
 
             if (!opts.force_build && repo_.has_meta(config) == PREP_SUCCESS) {
-                log::warn("used cached version of ", color::m(config.name()), color::y(config.version()));
+                log::warn("used cached version of ", color::m(config.name()), " [", color::y(config.version()), "]");
                 return PREP_SUCCESS;
             }
 

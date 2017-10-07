@@ -18,13 +18,14 @@ namespace micrantha
 {
     namespace prep
     {
+
         const unsigned char default_plugins_zip[] = {
 #include "plugins.inc"
         };
 
         const unsigned int default_plugins_size = sizeof(default_plugins_zip) / sizeof(default_plugins_zip[0]);
 
-        namespace helper
+        namespace internal
         {
             constexpr static const char *const HOOK_NAMES[] = {"load",   "unload",  "install",
                                                                "remove", "resolve", "build"};
@@ -207,7 +208,7 @@ namespace micrantha
                 executablePath_ = build_sys_path(basePath_.c_str(), entry.get<std::string>().c_str(), NULL);
                 log::trace("plugin [", name_, "] executable [", executablePath_, "]");
             } else {
-                if (type_ != helper::TYPE_INTERNAL) {
+                if (type_ != internal::TYPE_INTERNAL) {
                     log::error("plugin [", name_, "] has no executable");
                     return PREP_FAILURE;
                 }
@@ -261,7 +262,7 @@ namespace micrantha
 
         bool Plugin::is_internal() const
         {
-            return type_ == helper::TYPE_INTERNAL;
+            return type_ == internal::TYPE_INTERNAL;
         }
 
         std::string Plugin::plugin_name(const Package &config) const
@@ -373,7 +374,7 @@ namespace micrantha
         {
             int master = 0;
 
-            auto method = helper::HOOK_NAMES[hook];
+            auto method = internal::HOOK_NAMES[hook];
 
             log::trace("executing [", method, "] on plugin [", name_, "]");
 
@@ -403,7 +404,7 @@ namespace micrantha
             } else {
                 // otherwise we are the parent process...
                 int status = 0;
-                helper::Interpreter interpreter;
+                internal::Interpreter interpreter;
                 struct termios tios;
 
                 // set some terminal flags to remove local echo
@@ -411,7 +412,7 @@ namespace micrantha
                 tios.c_lflag &= ~(ECHO | ECHONL|ECHOCTL);
                 tcsetattr(master, TCSAFLUSH, &tios);
 
-                if (helper::write_header(master, method, info) == PREP_FAILURE) {
+                if (internal::write_header(master, method, info) == PREP_FAILURE) {
                     log::perror(errno);
                     if (kill(pid, SIGKILL) < 0) {
                         log::perror(errno);
@@ -444,7 +445,7 @@ namespace micrantha
                     // if we have something to read from child...
                     if (FD_ISSET(master, &read_fd)) {
                         // read a line
-                        int n = helper::read_line(master, line);
+                        int n = internal::read_line(master, line);
 
                         if (n <= 0) {
                             if (n < 0) {
@@ -455,7 +456,7 @@ namespace micrantha
 
                         // if the line is a return value, add it, else print it
                         if (!interpreter.interpret(line)) {
-                            if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
+                            if (verbose_ && internal::write_line(STDOUT_FILENO, line) < 0) {
                                 log::perror(errno);
                                 break;
                             }
@@ -464,7 +465,7 @@ namespace micrantha
 
                     // if we have something to read on stdin...
                     if (FD_ISSET(STDIN_FILENO, &read_fd)) {
-                        int n = helper::read_line(STDIN_FILENO, line);
+                        int n = internal::read_line(STDIN_FILENO, line);
 
                         if (n <= 0) {
                             if (n < 0) {
@@ -474,7 +475,7 @@ namespace micrantha
                         }
 
                         // send it to the child
-                        if (helper::write_line(master, line) < 0) {
+                        if (internal::write_line(master, line) < 0) {
                             log::perror(errno);
                             break;
                         }

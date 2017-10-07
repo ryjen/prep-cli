@@ -5,38 +5,123 @@
 #include "vt100.h"
 
 #include <sstream>
-#include <iostream>
 #include <sys/termios.h>
 #include <unistd.h>
+#include <set>
 
 #include "log.h"
 
 namespace micrantha {
     namespace prep {
 
-
         namespace internal {
+
             // indicates good terminal support
             bool valid_term;
+
+            // size of the terminal
+            // TODO: window resize
             int rows = 0, cols = 0;
 
             // tests a TERM value for validity
             bool init(const char *term) {
-                static const std::string term_names[] = {"xterm", "ansi", "linux", "vt100"};
+                static const std::string Types[] = {"xterm", "ansi", "linux", "vt100"};
+
                 if (term == nullptr) {
                     return false;
                 }
+
                 log::trace("found ", term, " terminal");
+
                 std::string test(term);
-                for (const auto &term : term_names) {
-                    if (term.find("xterm") != std::string::npos) {
+                for (const auto &term : Types) {
+                    if (test.find(term) != std::string::npos) {
                         return true;
                     }
                 }
                 return false;
             }
+
+
+            // reads a cursor report response from the terminal
+            ssize_t read_report(int fd, std::string &buf)
+            {
+                static const std::set<char> Valids = { '\033', '[', ';', 'R'};
+                ssize_t numRead; /* # of bytes fetched by last read() */
+                size_t totRead;  /* Total bytes read so far */
+                char ch;
+
+                totRead = 0;
+
+                buf.clear();
+
+                for (;;) {
+                    numRead = read(fd, &ch, 1);
+
+                    if (numRead == -1) {
+                        if (errno == EINTR) /* Interrupted --> restart read() */
+                            continue;
+                        else
+                            return -1; /* Some other error */
+
+                    } else if (numRead == 0) { /* EOF */
+                        if (totRead == 0)      /* No bytes read; return 0 */
+                            return 0;
+                        else /* Some bytes read; add '\0' */
+                            break;
+
+                    } else { /* 'numRead' must be 1 if we get here */
+                        totRead++;
+
+                        if (ch != '\n' && ch != '\r' && (Valids.find(ch) != Valids.end() || std::isdigit(ch))) {
+                            buf += ch;
+                        }
+
+                        if (ch == 'R')
+                            break;
+                    }
+                }
+
+                return totRead;
+            }
+
+            /**
+             * RAII class to disable echo mode so we can read a response from the terminal
+             */
+            class TTYRead {
+            public:
+                TTYRead()
+                {
+                    // get state
+                    tcgetattr(STDIN_FILENO, &state_);
+                    // copy state
+                    saved_ = state_;
+
+                    //turn off canonical mode and echo
+                    state_.c_lflag &= ~(ICANON | ECHO);
+                    //minimum of number input read.
+                    state_.c_cc[VMIN] = 1;
+                    // timeout
+                    state_.c_cc[VTIME] = 2;
+
+                    //set the new terminal attributes.
+                    tcsetattr(STDIN_FILENO, TCSANOW, &state_);
+
+                }
+                ~TTYRead() {
+                    // reset state
+                    tcsetattr(STDIN_FILENO, TCSANOW, &saved_);
+                }
+            private:
+                struct termios state_, saved_;
+            };
+
         }
+
+        // color related functions
         namespace color {
+
+            // colorizes a string
             std::string colorize(const std::vector<Value> &colors, const std::string &value, bool reset) {
 
                 // don't colorize if unknown term
@@ -98,21 +183,49 @@ namespace micrantha {
         // other terminal codes
         namespace vt100 {
 
+            // output related functions
             namespace output {
+
+                // called when a new line is added
+                Callback on_newline;
+
+                const Callback& Callback::operator()() const {
+                    for (const auto &entry : values_) {
+                        entry.second();
+                    }
+                    return *this;
+                }
+
+                Callback& Callback::add(std::size_t key, const Type &value) {
+                    values_[key] = value;
+                    return *this;
+                }
+                Callback& Callback::remove(std::size_t key) {
+                    values_.erase(key);
+                    return *this;
+                }
+
+                // utility for variadic print
                 std::ostream &print(std::ostream &os) {
                     return os;
                 }
 
-                std::mutex &get_mutex() {
-                    static std::mutex m;
+                // output functions have their own mutex
+                Mutex &get_mutex() {
+                    static Mutex m;
                     return m;
                 }
             }
             namespace cursor {
 
+                Mutex &get_mutex() {
+                    static Mutex m;
+                    return m;
+                }
+
                 void set(int rows, int cols) {
                     if (internal::valid_term && rows > 0 && cols > 0) {
-                        std::cout << "\033[" << rows << ";" << cols << "H" << std::flush;
+                        print("\033[", rows, ";", cols, "H") << std::flush;
                     }
                 }
 
@@ -121,62 +234,79 @@ namespace micrantha {
                         return;
                     }
 
-                    struct termios ttystate, ttysave;
+                    // disable echo and setup tty for reading
+                    internal::TTYRead ttyRead;
 
-                    tcgetattr(STDIN_FILENO, &ttystate);
-                    ttysave = ttystate;
-                    //turn off canonical mode and echo
-                    ttystate.c_lflag &= ~(ICANON | ECHO);
-                    //minimum of number input read.
-                    ttystate.c_cc[VMIN] = 1;
-                    ttystate.c_cc[VTIME] = 2;
+                    std::string line;
 
-                    //set the terminal attributes.
-                    tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
+                    // request the cursor position
+                    print(cursor::REPORT) << std::flush;
 
-                    std::cout << cursor::REPORT << std::flush;
+                    // read the response
+                    if (internal::read_report(STDIN_FILENO, line)) {
+                        log::perror(errno);
+                    }
 
-                    fscanf(stdin, "\033[%d;%dR", row, col);
-
-                    tcsetattr(STDIN_FILENO, TCSANOW, &ttysave);
+                    // parse the response
+                    if (sscanf(line.c_str(), "\033[%d;%dR", row, col) != 2) {
+                        log::error("unable to parse cursor position [", line, "]");
+                    };
 
                 };
 
-                Savepoint::Savepoint() {
-                    std::cout << SAVE << std::flush;
+                Savepoint::Savepoint(Mutex &mutex) noexcept : guard_(mutex) {
+                    // save the cursor position
+                    print(SAVE) << std::flush;
                 }
 
                 Savepoint::~Savepoint() {
-                    std::cout << RESTORE << std::flush;
+                    // restore the cursor position
+                    print(RESTORE) << std::flush;
                 }
             }
 
             void init() {
+                // get the type of terminal
                 auto term = std::getenv("TERM");
+
+                // test validity
                 internal::valid_term = term != nullptr && internal::init(term);
 
                 if (internal::valid_term) {
 
-                    cursor::Savepoint savepoint;
+                    cursor::Savepoint savepoint(cursor::get_mutex());
 
                     // find the screen height by setting the cursor to a extreme value
                     cursor::set(99999, 99999);
 
+                    // get the actual position
                     cursor::get(&internal::rows, &internal::cols);
                 }
             }
 
-            Progress::Progress() noexcept : alive_(true), row_(0),
-                                            bg_(std::bind(&Progress::run, this)) {
+            Progress::Progress() noexcept : alive_(false), row_(0), callback_(),
+                                            bg_() {
 
+                if (internal::valid_term) {
+                    init();
+
+                    // start updating
+                    bg_ = std::thread(std::bind(&Progress::run, this));
+                }
             }
 
             Progress::~Progress() {
                 alive_ = false;
+
                 if (bg_.joinable()) {
                     bg_.join();
                 }
+
                 reset();
+            }
+
+            std::size_t Progress::key() const {
+                return std::hash<const Progress*>()(this);
             }
 
             void Progress::reset() {
@@ -184,28 +314,47 @@ namespace micrantha {
                     return;
                 }
 
-                cursor::Savepoint savepoint;
+                // remove the new line callback
+                output::on_newline.remove(key());
 
-                // restore the cursor to the progress indicator
-                cursor::set(row_ - 1, 1);
+                // use a save point to reset the current cursor position
+                cursor::Savepoint savepoint(cursor::get_mutex());
+
+                // restore the cursor to this progress indicator
+                cursor::set(row_, 2);
 
                 // and erase the line
-                std::cout << " " << std::flush;
+                print(cursor::ERASE_BACK) << std::flush;
 
             }
 
-            void Progress::run() {
-                if (!internal::valid_term) {
-                    return;
-                }
+            void Progress::init() {
 
                 int col = 0;
 
+                std::lock_guard<Mutex> lock(cursor::get_mutex());
+
+                // get the current row
                 cursor::get(&row_, &col);
 
+                callback_ = [&]() {
+                    // if we're going to scroll at the last row...
+                    if (row_ == internal::rows) {
+                        // move the reset point back
+                        --row_;
+                    }
+                };
+
+                // add the callback for new lines
+                output::on_newline.add(key(), callback_);
+            }
+
+            void Progress::run() {
                 using namespace std::chrono_literals;
 
-                while (internal::valid_term && alive_) {
+                alive_ = true;
+
+                while (alive_) {
                     update();
                     std::this_thread::sleep_for(100ms);
                 }
@@ -219,17 +368,15 @@ namespace micrantha {
                 ++frame;
                 frame %= FRAME_SIZE;
 
-                if (internal::valid_term) {
+                // use a save point to reset the current cursor position
+                cursor::Savepoint savepoint(cursor::get_mutex());
 
-                    cursor::Savepoint savepoint;
+                // set the cursor to the saved position
+                cursor::set(row_, 1);
 
-                    // set the cursor to the saved position
-                    cursor::set(row_ - 1, 1);
-
-                    // send the frame and move the cursor back one character to print again
-                    std::cout << color::colorize({color::attr::BOLD, color::fg::GREEN}, FRAMES[frame], true)
-                              << std::flush;
-                }
+                // send the frame and move the cursor back one character to print again
+                print(color::colorize({color::attr::BOLD, color::fg::GREEN}, FRAMES[frame], true))
+                        << std::flush;
             }
         }
     }

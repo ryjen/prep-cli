@@ -15,7 +15,6 @@
 #include "log.h"
 #include "repository.h"
 #include "util.h"
-#include "vt100.h"
 
 namespace micrantha
 {
@@ -512,7 +511,8 @@ namespace micrantha
             for (const auto &plugin : plugins_) {
                 vt100::Progress progress;
 
-                    log::info("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
+                log::info("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
+
                 if (plugin->on_load() == PREP_ERROR) {
                     return PREP_FAILURE;
                 }

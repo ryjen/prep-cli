@@ -31,33 +31,19 @@ namespace micrantha {
 
                 bool valid(Type value);
 
-                std::ostream &format(level::Type value);
-            }
-
-            namespace output {
-                std::ostream &print(std::ostream &os);
-
-                template<class A0, class ...Args>
-                std::ostream &print(std::ostream &os, const A0 &a0, const Args &...args) {
-                    os << a0;
-                    return print(os, args...);
-                }
-
-                template<class ...Args>
-                std::ostream &print(std::ostream &os, const Args &...args) {
-                    return print(os, args...);
-                }
+                std::string format(level::Type value);
             }
 
             using namespace level;
+            namespace callback = vt100::output;
 
             template<class ...Args>
             void info(const Args &...args) {
                 if (!valid(Info)) {
                     return;
                 }
-                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
-                output::print(format(Info), args..., "\n");
+                vt100::print(format(Info), args..., "\n");
+                callback::on_newline();
             }
 
             template<class ...Args>
@@ -65,8 +51,8 @@ namespace micrantha {
                 if (!valid(Debug)) {
                     return;
                 }
-                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
-                output::print(format(Debug), args..., "\n");
+                vt100::print(format(Debug), args..., "\n");
+                callback::on_newline();
             }
 
             template<class ...Args>
@@ -74,8 +60,8 @@ namespace micrantha {
                 if (!valid(Error)) {
                     return;
                 }
-                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
-                output::print(format(Error), args..., "\n");
+                vt100::print(format(Error), args..., "\n");
+                callback::on_newline();
             }
 
             template<class ...Args>
@@ -83,8 +69,8 @@ namespace micrantha {
                 if (!valid(Warn)) {
                     return;
                 }
-                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
-                output::print(format(Warn), args..., "\n");
+                vt100::print(format(Warn), args..., "\n");
+                callback::on_newline();
             }
 
             template<class ...Args>
@@ -92,8 +78,8 @@ namespace micrantha {
                 if (!valid(Trace)) {
                     return;
                 }
-                std::lock_guard<std::mutex> _(vt100::output::get_mutex());
-                output::print(format(Trace), args..., "\n");
+                vt100::print(format(Trace), args..., "\n");
+                callback::on_newline();
             }
 
             template<class ...Args>
