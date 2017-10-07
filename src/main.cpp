@@ -18,6 +18,7 @@ void print_help(char *exe)
     printf("      : %s [-g -v] link <package> [version]\n", exe);
     printf("      : %s [-g -v] unlink <package>\n", exe);
     printf("      : %s run\n", exe);
+    printf("      : %s path\n", exe);
     printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
 }
@@ -118,8 +119,8 @@ int main(int argc, char *const argv[])
         return prep.remove(config, options);
     }
 
-    if (!strcmp(command, "setpath")) {
-        prep.add_path_to_shell();
+    if (!strcmp(command, "path")) {
+        prep.export_path();
 
         return PREP_SUCCESS;
     }

@@ -25,7 +25,7 @@ add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS})
 
 #add a target to zip the plugins.  requires the zip command on the path
-add_custom_target(ZIP_PLUGINS COMMAND zip -r ${PROJECT_BINARY_DIR}/gen/plugins.zip .
+add_custom_target(ZIP_PLUGINS COMMAND ${ZIP_EXECUTABLE} -r ${PROJECT_BINARY_DIR}/gen/plugins.zip .
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins)
 
 #add a target to convert the zip file to a csv of bytes we can include in the source

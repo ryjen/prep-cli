@@ -11,8 +11,6 @@ namespace micrantha
 
         int PackageBuilder::initialize(const Options &opts)
         {
-            log_info("Initializing...");
-            
             if (repo_.initialize(opts)) {
                 return PREP_FAILURE;
             }
@@ -34,13 +32,9 @@ namespace micrantha
             return &repo_;
         }
 
-        void PackageBuilder::add_path_to_shell() const
+        void PackageBuilder::export_path() const
         {
-            prompt_to_add_path_to_shell_rc(".zshrc", repo_.get_bin_path().c_str());
-            if (prompt_to_add_path_to_shell_rc(".bash_profile", repo_.get_bin_path().c_str())) {
-                prompt_to_add_path_to_shell_rc(".bashrc", repo_.get_bin_path().c_str());
-            }
-            prompt_to_add_path_to_shell_rc(".kshrc", repo_.get_bin_path().c_str());
+            std::cout << "export PATH=$PATH:" << repo_.get_bin_path() << std::endl;
         }
 
         int PackageBuilder::build_package(const Package &config, const Options &opts, const char *path)
@@ -162,11 +156,13 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
+            log_info("preparing package %s [%s]", color::m(config.name()).c_str(), color::y(config.version()).c_str());
+
             if (!opts.force_build && repo_.has_meta(config) == PREP_SUCCESS) {
+                log_warn("used cached version of %s [%s]", color::m(config.name()).c_str(),
+                         color::y(config.version()).c_str());
                 return PREP_SUCCESS;
             }
-
-            log_trace("Building from [%s]", path);
 
             installDir = repo_.get_install_path(config.name());
 
@@ -180,7 +176,8 @@ namespace micrantha
             for (const auto &p : config.dependencies()) {
                 std::string package_dir;
 
-                log_info("preparing dependency \033[0;35m%s\033[0m", p.name().c_str());
+                log_info("preparing %s dependency %s [%s]", color::m(config.name()).c_str(),
+                         color::c(p.name()).c_str(), color::y(p.version()).c_str());
 
                 if (repo_.notify_plugins_install(p) == PREP_SUCCESS) {
                     continue;
@@ -209,7 +206,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            log_info("built package \033[1;35m%s\033[0m", config.name().c_str());
+            log_info("built package %s [%s]", color::m(config.name()).c_str(), color::y(config.version()).c_str());
 
             return PREP_SUCCESS;
         }

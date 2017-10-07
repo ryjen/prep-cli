@@ -66,7 +66,7 @@ namespace micrantha
              * adds preps bin path to shell configuration
              * TODO: might deprecate this
              */
-            void add_path_to_shell() const;
+            void export_path() const;
 
             /**
              * gets the repository used for building

@@ -10,8 +10,9 @@
 	"dependencies": [
 		{
 			"name": "libarchive",
+			"version": "3.3.2",
 			"archive": {
-				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz"
+				"location": "http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz"
 			},
 			"build_system": ["autotools", "make"],
 			"dependencies": [

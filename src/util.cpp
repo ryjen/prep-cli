@@ -6,26 +6,24 @@
 #include <fstream>
 #include <fts.h>
 #include <iostream>
+#include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "common.h"
 #include "log.h"
+#include "util.h"
 
-namespace micrantha
-{
-    namespace prep
-    {
+namespace micrantha {
+    namespace prep {
 
-        char *make_temp_dir(char *buffer, size_t size)
-        {
+        char *make_temp_dir(char *buffer, size_t size) {
             strncpy(buffer, "/tmp/prep-XXXXXX", size);
 
             return mkdtemp(buffer);
         }
 
-        int fork_command(const char *argv[], const char *directory, char *const envp[])
-        {
+        int fork_command(const char *argv[], const char *directory, char *const envp[]) {
             int rval = EXIT_FAILURE;
 
             pid_t pid = fork();
@@ -42,7 +40,7 @@ namespace micrantha
                 }
 
                 // we are the child
-                execve(argv[0], (char *const *)&argv[0], envp);
+                execve(argv[0], (char *const *) &argv[0], envp);
 
                 exit(EXIT_FAILURE); // exec never returns
             } else {
@@ -72,16 +70,15 @@ namespace micrantha
             return rval;
         }
 
-        int remove_directory(const char *dir)
-        {
-            int ret      = PREP_SUCCESS;
-            FTS *ftsp    = nullptr;
+        int remove_directory(const char *dir) {
+            int ret = PREP_SUCCESS;
+            FTS *ftsp = nullptr;
             FTSENT *curr = nullptr;
 
             // Cast needed (in C) because fts_open() takes a "char * const *", instead
             // of a "const char * const *", which is only allowed in C++. fts_open()
             // does not modify the argument.
-            char *files[] = { (char *)dir, nullptr };
+            char *files[] = {(char *) dir, nullptr};
 
             // FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
             //                in multithreaded programs
@@ -97,35 +94,36 @@ namespace micrantha
 
             while ((curr = fts_read(ftsp))) {
                 switch (curr->fts_info) {
-                case FTS_NS:
-                case FTS_DNR:
-                case FTS_ERR:
-                    log_error("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
-                    break;
+                    case FTS_NS:
+                    case FTS_DNR:
+                    case FTS_ERR:
+                        log_error("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
+                        break;
 
-                case FTS_DC:
-                case FTS_DOT:
-                case FTS_NSOK:
-                    // Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
-                    // passed to fts_open()
-                    break;
+                    case FTS_DC:
+                    case FTS_DOT:
+                    case FTS_NSOK:
+                        // Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
+                        // passed to fts_open()
+                        break;
 
-                case FTS_D:
-                    // Do nothing. Need depth-first search, so directories are deleted
-                    // in FTS_DP
-                    break;
+                    case FTS_D:
+                        // Do nothing. Need depth-first search, so directories are deleted
+                        // in FTS_DP
+                        break;
 
-                case FTS_DP:
-                case FTS_F:
-                case FTS_SL:
-                case FTS_SLNONE:
-                case FTS_DEFAULT:
-                    if (remove(curr->fts_accpath) < 0) {
-                        log_error("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
-                        ret = PREP_FAILURE;
-                    }
-                    break;
-                    default:break;
+                    case FTS_DP:
+                    case FTS_F:
+                    case FTS_SL:
+                    case FTS_SLNONE:
+                    case FTS_DEFAULT:
+                        if (remove(curr->fts_accpath) < 0) {
+                            log_error("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
+                            ret = PREP_FAILURE;
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -134,9 +132,9 @@ namespace micrantha
             return ret;
         }
 
-        int directory_exists(const char *path)
-        {
-            struct stat s{};
+        int directory_exists(const char *path) {
+            struct stat s{
+            };
             int err = stat(path, &s);
             if (-1 == err) {
                 if (ENOENT == errno) {
@@ -156,9 +154,9 @@ namespace micrantha
             }
         }
 
-        bool file_exists(const char *path)
-        {
-            struct stat s{};
+        bool file_exists(const char *path) {
+            struct stat s{
+            };
             int err = stat(path, &s);
             if (-1 == err) {
                 if (ENOENT != errno) {
@@ -176,9 +174,9 @@ namespace micrantha
             }
         }
 
-        bool file_executable(const char *path)
-        {
-            struct stat s{};
+        bool file_executable(const char *path) {
+            struct stat s{
+            };
             int err = stat(path, &s);
             if (-1 == err) {
                 if (ENOENT != errno) {
@@ -195,14 +193,13 @@ namespace micrantha
             }
         }
 
-        int mkpath(const char *file_path, mode_t mode)
-        {
+        int mkpath(const char *file_path, mode_t mode) {
             char *p = nullptr;
 
             if (!file_path || !*file_path) {
                 return PREP_FAILURE;
             }
-            for (p = const_cast<char*>(strchr(file_path + 1, '/')); p; p = strchr(p + 1, '/')) {
+            for (p = const_cast<char *>(strchr(file_path + 1, '/')); p; p = strchr(p + 1, '/')) {
                 *p = '\0';
                 if (mkdir(file_path, mode) == -1) {
                     if (errno != EEXIST) {
@@ -220,9 +217,9 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int copy_file(const std::string &from, const std::string &to)
-        {
-            struct stat fst{}, tst{};
+        int copy_file(const std::string &from, const std::string &to) {
+            struct stat fst{
+            }, tst{};
 
             if (stat(from.c_str(), &fst)) {
                 log_errno(errno);
@@ -263,13 +260,13 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int copy_directory(const std::string &from, const std::string &to, bool overwrite)
-        {
-            FTS *file_system       = nullptr;
-            FTSENT *parent         = nullptr;
-            int rval               = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = { 0 };
-            struct stat st{};
+        int copy_directory(const std::string &from, const std::string &to, bool overwrite) {
+            FTS *file_system = nullptr;
+            FTSENT *parent = nullptr;
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
+            struct stat st{
+            };
 
             if (!directory_exists(from.c_str())) {
                 log_error("%s is not a directory", from.c_str());
@@ -283,7 +280,7 @@ namespace micrantha
                 }
             }
 
-            char *const paths[] = { (char *const)from.c_str(), nullptr };
+            char *const paths[] = {(char *const) from.c_str(), nullptr};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
@@ -344,8 +341,7 @@ namespace micrantha
             return rval;
         }
 
-        const char *build_sys_path(const char *start, ...)
-        {
+        const char *build_sys_path(const char *start, ...) {
             static char sbuf[3][PATH_MAX + 1];
             static int i = 0;
 
@@ -382,8 +378,7 @@ namespace micrantha
             return buf;
         }
 
-        int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path)
-        {
+        int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path) {
             char *home = getenv("HOME");
 
             if (!home) {
@@ -407,6 +402,64 @@ namespace micrantha
             }
 
             return PREP_SUCCESS;
+        }
+
+        namespace vt100 {
+
+            void update_progress() {
+                static unsigned frame = 0;
+                constexpr static const char *const FRAMES = "|/-\\|/-\\";
+
+                ++frame;
+                frame %= strlen(FRAMES);
+
+                fprintf(stdout, "%c%s", FRAMES[frame], BACK);
+                fflush(stdout);
+            }
+        }
+
+        namespace color {
+            std::string colorize(Type color, const std::string &value, unsigned attribute, int flags) {
+                std::ostringstream buf;
+                auto mod = (flags & options::BACKGROUND) ? 40 : 30;
+                buf << "\033[" << attribute << ";" << (mod + color) << "m";
+                if (flags & options::TERMINATE) {
+                    buf << value << color::CLEAR;
+                }
+                return buf.str();
+            }
+
+            std::string B(const std::string &value, unsigned attribute, int flags) {
+                return colorize(BLACK, value, attribute, flags);
+            }
+
+            std::string r(const std::string &value, unsigned attribute, int flags) {
+                return colorize(RED, value, attribute, flags);
+            }
+
+            std::string g(const std::string &value, unsigned attribute, int flags) {
+                return colorize(GREEN, value, attribute, flags);
+            }
+
+            std::string y(const std::string &value, unsigned attribute, int flags) {
+                return colorize(YELLOW, value, attribute, flags);
+            }
+
+            std::string b(const std::string &value, unsigned attribute, int flags) {
+                return colorize(BLUE, value, attribute, flags);
+            }
+
+            std::string m(const std::string &value, unsigned attribute, int flags) {
+                return colorize(MAGENTA, value, attribute, flags);
+            }
+
+            std::string c(const std::string &value, unsigned attribute, int flags) {
+                return colorize(CYAN, value, attribute, flags);
+            }
+
+            std::string w(const std::string &value, unsigned attribute, int flags) {
+                return colorize(WHITE, value, attribute, flags);
+            }
         }
     }
 }

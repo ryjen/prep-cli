@@ -50,11 +50,14 @@ namespace micrantha
                 }
 
                 auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
-                std::ifstream file;
+
+                std::ifstream file(manifest);
+
+                if (!file.is_open()) {
+                    return false;
+                }
+
                 std::ostringstream buf;
-
-                file.open(manifest);
-
                 file >> buf.rdbuf();
                 auto config = Package::json_type::parse(buf.str().c_str());
 
@@ -179,15 +182,13 @@ namespace micrantha
 
             std::string manifest = build_sys_path(path.c_str(), MANIFEST_FILE, NULL);
 
-            // skip folders with no manifest
-            if (!file_exists(manifest.c_str())) {
+            std::ifstream file(manifest);
+
+            if (!file.is_open()) {
                 return PREP_ERROR;
             }
 
-            std::ifstream file;
             std::ostringstream buf;
-
-            file.open(manifest);
 
             file >> buf.rdbuf();
 
@@ -204,23 +205,22 @@ namespace micrantha
                 type_ = entry.get<std::string>();
             }
 
+            entry = config["version"];
+
+            if (entry.is_string()) {
+                version_ = entry.get<std::string>();
+            }
+
             entry = config["executable"];
 
             if (entry.is_string()) {
                 executablePath_ = build_sys_path(basePath_.c_str(), entry.get<std::string>().c_str(), NULL);
                 log_trace("plugin [%s] executable [%s]", name_.c_str(), executablePath_.c_str());
             } else {
-                if (type_ == helper::TYPE_INTERNAL) {
-                    return PREP_SUCCESS;
+                if (type_ != helper::TYPE_INTERNAL) {
+                    log_error("plugin [%s] has no executable", name_.c_str());
+                    return PREP_FAILURE;
                 }
-                log_error("plugin [%s] has no executable", name_.c_str());
-                return PREP_FAILURE;
-            }
-
-            entry = config["version"];
-
-            if (entry.is_string()) {
-                version_ = entry.get<std::string>();
             }
 
             return PREP_SUCCESS;
@@ -434,6 +434,7 @@ namespace micrantha
                     fd_set except_fd;
                     char input = 0;
                     std::string line;
+                    struct timeval poll = {0, 300000};
 
                     FD_ZERO(&read_fd);
                     FD_ZERO(&write_fd);
@@ -443,10 +444,14 @@ namespace micrantha
                     FD_SET(STDIN_FILENO, &read_fd);
 
                     // wait for something to happen
-                    if (select(master + 1, &read_fd, &write_fd, &except_fd, NULL) < 0) {
-                        log_errno(errno);
+                    if (select(master + 1, &read_fd, &write_fd, &except_fd, &poll) < 0) {
+                        if (errno != EINTR) {
+                            log_errno(errno);
+                        }
                         break;
                     }
+
+                    vt100::update_progress();
 
                     // if we have something to read from child...
                     if (FD_ISSET(master, &read_fd)) {
