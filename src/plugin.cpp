@@ -30,47 +30,6 @@ namespace micrantha
 
             constexpr static const char *const TYPE_INTERNAL = "internal";
 
-            // test a plugin path for a manifest file
-            bool is_valid_plugin_path(const std::string &path)
-            {
-                if (path.empty()) {
-                    return false;
-                }
-
-                auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
-
-                return file_exists(manifest);
-            }
-
-            // test a plugin path to see if its type is internal
-            bool is_plugin_internal(const std::string &path)
-            {
-                if (path.empty()) {
-                    return false;
-                }
-
-                auto manifest = build_sys_path(path.c_str(), Plugin::MANIFEST_FILE, NULL);
-
-                std::ifstream file(manifest);
-
-                if (!file.is_open()) {
-                    return false;
-                }
-
-                std::ostringstream buf;
-                file >> buf.rdbuf();
-                auto config = Package::json_type::parse(buf.str().c_str());
-
-                auto type = config["type"];
-
-                return type.is_string() && type.get<std::string>() == TYPE_INTERNAL;
-            }
-
-            // test input for a return command
-            bool is_return_command(const std::string &line)
-            {
-                return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
-            }
 
             // writes a line to a file descriptor
             ssize_t write_line(int fd, const std::string &line)
@@ -154,6 +113,40 @@ namespace micrantha
 
                 return totRead;
             }
+
+            class Interpreter
+            {
+            public:
+                std::vector<std::string> returns;
+
+                bool interpret(const std::string &line) {
+                    if (is_return_command(line)) {
+                        returns.push_back(line.substr(7));
+                        return true;
+                    }
+
+                    if (is_echo_command(line)) {
+                        log_info(line.substr(5).c_str());
+                        return true;
+                    }
+
+                    return false;
+                }
+            private:
+
+                // test input for a return command
+                static bool is_return_command(const std::string &line)
+                {
+                    return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
+                }
+
+                // test input for a echo command
+                static bool is_echo_command(const std::string &line)
+                {
+                    return line.length() > 5 && !strcasecmp(line.substr(0, 5).c_str(), "ECHO ");
+                }
+            };
+
         }
 
         Plugin::Plugin(const std::string &name) : name_(name)
@@ -411,7 +404,7 @@ namespace micrantha
             } else {
                 // otherwise we are the parent process...
                 int status = 0;
-                std::vector<std::string> returnValues;
+                helper::Interpreter interpreter;
                 struct termios tios;
 
                 // set some terminal flags to remove local echo
@@ -462,11 +455,11 @@ namespace micrantha
                         }
 
                         // if the line is a return value, add it, else print it
-                        if (helper::is_return_command(line)) {
-                            returnValues.push_back(line.substr(7));
-                        } else if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
-                            log_errno(errno);
-                            break;
+                        if (!interpreter.interpret(line)) {
+                            if (verbose_ && helper::write_line(STDOUT_FILENO, line) < 0) {
+                                log_errno(errno);
+                                break;
+                            }
                         }
                     }
 
@@ -498,7 +491,7 @@ namespace micrantha
                     int rval = WEXITSTATUS(status);
                     // typically rval will be the return status of the command the plugin executes
                     rval = rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
-                    return {rval, returnValues};
+                    return {rval, interpreter.returns};
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 

@@ -107,17 +107,11 @@ namespace micrantha
                 log_warn("%s is not added to your PATH", binPath.c_str());
             }
 
-            if (validate_plugins(opts) == PREP_FAILURE) {
-                return PREP_FAILURE;
-            }
-
             return PREP_SUCCESS;
         }
 
         int Repository::validate_plugins(const options &opts) const
         {
-            struct dirent *d             = nullptr;
-            DIR *dir                     = nullptr;
             const std::string pluginPath = get_plugin_path();
 
             if (!directory_exists(pluginPath.c_str())) {
@@ -130,28 +124,6 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
             }
-
-            dir = opendir(pluginPath.c_str());
-
-            if (dir == nullptr) {
-                log_errno(errno);
-                return PREP_FAILURE;
-            }
-
-            while ((d = readdir(dir)) != nullptr) {
-                if (d->d_name[0] == '.') {
-                    continue;
-                }
-
-                const std::string localPath = build_sys_path(pluginPath.c_str(), d->d_name, nullptr);
-
-                if (!helper::is_valid_plugin_path(localPath)) {
-                    log_error("Plugin %s is invalid!", d->d_name);
-                    return PREP_FAILURE;
-                }
-            }
-
-            closedir(dir);
 
             return PREP_SUCCESS;
         }
@@ -494,6 +466,10 @@ namespace micrantha
 
         int Repository::load_plugins(const Options &opts)
         {
+            if (validate_plugins(opts) == PREP_FAILURE) {
+                return PREP_FAILURE;
+            }
+
             std::string path = get_plugin_path();
 
             if (!directory_exists(path.c_str())) {
@@ -543,8 +519,6 @@ namespace micrantha
 
             plugins_.sort(
                 [](const std::shared_ptr<Plugin> &a, const std::shared_ptr<Plugin> &b) { return a->is_internal(); });
-
-            vt100::Progress progress;
 
             for (const auto &plugin : plugins_) {
                     log_info("initializing %s [%s]", color::m(plugin->name()).c_str(),

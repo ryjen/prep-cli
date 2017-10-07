@@ -20,6 +20,8 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
+            vt100::Progress progress;
+
             if (repo_.load_plugins(opts) == PREP_FAILURE) {
                 log_error("unable to load plugins");
                 return PREP_FAILURE;
