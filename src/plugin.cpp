@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <vector>
 
 #include "common.h"
 #include "environment.h"
@@ -156,11 +157,6 @@ namespace micrantha
         Plugin::~Plugin()
         {
             on_unload();
-        }
-
-        bool Plugin::is_verbose() const
-        {
-            return verbose_;
         }
 
         Plugin &Plugin::set_verbose(bool value)
@@ -365,7 +361,9 @@ namespace micrantha
             std::vector<std::string> info(
                 {plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()});
 
-            info.insert(std::end(info), std::begin(envVars), std::end(envVars));
+            for(const auto &entry : envVars) {
+                info.push_back(entry.first + "=" + entry.second);
+            }
 
             return execute(BUILD, info);
         }

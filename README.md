@@ -91,6 +91,8 @@ RETURN <value>\n
 
 ##### ECHO:
 
+Relays a message to prep, regardless of verbosity level.
+
 ```
 ECHO <message>\n
 ```

@@ -1,4 +1,5 @@
 .prep
+bin2csv
 debug
 src/prep
 tests/prep-test

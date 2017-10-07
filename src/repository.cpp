@@ -21,12 +21,6 @@ namespace micrantha
 {
     namespace prep
     {
-        namespace helper
-        {
-            extern bool is_valid_plugin_path(const std::string &path);
-            extern bool is_plugin_internal(const std::string &path);
-        }
-
         const char *const Repository::get_local_repo()
         {
             char buf[BUFSIZ] = { 0 };
@@ -466,10 +460,6 @@ namespace micrantha
 
         int Repository::load_plugins(const Options &opts)
         {
-            if (validate_plugins(opts) == PREP_FAILURE) {
-                return PREP_FAILURE;
-            }
-
             std::string path = get_plugin_path();
 
             if (!directory_exists(path.c_str())) {

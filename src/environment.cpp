@@ -30,13 +30,7 @@ namespace micrantha
                 buf << temp;
             }
 
-            string flags = buf.str();
-
-            if (flags.empty()) {
-                return flags;
-            }
-
-            return varName + "=" + flags;
+            return buf.str();
         }
 
         string environment::build_cflags(const string &varName)
@@ -58,16 +52,10 @@ namespace micrantha
                 buf << temp;
             }
 
-            string flags = buf.str();
-
-            if (flags.empty()) {
-                return flags;
-            }
-
-            return varName + "=" + flags;
+            return buf.str();
         }
 
-        string environment::build_path()
+        string environment::build_path(const std::string &varName)
         {
             ostringstream buf;
             const char *temp = Repository::get_local_repo();
@@ -80,22 +68,16 @@ namespace micrantha
                 buf << temp << "/bin:";
             }
 
-            temp = getenv("PATH");
+            temp = getenv(varName.c_str());
 
             if (temp) {
                 buf << temp;
             }
 
-            string flags = buf.str();
-
-            if (flags.empty()) {
-                return flags;
-            }
-
-            return "PATH=" + flags;
+            return buf.str();
         }
 
-        string environment::build_ldpath()
+        string environment::build_ldpath(const std::string &varName)
         {
             ostringstream buf;
             const char *temp = Repository::get_local_repo();
@@ -108,31 +90,27 @@ namespace micrantha
                 buf << temp << "/lib:";
             }
 
-#ifdef __APPLE__
-            temp = getenv("DYLD_LIBRARY_PATH");
-#else
-            temp = getenv("LD_LIBRARY_PATH");
-#endif
+            temp = getenv(varName.c_str());
 
             if (temp) {
                 buf << temp;
             }
 
-            string flags = buf.str();
-
-            if (flags.empty()) {
-                return flags;
-            }
-#ifdef __APPLE__
-            return "DYLD_LIBRARY_PATH=" + flags;
-#else
-            return "LD_LIBRARY_PATH=" + flags;
-#endif
+            return buf.str();
         }
 
-        std::vector<std::string> environment::build_cpp_variables()
+        std::map<std::string, std::string> environment::build_cpp_variables()
         {
-            return {build_cflags("CPPFLAGS"), build_ldflags("LDFLAGS"), build_path(), build_ldpath()};
+            return { {"CPPFLAGS", build_cflags("CPPFLAGS")},
+                     {"LDFLAGS", build_ldflags("LDFLAGS")},
+                     { "PATH", build_path("PATH") },
+                     {
+#ifdef __APPLE__
+                            "DYLD_LIBRARY_PATH", build_ldpath("DYLD_LIBRARY_PATH")
+#else
+                            "LD_LIBRARY_PATH", build_ldpath("LD_LIBRARY_PATH")
+#endif
+                    }};
         }
     }
 }

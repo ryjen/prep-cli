@@ -15,13 +15,13 @@ using namespace micrantha::prep;
 
 void print_help(char *exe)
 {
-    printf("Syntax: %s [-g -f -v] install <package url, git url, archive or directory>\n", exe);
-    printf("      : %s [-g -v] remove <package>\n", exe);
-    printf("      : %s [-g -v] update <package>\n", exe);
+    printf("Syntax: %s [-g -f -v] install <package url, git url, plugin, archive or directory>\n", exe);
+    printf("      : %s [-g -v] remove <package or plugin>\n", exe);
+    printf("      : %s [-g -v] update <package or plugin>\n", exe);
     printf("      : %s [-g -v] link <package> [version]\n", exe);
     printf("      : %s [-g -v] unlink <package>\n", exe);
     printf("      : %s run\n", exe);
-    printf("      : %s path\n", exe);
+    printf("      : %s env\n", exe);
     printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
 }
@@ -75,7 +75,7 @@ int main(int argc, char *const argv[])
     vt100::init();
 
     try {
-        if (prep.initialize(options)) {
+        if (prep.initialize(options) != PREP_SUCCESS) {
             return PREP_FAILURE;
         }
 
@@ -88,6 +88,21 @@ int main(int argc, char *const argv[])
         command = "install";
     } else {
         command = argv[optind++];
+    }
+
+    if (!strcmp(command, "env")) {
+        prep.print_env();
+        return PREP_SUCCESS;
+    }
+
+    try {
+        if (prep.load(options) != PREP_SUCCESS) {
+            return PREP_FAILURE;
+        }
+
+    } catch (const std::exception &e) {
+        log_error(e.what());
+        return PREP_FAILURE;
     }
 
     if (!strcmp(command, "install")) {
@@ -134,11 +149,6 @@ int main(int argc, char *const argv[])
         return prep.remove(config, options);
     }
 
-    if (!strcmp(command, "path")) {
-        prep.export_path();
-
-        return PREP_SUCCESS;
-    }
 
     if (!strcmp(command, "unlink")) {
         PackageConfig config;
@@ -170,6 +180,8 @@ int main(int argc, char *const argv[])
     }
 
     if (!strcmp(command, "check")) {
+        log_error("Not Implemented.");
+        return PREP_FAILURE;
     }
 
     if (!strcmp(command, "run")) {
@@ -181,6 +193,7 @@ int main(int argc, char *const argv[])
         } else {
             options.location = ".";
         }
+        
         auto callback = [&options](const Plugin::Result &result) { options.location = result.values.front(); };
 
         if (prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {

@@ -2,7 +2,7 @@
 #define MICRANTHA_PREP_ENVIRONMENT_H
 
 #include <string>
-#include <vector>
+#include <map>
 
 namespace micrantha
 {
@@ -27,17 +27,17 @@ namespace micrantha
             /**
              * creates the bin path with preps bin path
              */
-            std::string build_path();
+            std::string build_path(const std::string &varName);
 
             /**
              * creates the link path with preps link path
              */
-            std::string build_ldpath();
+            std::string build_ldpath(const std::string &varName);
 
             /**
              * creates a vector of build variables (build, link, and paths)
              */
-            std::vector<std::string> build_cpp_variables();
+            std::map<std::string,std::string> build_cpp_variables();
         }
     }
 }

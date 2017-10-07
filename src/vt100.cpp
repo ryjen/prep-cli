@@ -15,7 +15,10 @@ namespace micrantha
     {
 
         namespace internal {
+            // indicates good terminal support
             bool valid_term;
+
+            // tests a TERM value for validity
             bool init(const char *term) {
                 static const std::string term_names[] = {"xterm", "ansi", "linux", "vt100"};
                 if (term == nullptr) {
@@ -34,6 +37,7 @@ namespace micrantha
         namespace color {
             std::string colorize(const std::vector<Value> &colors, const std::string &value, bool reset) {
 
+                // don't colorize if unknown term
                 if (!internal::valid_term) {
                     return value;
                 }
@@ -89,6 +93,7 @@ namespace micrantha
             }
         }
 
+        // other terminal codes
         namespace vt100 {
 
             namespace cursor {
@@ -104,7 +109,9 @@ namespace micrantha
                 internal::valid_term = term != nullptr && internal::init(term);
 
                 if (internal::valid_term) {
+                    // find the screen height by setting the cursor to a extreme value
                     cursor::set(99999, 0);
+                    // and then saving the actual cursor position
                     std::cout << cursor::SAVE << std::flush;
                 }
             }
@@ -123,7 +130,9 @@ namespace micrantha
 
             void Progress::reset() {
                 if (internal::valid_term) {
+                    // restore the cursor to the progress indicator
                     std::cout << cursor::RESTORE << std::flush;
+                    // and erase the line
                     std::cout << cursor::ERASE_LINE << std::flush;
                 }
             }
@@ -145,7 +154,9 @@ namespace micrantha
                 frame %= FRAME_SIZE;
 
                 if (internal::valid_term) {
+                    // set the cursor to the saved position
                     std::cout << cursor::RESTORE << std::flush;
+                    // send the frame and move the cursor back one character to print again
                     std::cout << color::colorize({color::attr::BOLD, color::fg::GREEN}, FRAMES[frame], true)
                               << cursor::BACK << std::flush;
                 }

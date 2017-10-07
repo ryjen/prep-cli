@@ -20,14 +20,19 @@ namespace micrantha
 
             //! initializes this instance
             // @param opts the options to initialize with
-            // @returns PREP_SUCESS or PREP_FAILURE if an error occured
+            // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
             int initialize(const Options &opts);
+
+            //! do some heavy lifting
+            // @param opts the options to load with
+            // @return PREP_SUCCESS or PREP_FAILURE if an error occurred
+            int load(const Options &opts);
 
             //! builds a package in a path
             // @param config the package config
             // @param opts the session options
             // @param path the path the source is in
-            // @returns PREP_SUCCESS or PREP_FAILURE if an error occured
+            // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
             int build(const Package &config, const Options &opts, const char *path);
 
             /**
@@ -66,7 +71,7 @@ namespace micrantha
              * adds preps bin path to shell configuration
              * TODO: might deprecate this
              */
-            void export_path() const;
+            void print_env() const;
 
             /**
              * gets the repository used for building

@@ -10,8 +10,7 @@ namespace micrantha
     {
         PackageBuilder::PackageBuilder() = default;
 
-        int PackageBuilder::initialize(const Options &opts)
-        {
+        int PackageBuilder::initialize(const Options &opts) {
             if (repo_.initialize(opts)) {
                 return PREP_FAILURE;
             }
@@ -20,7 +19,16 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
+            return PREP_SUCCESS;
+        }
+
+        int PackageBuilder::load(const Options &opts) {
+
             vt100::Progress progress;
+
+            if (repo_.validate_plugins(opts) == PREP_FAILURE) {
+                return PREP_FAILURE;
+            }
 
             if (repo_.load_plugins(opts) == PREP_FAILURE) {
                 log_error("unable to load plugins");
@@ -35,9 +43,15 @@ namespace micrantha
             return &repo_;
         }
 
-        void PackageBuilder::export_path() const
+        void PackageBuilder::print_env() const
         {
-            std::cout << "export PATH=$PATH:" << repo_.get_bin_path() << std::endl;
+            auto envVars = environment::build_cpp_variables();
+
+            std::cout << std::endl << color::g("ENV") << ":\n\n";
+
+            for(const auto &entry : envVars) {
+                std::cout << color::c(entry.first) << "=" << color::w(entry.second) << std::endl << std::endl;
+            }
         }
 
         int PackageBuilder::build_package(const Package &config, const Options &opts, const char *path)
