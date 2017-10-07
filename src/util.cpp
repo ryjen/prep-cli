@@ -5,8 +5,6 @@
 #include <cstring>
 #include <fstream>
 #include <fts.h>
-#include <iostream>
-#include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -377,89 +375,6 @@ namespace micrantha {
 
             return buf;
         }
-
-        int prompt_to_add_path_to_shell_rc(const char *shellrc, const char *path) {
-            char *home = getenv("HOME");
-
-            if (!home) {
-                return PREP_FAILURE;
-            }
-
-            auto buf = build_sys_path(home, shellrc, nullptr);
-
-            if (!file_exists(buf)) {
-                return PREP_FAILURE;
-            }
-
-            printf("Would you like to add prep to your PATH in %s? (y/N) ", shellrc);
-
-            int ch = getchar();
-
-            if (ch != 10 || toupper(ch) == 'Y') {
-                std::ofstream rcfile(buf, std::ios::app);
-
-                rcfile << "export PATH=\"$PATH:" << path << "\"";
-            }
-
-            return PREP_SUCCESS;
-        }
-
-        namespace vt100 {
-
-            void update_progress() {
-                static unsigned frame = 0;
-                constexpr static const char *const FRAMES = "|/-\\|/-\\";
-
-                ++frame;
-                frame %= strlen(FRAMES);
-
-                fprintf(stdout, "%c%s", FRAMES[frame], BACK);
-                fflush(stdout);
-            }
-        }
-
-        namespace color {
-            std::string colorize(Type color, const std::string &value, unsigned attribute, int flags) {
-                std::ostringstream buf;
-                auto mod = (flags & options::BACKGROUND) ? 40 : 30;
-                buf << "\033[" << attribute << ";" << (mod + color) << "m";
-                if (flags & options::TERMINATE) {
-                    buf << value << color::CLEAR;
-                }
-                return buf.str();
-            }
-
-            std::string B(const std::string &value, unsigned attribute, int flags) {
-                return colorize(BLACK, value, attribute, flags);
-            }
-
-            std::string r(const std::string &value, unsigned attribute, int flags) {
-                return colorize(RED, value, attribute, flags);
-            }
-
-            std::string g(const std::string &value, unsigned attribute, int flags) {
-                return colorize(GREEN, value, attribute, flags);
-            }
-
-            std::string y(const std::string &value, unsigned attribute, int flags) {
-                return colorize(YELLOW, value, attribute, flags);
-            }
-
-            std::string b(const std::string &value, unsigned attribute, int flags) {
-                return colorize(BLUE, value, attribute, flags);
-            }
-
-            std::string m(const std::string &value, unsigned attribute, int flags) {
-                return colorize(MAGENTA, value, attribute, flags);
-            }
-
-            std::string c(const std::string &value, unsigned attribute, int flags) {
-                return colorize(CYAN, value, attribute, flags);
-            }
-
-            std::string w(const std::string &value, unsigned attribute, int flags) {
-                return colorize(WHITE, value, attribute, flags);
-            }
-        }
     }
 }
+

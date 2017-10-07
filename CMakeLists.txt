@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 3.1)
 
 #use c++11
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 # add options for testing
 option(CODE_COVERAGE "Enable code coverage testing." OFF)

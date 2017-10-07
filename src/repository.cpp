@@ -7,8 +7,6 @@
 #include <fts.h>
 #include <iostream>
 #include <map>
-#include <pwd.h>
-#include <sys/param.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -17,6 +15,7 @@
 #include "log.h"
 #include "repository.h"
 #include "util.h"
+#include "vt100.h"
 
 namespace micrantha
 {
@@ -545,6 +544,7 @@ namespace micrantha
             plugins_.sort(
                 [](const std::shared_ptr<Plugin> &a, const std::shared_ptr<Plugin> &b) { return a->is_internal(); });
 
+            vt100::Progress progress;
 
             for (const auto &plugin : plugins_) {
                     log_info("initializing %s [%s]", color::m(plugin->name()).c_str(),

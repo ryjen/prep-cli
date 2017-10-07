@@ -4,7 +4,8 @@ set(LIBRARY_FILES
     environment.cpp
     log.cpp
     util.cpp
-    decompressor.cpp)
+    decompressor.cpp
+    vt100.cpp)
 
 # define source files for the binary
 set(SOURCE_FILES
@@ -44,7 +45,7 @@ set(HEADER_FILES
     log.h
     util.h
     decompressor.h
-)
+    vt100.h)
 
 #sets installation target for library header files
 install(FILES ${HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_LIBRARY})

@@ -416,7 +416,7 @@ namespace micrantha
 
                 // set some terminal flags to remove local echo
                 tcgetattr(master, &tios);
-                tios.c_lflag &= ~(ECHO | ECHONL);
+                tios.c_lflag &= ~(ECHO | ECHONL|ECHOCTL);
                 tcsetattr(master, TCSAFLUSH, &tios);
 
                 if (helper::write_header(master, method, info) == PREP_FAILURE) {
@@ -432,9 +432,7 @@ namespace micrantha
                     fd_set read_fd;
                     fd_set write_fd;
                     fd_set except_fd;
-                    char input = 0;
                     std::string line;
-                    struct timeval poll = {0, 300000};
 
                     FD_ZERO(&read_fd);
                     FD_ZERO(&write_fd);
@@ -444,14 +442,12 @@ namespace micrantha
                     FD_SET(STDIN_FILENO, &read_fd);
 
                     // wait for something to happen
-                    if (select(master + 1, &read_fd, &write_fd, &except_fd, &poll) < 0) {
+                    if (select(master + 1, &read_fd, &write_fd, &except_fd, nullptr) < 0) {
                         if (errno != EINTR) {
                             log_errno(errno);
                         }
                         break;
                     }
-
-                    vt100::update_progress();
 
                     // if we have something to read from child...
                     if (FD_ISSET(master, &read_fd)) {

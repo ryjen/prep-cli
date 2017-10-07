@@ -2,6 +2,7 @@
 #include "common.h"
 #include "log.h"
 #include "util.h"
+#include "vt100.h"
 
 namespace micrantha
 {
@@ -155,6 +156,8 @@ namespace micrantha
                 log_error("config is not loaded");
                 return PREP_FAILURE;
             }
+
+            vt100::Progress progress;
 
             log_info("preparing package %s [%s]", color::m(config.name()).c_str(), color::y(config.version()).c_str());
 

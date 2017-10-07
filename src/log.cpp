@@ -15,6 +15,10 @@ namespace micrantha
 
         LogLevel __current_log_level = LogInfo;
 
+        namespace internal {
+            extern bool valid_term;
+        }
+
         void set_log_level(const char *name)
         {
             int i = 0;
@@ -32,7 +36,11 @@ namespace micrantha
 
         static void log_vargs(LogLevel level, const char *const format, va_list args)
         {
-            fprintf(stdout, "%s%5s\x1b[0m: ", LOG_LEVEL_COLOR[level], LOG_LEVEL_NAMES[level]);
+            if (internal::valid_term) {
+                fprintf(stdout, "%s%5s\x1b[0m: ", LOG_LEVEL_COLOR[level], LOG_LEVEL_NAMES[level]);
+            } else {
+                fprintf(stdout, "%s: ", LOG_LEVEL_NAMES[level]);
+            }
             vfprintf(stdout, format, args);
             fputs("\n", stdout);
             fflush(stdout);
