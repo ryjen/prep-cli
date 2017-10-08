@@ -36,27 +36,11 @@ namespace micrantha {
                 std::string test(term);
                 for (const auto &term : Types) {
                     if (test.find(term) != std::string::npos) {
-                        struct termios state;
-
-                        // get state
-                        tcgetattr(STDIN_FILENO, &state);
-
-                        //turn off canonical mode and echo
-                        state.c_lflag &= ~(ICANON | ECHO);
-                        //minimum of number input read.
-                        state.c_cc[VMIN] = 1;
-                        // timeout
-                        state.c_cc[VTIME] = 2;
-
-                        //set the new terminal attributes.
-                        tcsetattr(STDIN_FILENO, TCSANOW, &state);
-
                         return true;
                     }
                 }
                 return false;
             }
-
         }
 
         // color related functions
@@ -171,6 +155,38 @@ namespace micrantha {
 
                     return totRead;
                 }
+
+                /**
+                * RAII class to temporarily disable echo mode so we can read a response from the terminal
+                */
+                class TTYRead {
+                public:
+                    TTYRead()
+                    {
+                        // get state
+                        tcgetattr(STDIN_FILENO, &state_);
+                        // copy state
+                        saved_ = state_;
+
+                        //turn off canonical mode and echo
+                        state_.c_lflag &= ~(ICANON | ECHO);
+                        //minimum of number input read.
+                        state_.c_cc[VMIN] = 1;
+                        // timeout
+                        state_.c_cc[VTIME] = 2;
+
+                        //set the new terminal attributes.
+                        tcsetattr(STDIN_FILENO, TCSANOW, &state_);
+
+                    }
+                    ~TTYRead() {
+                        // reset state
+                        tcsetattr(STDIN_FILENO, TCSANOW, &saved_);
+                    }
+                private:
+                    struct termios state_, saved_;
+                };
+
             }
 
             // output related functions
@@ -228,6 +244,9 @@ namespace micrantha {
                         return;
                     }
 
+                    // assert we can read
+                    internal::TTYRead ttyRead;
+
                     std::string line;
 
                     // request the cursor position
@@ -273,6 +292,24 @@ namespace micrantha {
                     // get the actual position
                     cursor::get(&internal::rows, &internal::cols);
                 }
+            }
+
+            void disable_user() {
+
+                struct termios state;
+
+                // get state
+                tcgetattr(STDIN_FILENO, &state);
+
+                //turn off canonical mode and echo
+                state.c_lflag &= ~(ICANON | ECHO);
+                //minimum of number input read.
+                state.c_cc[VMIN] = 1;
+                // timeout
+                state.c_cc[VTIME] = 2;
+
+                //set the new terminal attributes.
+                tcsetattr(STDIN_FILENO, TCSANOW, &state);
             }
 
             Progress::Progress() noexcept : alive_(false), row_(0), callback_(),

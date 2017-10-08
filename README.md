@@ -8,6 +8,8 @@ Prep is a modular package manager and build tool for c/c++ projects.  Yes, the c
 
 I no longer have time to maintain this project, so I'm releasing to open source.
 
+![Prep Building Itself](prep.gif)
+
 Plugins
 =======
 

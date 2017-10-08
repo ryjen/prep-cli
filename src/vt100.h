@@ -203,6 +203,11 @@ namespace micrantha {
             void init();
 
             /**
+             * turn off user input
+             */
+            void disable_user();
+
+            /**
              * RAII class to display a progress indicator, will disappear on scope loss
              */
             class Progress {

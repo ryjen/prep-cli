@@ -84,6 +84,8 @@ int main(int argc, char *const argv[])
         return PREP_FAILURE;
     }
 
+    vt100::disable_user();
+
     if (optind >= argc) {
         command = "install";
     } else {
