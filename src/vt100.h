@@ -39,7 +39,7 @@ namespace micrantha {
                      * executes the callbacks
                      * @return a reference to this instance
                      */
-                    const Callback& operator()() const;
+                    Callback& operator()();
 
                     /**
                      * adds a callback to this
@@ -57,6 +57,7 @@ namespace micrantha {
                     Callback& remove(std::size_t key);
                 private:
                     List values_;
+                    Mutex mutex_;
                 };
 
                 /**
@@ -134,6 +135,7 @@ namespace micrantha {
                  * restores a saved cursor position and attributes
                  */
                 constexpr static const char *const RESTORE = "\0338";
+
                 /**
                  * erases from cursor to the start of the line
                  */
@@ -174,12 +176,23 @@ namespace micrantha {
                      * @param mutex the mutex to lock
                      */
                     Savepoint(Mutex &mutex) noexcept;
-                    ~Savepoint();
+                    ~Savepoint() = default;
                     Savepoint(const Savepoint &) = delete;
                     Savepoint(Savepoint &&) = delete;
                     Savepoint &operator=(const Savepoint&) = delete;
                     Savepoint &operator=(Savepoint &&) = delete;
                 private:
+                    class Restore {
+                    public:
+                        Restore() = default;
+                        ~Restore();
+                        Restore(const Restore &) = delete;
+                        Restore(Restore &&) = delete;
+                        Restore &operator=(const Restore&) = delete;
+                        Restore &operator=(Restore &&) = delete;
+                    };
+                    // deconstruct restore first
+                    Restore restore_;
                     std::lock_guard<Mutex> guard_;
                 };
             }
@@ -232,6 +245,7 @@ namespace micrantha {
                 int row_;
                 output::Callback::Type callback_;
                 std::thread bg_;
+                Mutex mutex_;
             };
         }
 

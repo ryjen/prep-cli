@@ -24,7 +24,7 @@ namespace micrantha {
             int rows = 0, cols = 0;
 
             // tests a TERM value for validity
-            bool init(const char *term) {
+            static bool init(const char *term) {
                 static const std::string Types[] = {"xterm", "ansi", "linux", "vt100"};
 
                 if (term == nullptr) {
@@ -36,85 +36,26 @@ namespace micrantha {
                 std::string test(term);
                 for (const auto &term : Types) {
                     if (test.find(term) != std::string::npos) {
+                        struct termios state;
+
+                        // get state
+                        tcgetattr(STDIN_FILENO, &state);
+
+                        //turn off canonical mode and echo
+                        state.c_lflag &= ~(ICANON | ECHO);
+                        //minimum of number input read.
+                        state.c_cc[VMIN] = 1;
+                        // timeout
+                        state.c_cc[VTIME] = 2;
+
+                        //set the new terminal attributes.
+                        tcsetattr(STDIN_FILENO, TCSANOW, &state);
+
                         return true;
                     }
                 }
                 return false;
             }
-
-
-            // reads a cursor report response from the terminal
-            ssize_t read_report(int fd, std::string &buf)
-            {
-                static const std::set<char> Valids = { '\033', '[', ';', 'R'};
-                ssize_t numRead; /* # of bytes fetched by last read() */
-                size_t totRead;  /* Total bytes read so far */
-                char ch;
-
-                totRead = 0;
-
-                buf.clear();
-
-                for (;;) {
-                    numRead = read(fd, &ch, 1);
-
-                    if (numRead == -1) {
-                        if (errno == EINTR) /* Interrupted --> restart read() */
-                            continue;
-                        else
-                            return -1; /* Some other error */
-
-                    } else if (numRead == 0) { /* EOF */
-                        if (totRead == 0)      /* No bytes read; return 0 */
-                            return 0;
-                        else /* Some bytes read; add '\0' */
-                            break;
-
-                    } else { /* 'numRead' must be 1 if we get here */
-                        totRead++;
-
-                        if (ch != '\n' && ch != '\r' && (Valids.find(ch) != Valids.end() || std::isdigit(ch))) {
-                            buf += ch;
-                        }
-
-                        if (ch == 'R')
-                            break;
-                    }
-                }
-
-                return totRead;
-            }
-
-            /**
-             * RAII class to disable echo mode so we can read a response from the terminal
-             */
-            class TTYRead {
-            public:
-                TTYRead()
-                {
-                    // get state
-                    tcgetattr(STDIN_FILENO, &state_);
-                    // copy state
-                    saved_ = state_;
-
-                    //turn off canonical mode and echo
-                    state_.c_lflag &= ~(ICANON | ECHO);
-                    //minimum of number input read.
-                    state_.c_cc[VMIN] = 1;
-                    // timeout
-                    state_.c_cc[VTIME] = 2;
-
-                    //set the new terminal attributes.
-                    tcsetattr(STDIN_FILENO, TCSANOW, &state_);
-
-                }
-                ~TTYRead() {
-                    // reset state
-                    tcsetattr(STDIN_FILENO, TCSANOW, &saved_);
-                }
-            private:
-                struct termios state_, saved_;
-            };
 
         }
 
@@ -183,13 +124,64 @@ namespace micrantha {
         // other terminal codes
         namespace vt100 {
 
+            namespace internal {
+
+                using namespace prep::internal;
+
+                static bool scrolling = false;
+
+                // reads a cursor report response from the terminal
+                static ssize_t read_report(int fd, std::string &buf)
+                {
+                    static const std::set<char> Valids = { '\033', '[', ';', 'R'};
+                    ssize_t numRead; /* # of bytes fetched by last read() */
+                    size_t totRead;  /* Total bytes read so far */
+                    char ch;
+
+                    totRead = 0;
+
+                    buf.clear();
+
+                    for (;;) {
+                        numRead = read(fd, &ch, 1);
+
+                        if (numRead == -1) {
+                            if (errno == EINTR) /* Interrupted --> restart read() */
+                                continue;
+                            else
+                                return -1; /* Some other error */
+
+                        } else if (numRead == 0) { /* EOF */
+                            if (totRead == 0)      /* No bytes read; return 0 */
+                                return 0;
+                            else /* Some bytes read; add '\0' */
+                                break;
+
+                        } else { /* 'numRead' must be 1 if we get here */
+                            totRead++;
+
+                            if (ch != '\n' && ch != '\r' && (Valids.find(ch) != Valids.end() || std::isdigit(ch))) {
+                                buf += ch;
+                            }
+
+                            if (ch == 'R')
+                                break;
+                        }
+                    }
+
+                    return totRead;
+                }
+            }
+
             // output related functions
             namespace output {
 
                 // called when a new line is added
                 Callback on_newline;
 
-                const Callback& Callback::operator()() const {
+                Callback& Callback::operator()() {
+                    std::lock_guard<Mutex> lock(mutex_);
+
                     for (const auto &entry : values_) {
                         entry.second();
                     }
@@ -197,10 +189,12 @@ namespace micrantha {
                 }
 
                 Callback& Callback::add(std::size_t key, const Type &value) {
+                    std::lock_guard<Mutex> lock(mutex_);
                     values_[key] = value;
                     return *this;
                 }
                 Callback& Callback::remove(std::size_t key) {
+                    std::lock_guard<Mutex> lock(mutex_);
                     values_.erase(key);
                     return *this;
                 }
@@ -234,16 +228,13 @@ namespace micrantha {
                         return;
                     }
 
-                    // disable echo and setup tty for reading
-                    internal::TTYRead ttyRead;
-
                     std::string line;
 
                     // request the cursor position
                     print(cursor::REPORT) << std::flush;
 
                     // read the response
-                    if (internal::read_report(STDIN_FILENO, line)) {
+                    if (internal::read_report(STDIN_FILENO, line) < 0) {
                         log::perror(errno);
                     }
 
@@ -254,12 +245,12 @@ namespace micrantha {
 
                 };
 
-                Savepoint::Savepoint(Mutex &mutex) noexcept : guard_(mutex) {
+                Savepoint::Savepoint(Mutex &mutex) noexcept : restore_(), guard_(mutex) {
                     // save the cursor position
                     print(SAVE) << std::flush;
                 }
 
-                Savepoint::~Savepoint() {
+                Savepoint::Restore::~Restore() {
                     // restore the cursor position
                     print(RESTORE) << std::flush;
                 }
@@ -303,6 +294,7 @@ namespace micrantha {
                 }
 
                 reset();
+
             }
 
             std::size_t Progress::key() const {
@@ -314,9 +306,6 @@ namespace micrantha {
                     return;
                 }
 
-                // remove the new line callback
-                output::on_newline.remove(key());
-
                 // use a save point to reset the current cursor position
                 cursor::Savepoint savepoint(cursor::get_mutex());
 
@@ -325,7 +314,6 @@ namespace micrantha {
 
                 // and erase the line
                 print(cursor::ERASE_BACK) << std::flush;
-
             }
 
             void Progress::init() {
@@ -337,16 +325,27 @@ namespace micrantha {
                 // get the current row
                 cursor::get(&row_, &col);
 
+                internal::scrolling = row_ == internal::rows;
+
+                // if we're going to scroll at the last row...
                 callback_ = [&]() {
-                    // if we're going to scroll at the last row...
-                    if (row_ == internal::rows) {
-                        // move the reset point back
-                        --row_;
+                    if (!internal::scrolling) {
+                        return;
                     }
+
+                    // move the reset point back
+                    cursor::Savepoint savepoint(cursor::get_mutex());
+
+                    // go to current row
+                    cursor::set(row_--, 1);
+
+                    // and erase the line
+                    print(" ") << std::flush;
                 };
 
                 // add the callback for new lines
                 output::on_newline.add(key(), callback_);
+
             }
 
             void Progress::run() {
@@ -358,6 +357,9 @@ namespace micrantha {
                     update();
                     std::this_thread::sleep_for(100ms);
                 }
+
+                // remove the new line callback
+                output::on_newline.remove(key());
             }
 
             void Progress::update() {

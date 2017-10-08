@@ -42,7 +42,7 @@ namespace micrantha {
                 if (!valid(Info)) {
                     return;
                 }
-                vt100::print(format(Info), args..., "\n");
+                vt100::print(format(Info), args..., "\n") << std::flush;
                 callback::on_newline();
             }
 
@@ -51,7 +51,7 @@ namespace micrantha {
                 if (!valid(Debug)) {
                     return;
                 }
-                vt100::print(format(Debug), args..., "\n");
+                vt100::print(format(Debug), args..., "\n") << std::flush;
                 callback::on_newline();
             }
 
@@ -60,7 +60,7 @@ namespace micrantha {
                 if (!valid(Error)) {
                     return;
                 }
-                vt100::print(format(Error), args..., "\n");
+                vt100::print(format(Error), args..., "\n") << std::flush;
                 callback::on_newline();
             }
 
@@ -69,7 +69,7 @@ namespace micrantha {
                 if (!valid(Warn)) {
                     return;
                 }
-                vt100::print(format(Warn), args..., "\n");
+                vt100::print(format(Warn), args..., "\n") << std::flush;
                 callback::on_newline();
             }
 
@@ -78,7 +78,7 @@ namespace micrantha {
                 if (!valid(Trace)) {
                     return;
                 }
-                vt100::print(format(Trace), args..., "\n");
+                vt100::print(format(Trace), args..., "\n") << std::flush;
                 callback::on_newline();
             }
 
