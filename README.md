@@ -194,24 +194,40 @@ This is what prep's configuration to build itself looks like:
 	"dependencies": [
 		{
 			"name": "libarchive",
-			"version": "3.1.2",
+			"version": "3.3.2",
 			"archive": {
-				"location": "http://www.libarchive.org/downloads/libarchive-3.1.2.tar.gz",
-				"build_system": ["autotools", "make"]
+				"location": "http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz"
 			},
+			"build_system": [
+				"autotools",
+				"make"
+			]
+		},
+		{
+			"name": "minisign",
+			"version": "0.7",
+			"archive": {
+				"location": "https://github.com/jedisct1/minisign/archive/0.7.tar.gz"
+			},
+			"build_system": [
+				"cmake", "make"
+			],
 			"dependencies": [
 				{
-					"name": "libxml2",
+					"name": "libsodium",
+					"version": "1.0.15",
 					"archive": {
-						"location": "http://xmlsoft.org/sources/libxml2-2.9.2.tar.gz",
-						"build_system": ["autotools", "make"],
-						"build_options": "--without-python"
-					}
+						"location": "https://download.libsodium.org/libsodium/releases/libsodium-1.0.15.tar.gz"
+					},
+					"build_system": [
+						"autotools", "make"
+					]
 				}
 			]
 		}
 	]
 }
+
 
 ```
 

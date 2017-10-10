@@ -33,8 +33,9 @@ int main(int argc, char *const argv[])
                     .global = false,
                     .location = ".",
                     .force_build = false,
-                    .verbose = false};
-    const char *command;
+                    .verbose = false,
+                    .defaults = false};
+    const char *command = nullptr;
     int option;
     int option_index = 0;
     static struct option args[] = {
@@ -43,6 +44,7 @@ int main(int argc, char *const argv[])
             {"force",   no_argument,       0,  'f' },
             {"verbose", no_argument,       0,  'v' },
             {"log",     required_argument, 0,  'l' },
+            {"defaults",no_argument,       0,   1, },
             {"help",    no_argument,       0,   0  },
             {0,         0,                 0,   0  }
     };
@@ -67,6 +69,9 @@ int main(int argc, char *const argv[])
             case 'h':
                 print_help(argv[0]);
                 return PREP_FAILURE;
+            case 1:
+                options.defaults = true;
+                break;
             default:
                 break;
         }

@@ -201,6 +201,7 @@ namespace micrantha
                     continue;
                 }
 
+                // setup a callback to get the return value
                 auto callback = [&package_dir](const Plugin::Result &result) { package_dir = result.values.front(); };
 
                 if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {

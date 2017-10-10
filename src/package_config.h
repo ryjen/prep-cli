@@ -24,6 +24,8 @@ namespace micrantha
             bool force_build;
             // display plugin output
             bool verbose;
+            // accept default options
+            bool defaults;
         } Options;
 
         // forward declarations

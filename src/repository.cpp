@@ -63,13 +63,15 @@ namespace micrantha
             if (!directory_exists(path_.c_str())) {
                 std::string buf;
 
-                // TODO: save no result, add an non-interactive flag
-                printf("Create local repository %s? (Y/n) ", path_.c_str());
+                if (!opts.defaults) {
+                    // TODO: add an assume yes flag and save this preference
+                    printf("Create local repository %s? (Y/n) ", path_.c_str());
 
-                std::getline(std::cin, buf);
+                    std::getline(std::cin, buf);
 
-                if (!buf.empty() && buf[0] != 10 && toupper(buf[0]) != 'Y') {
-                    return PREP_FAILURE;
+                    if (!buf.empty() && buf[0] != 10 && toupper(buf[0]) != 'Y') {
+                        return PREP_FAILURE;
+                    }
                 }
 
                 auto lib = build_sys_path(path_.c_str(), "lib", nullptr);
