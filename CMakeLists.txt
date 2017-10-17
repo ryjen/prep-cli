@@ -1,8 +1,8 @@
 #latest cmake for C++11 flag
 cmake_minimum_required (VERSION 3.1)
 
-#use c++17
-set(CMAKE_CXX_STANDARD 17)
+#use c++11
+set(CMAKE_CXX_STANDARD 14)
 
 # add options for testing
 option(CODE_COVERAGE "Enable code coverage testing." OFF)
@@ -22,7 +22,7 @@ create_package("a c/c++ package and project manager")
 set(PROJECT_LIBRARY "utensil")
 
 if (APPLE)
-
+	
 # osx has its own libarchive but without headers
 # set the pkg config path to prefer the homebrew installation
 set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libarchive/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
