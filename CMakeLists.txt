@@ -14,6 +14,8 @@ project (prep VERSION 0.1)
 # set path to custom cmake modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+enable_language(Go)
+
 # create the package config
 include(CreatePackage)
 create_package(DESCRIPTION "a c/c++ package and project manager")
@@ -31,7 +33,7 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 
-# find a libarchive.
+# find a libarchive.  hint to a homebrew installation for the header files
 pkg_search_module(LibArchive REQUIRED libarchive)
 
 find_program(ZIP_EXECUTABLE zip)
@@ -48,7 +50,6 @@ if(CODE_COVERAGE)
 endif()
 
 # add directories
-add_subdirectory(plugins)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(util)

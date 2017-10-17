@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+use CPAN;
+use CPAN::FirstTime;
+
+##
+# initializes cpan and the required modules for plugins
+#
+sub install_dependencies
+{
+
+    # get the path to the library
+    my $libpath = $Config{privlib} || $ENV{HOME} . "/.cpan";
+
+    print "ECHO checking CPAN modules\n";
+
+    if ( ! -d $libpath ) {
+
+        $ENV{PERL_MM_USE_DEFAULT}=1;
+        $ENV{PERL_MM_NONINTERACTIVE}=1;
+        $ENV{AUTOMATED_TESTING}=1;
+
+        CPAN::FirstTime::init("$libpath/CPAN/Config.pm");
+
+        CPAN::Config->commit("$libpath/CPAN/MyConfig.pm");
+    }
+
+    my $file = dirname($0) . "/cpan_modules.txt";
+
+    open my $fp, $file or die "could not open $file";
+
+    while(my $line = <$fp>) {
+        chomp($line);
+        CPAN::Shell->install($line);
+    }
+
+    return 0;
+}
+
+sub main
+{
+	my $param = <STDIN>;
+
+    chomp($param);
+
+    if ($param eq "load") {
+    	return install_dependencies();
+    }
+    return 1;
+}
+
+exit(&main);

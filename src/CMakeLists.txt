@@ -38,8 +38,6 @@ add_custom_target(GEN_PLUGIN_INC COMMAND bin2csv ${PROJECT_BINARY_DIR}/gen/plugi
 #add the plugins bytes as a dependency on the library target
 add_dependencies(${PROJECT_LIBRARY} GEN_PLUGIN_INC)
 
-add_dependencies(ZIP_PLUGINS ${PREP_PLUGINS})
-
 #defines the library header files for installation
 set(HEADER_FILES
     common.h
@@ -58,3 +56,9 @@ install(TARGETS ${PROJECT_LIBRARY} ${PROJECT_NAME}
     RUNTIME DESTINATION bin
 )
 
+#set installation of plugins into shared folder
+install(DIRECTORY plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME} USE_SOURCE_PERMISSIONS)
+
+set(PLUGINS_FOLDER plugins)
+
+add_subdirectory(${PLUGINS_FOLDER})
