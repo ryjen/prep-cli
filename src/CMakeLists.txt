@@ -27,7 +27,7 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS})
 
 #add a target to zip the plugins.  requires the zip command on the path
 add_custom_target(ZIP_PLUGINS COMMAND ${ZIP_EXECUTABLE} -r ${PROJECT_BINARY_DIR}/gen/plugins.zip .
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins)
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins)
 
 #add a target to convert the zip file to a csv of bytes we can include in the source
 #sets the zip file target as a dependency
@@ -58,7 +58,3 @@ install(TARGETS ${PROJECT_LIBRARY} ${PROJECT_NAME}
 
 #set installation of plugins into shared folder
 install(DIRECTORY plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME} USE_SOURCE_PERMISSIONS)
-
-set(PLUGINS_FOLDER plugins)
-
-add_subdirectory(${PLUGINS_FOLDER})

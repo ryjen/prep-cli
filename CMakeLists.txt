@@ -14,11 +14,9 @@ project (prep VERSION 0.1)
 # set path to custom cmake modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-enable_language(Go)
-
 # create the package config
 include(CreatePackage)
-create_package(DESCRIPTION "a c/c++ package and project manager")
+create_package("a c/c++ package and project manager")
 
 # define the library name
 set(PROJECT_LIBRARY "utensil")
