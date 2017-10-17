@@ -1,3 +1,0 @@
-rlib
-Archive::Extract
-Git::Repository
