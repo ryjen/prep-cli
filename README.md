@@ -22,9 +22,13 @@ The default plugins are currently written in Perl for prototyping purposes, so r
 
 ## plugin types:
 
+#### dependency
+
+resolves system packages
+
 #### resolver
 
-resolves package locations
+resolves package files for building
 
 #### build
 

@@ -1,10 +1,10 @@
 
-#include <signal.h>
-#include <unistd.h>
-#include <util.h>
 #include <fstream>
+#include <signal.h>
 #include <sstream>
 #include <thread>
+#include <unistd.h>
+#include <util.h>
 #include <vector>
 
 #include "common.h"
@@ -18,17 +18,10 @@ namespace micrantha
 {
     namespace prep
     {
-
-        const unsigned char default_plugins_zip[] = {
-#include "plugins.inc"
-        };
-
-        const unsigned int default_plugins_size = sizeof(default_plugins_zip) / sizeof(default_plugins_zip[0]);
-
         namespace internal
         {
-            constexpr static const char *const HOOK_NAMES[] = {"load",   "unload",  "install",
-                                                               "remove", "resolve", "build"};
+            constexpr static const char *const HOOK_NAMES[] = { "load",   "unload",  "install",
+                                                                "remove", "resolve", "build" };
 
             constexpr static const char *const TYPE_INTERNAL = "internal";
 
@@ -119,10 +112,11 @@ namespace micrantha
 
             class Interpreter
             {
-            public:
+              public:
                 std::vector<std::string> returns;
 
-                bool interpret(const std::string &line) {
+                bool interpret(const std::string &line)
+                {
                     if (is_return_command(line)) {
                         returns.push_back(line.substr(7));
                         return true;
@@ -135,8 +129,8 @@ namespace micrantha
 
                     return false;
                 }
-            private:
 
+              private:
                 // test input for a return command
                 static bool is_return_command(const std::string &line)
                 {
@@ -149,7 +143,6 @@ namespace micrantha
                     return line.length() > 5 && !strcasecmp(line.substr(0, 5).c_str(), "ECHO ");
                 }
             };
-
         }
 
         Plugin::Plugin(const std::string &name) : name_(name)
@@ -301,7 +294,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = {plugin_name(config), config.version(), path};
+            std::vector<std::string> info = { plugin_name(config), config.version(), path };
 
             return execute(INSTALL, info);
         }
@@ -313,7 +306,7 @@ namespace micrantha
 
         Plugin::Result Plugin::on_resolve(const std::string &location) const
         {
-            char buf[PATH_MAX];
+            char buf[PATH_MAX] = {0};
 
             if (!is_valid()) {
                 return PREP_FAILURE;
@@ -325,7 +318,7 @@ namespace micrantha
 
             make_temp_dir(buf, PATH_MAX);
 
-            std::vector<std::string> info = {buf, location};
+            std::vector<std::string> info = { buf, location };
 
             return execute(RESOLVE, info);
         }
@@ -340,7 +333,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            std::vector<std::string> info = {plugin_name(config), config.version(), path};
+            std::vector<std::string> info = { plugin_name(config), config.version(), path };
 
             return execute(REMOVE, info);
         }
@@ -361,9 +354,9 @@ namespace micrantha
             auto envVars = environment::build_cpp_variables();
 
             std::vector<std::string> info(
-                {plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options()});
+                { plugin_name(config), config.version(), sourcePath, buildPath, installPath, config.build_options() });
 
-            for(const auto &entry : envVars) {
+            for (const auto &entry : envVars) {
                 info.push_back(entry.first + "=" + entry.second);
             }
 
@@ -395,12 +388,12 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                const char *argv[] = {name_.c_str(), nullptr};
+                const char *argv[] = { name_.c_str(), nullptr };
 
                 // execute the plugin in this process
                 execvp(executablePath_.c_str(), (char *const *)argv);
 
-                exit(PREP_FAILURE);  // exec never returns
+                exit(PREP_FAILURE); // exec never returns
             } else {
                 // otherwise we are the parent process...
                 int status = 0;
@@ -409,7 +402,7 @@ namespace micrantha
 
                 // set some terminal flags to remove local echo
                 tcgetattr(master, &tios);
-                tios.c_lflag &= ~(ECHO | ECHONL|ECHOCTL);
+                tios.c_lflag &= ~(ECHO | ECHONL | ECHOCTL);
                 tcsetattr(master, TCSAFLUSH, &tios);
 
                 if (internal::write_header(master, method, info) == PREP_FAILURE) {
@@ -491,7 +484,7 @@ namespace micrantha
                     int rval = WEXITSTATUS(status);
                     // typically rval will be the return status of the command the plugin executes
                     rval = rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
-                    return {rval, interpreter.returns};
+                    return { rval, interpreter.returns };
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 

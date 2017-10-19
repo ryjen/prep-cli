@@ -1,0 +1,17 @@
+
+find_program(TAR_EXECUTABLE tar)
+
+if (NOT TAR_EXECUTABLE)
+	message(FATAL "tar archive program required")
+endif()
+
+# compress the plugins output and convert it into a byte array
+execute_process(COMMAND ${TAR_EXECUTABLE} -C plugins -cj . COMMAND ${WORKING_DIR}/util/bin2csv
+	WORKING_DIRECTORY ${WORKING_DIR}/gen RESULT_VARIABLE OUTPUT_RESULT OUTPUT_VARIABLE PLUGINS_ARCHIVE)
+
+if (OUTPUT_RESULT)
+	message(FATAL_ERROR "${OUTPUT_RESULT}")
+endif()
+
+# now configure the source file with the byte array
+configure_file(${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp.in ${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp @ONLY)

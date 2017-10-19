@@ -125,7 +125,7 @@ namespace micrantha
 
         int Repository::init_plugins(const options &opts, const std::string &path) const
         {
-            decompressor unzip(default_plugins_zip, default_plugins_size, path);
+            decompressor unzip(default_plugins_archive, default_plugins_archive_size, path);
 
             return unzip.decompress();
         }
@@ -255,7 +255,7 @@ namespace micrantha
             dir = opendir(metaDir.c_str());
 
             if (dir == nullptr) {
-                log::error("unable to open file system [", strerror(errno), "]" );
+                log::error("unable to open file system [", strerror(errno), "]");
                 return 0;
             }
 
@@ -491,11 +491,12 @@ namespace micrantha
                     plugin->set_verbose(opts.verbose);
                     plugins_.push_back(plugin);
                     if (!plugin->is_internal()) {
-                        log::trace("loaded plugin ",color::m(plugin->name())," version [",color::y(plugin->version()),"]");
+                        log::trace("loaded plugin ", color::m(plugin->name()), " version [",
+                                   color::y(plugin->version()), "]");
                     }
                     break;
                 case PREP_FAILURE:
-                    log::warn("unable to load plugin [",d->d_name,"]" );
+                    log::warn("unable to load plugin [", d->d_name, "]");
                     break;
                 case PREP_ERROR:
                     log::trace("skipping non-plugin [", d->d_name, "]");
