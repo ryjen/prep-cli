@@ -1,3 +1,6 @@
 [submodule "cmake"]
 	path = cmake
 	url = http://github.com/ryjen/cmake.git
+[submodule "plugins"]
+	path = plugins
+	url = git@github.com:ryjen/prep-plugins.git
