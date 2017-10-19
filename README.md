@@ -251,6 +251,7 @@ TODO
 - [ ] convert plugins to compiled language
 - [ ] plugin communication will for sure need a better specification
 - [ ] plugins may need to be interactive, currently not supported
+- [ ] repository cleanup (builds, old versions, etc)
 
 
 Building
