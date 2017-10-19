@@ -34,12 +34,6 @@ find_package(PkgConfig REQUIRED)
 # find a libarchive.
 pkg_search_module(LibArchive REQUIRED libarchive)
 
-find_program(ZIP_EXECUTABLE zip)
-
-if (NOT ZIP_EXECUTABLE)
-	message(FATAL "A zip program required")
-endif()
-
 # add target for code coverage
 if(CODE_COVERAGE)
 	include(CodeCoverage)

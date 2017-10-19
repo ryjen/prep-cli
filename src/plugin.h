@@ -18,15 +18,15 @@ namespace micrantha
          * i would prefer an install script of some sort to do this,
          * but for now, it ensures the plugins are always available.
          */
-        extern const unsigned char default_plugins_zip[];
-        extern const unsigned int default_plugins_size;
+        extern unsigned char default_plugins_archive[];
+        extern size_t default_plugins_archive_size;
 
         /**
          * represents a plugin
          */
         class Plugin
         {
-           public:
+          public:
             // types of hooks a plugin supports
             typedef enum { LOAD, UNLOAD, INSTALL, REMOVE, RESOLVE, BUILD } Hooks;
 
@@ -61,7 +61,7 @@ namespace micrantha
 
             /* non-copyable, non-movable */
             Plugin(const Plugin &other) = delete;
-            Plugin(Plugin &&other) = default;
+            Plugin(Plugin &&other)      = default;
             Plugin &operator=(const Plugin &other) = delete;
             Plugin &operator=(Plugin &&other) = default;
 
@@ -93,7 +93,7 @@ namespace micrantha
              */
             int load(const std::string &path);
 
-           private:
+          private:
             /**
              * gets this plugins name.  can be overriden by config
              * @param config the package config

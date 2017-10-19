@@ -12,6 +12,7 @@ set(SOURCE_FILES
     package_builder.cpp
     package_config.cpp
     plugin.cpp
+    plugins_archive.cpp
     repository.cpp)
 
 include_directories(${LibArchive_INCLUDE_DIRS})
@@ -25,20 +26,18 @@ add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
 #link libraries to the executable
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS})
 
-#add a target to zip the plugins.  requires the zip command on the path
-add_custom_target(ZIP_PLUGINS COMMAND ${ZIP_EXECUTABLE} -r ${PROJECT_BINARY_DIR}/gen/plugins.zip .
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins)
+set(PLUGINS_ARCHIVE_STAMP ${CMAKE_CURRENT_BINARY_DIR}/source_stamp)
 
-#add a target to convert the zip file to a csv of bytes we can include in the source
-#sets the zip file target as a dependency
-add_custom_target(GEN_PLUGIN_INC COMMAND bin2csv ${PROJECT_BINARY_DIR}/gen/plugins.zip
-        ${CMAKE_CURRENT_SOURCE_DIR}/plugins.inc
-        DEPENDS ZIP_PLUGINS)
+# generate the plugins archive source file
+add_custom_command(OUTPUT ${PLUGINS_ARCHIVE_STAMP} COMMAND ${CMAKE_COMMAND} -DWORKING_DIR=${PROJECT_BINARY_DIR} -P
+    ${CMAKE_CURRENT_LIST_DIR}/CMakeGenerateSource.txt COMMAND ${CMAKE_COMMAND} -E touch ${PLUGINS_ARCHIVE_STAMP}
+        DEPENDS bin2csv build_plugins )
 
-#add the plugins bytes as a dependency on the library target
-add_dependencies(${PROJECT_LIBRARY} GEN_PLUGIN_INC)
+add_custom_target(generate_source ALL DEPENDS ${PLUGINS_ARCHIVE_STAMP})
 
-add_dependencies(ZIP_PLUGINS ${PREP_PLUGINS})
+set_source_files_properties(${PLUGINS_ARCHIVE_STAMP} PROPERTIES OBJECT_DEPENDS plugins_archive.cpp.in)
+
+add_dependencies(${PROJECT_NAME} generate_source)
 
 #defines the library header files for installation
 set(HEADER_FILES

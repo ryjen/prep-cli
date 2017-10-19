@@ -83,8 +83,8 @@ namespace micrantha
         {
             int r;
             struct archive_entry *entry;
-            char folderName[PATH_MAX + 1] = {0};
-            char buf[PATH_MAX + 1] = {0};
+            char folderName[PATH_MAX + 1] = { 0 };
+            char buf[PATH_MAX + 1]        = { 0 };
 
             if (in_ != nullptr || out_ != nullptr) {
                 log::perror(EINVAL);
@@ -100,19 +100,19 @@ namespace micrantha
             archive_read_support_compression_all(in_);
 #endif
             switch (type_) {
-                case FILE:
-                    if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), size_))) {
-                        log::error("unable to open file ", r, ": ", archive_error_string(in_));
-                        cleanup();
-                        return PREP_FAILURE;
-                    }
-                    break;
-                case MEMORY:
-                    if ((r = archive_read_open_memory(in_, from_, size_))) {
-                        log::error("unable to open memory archive ", r, ": ", archive_error_string(in_));
-                        cleanup();
-                        return PREP_FAILURE;
-                    }
+            case FILE:
+                if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), size_))) {
+                    log::error("unable to open file ", r, ": ", archive_error_string(in_));
+                    cleanup();
+                    return PREP_FAILURE;
+                }
+                break;
+            case MEMORY:
+                if ((r = archive_read_open_memory(in_, from_, size_))) {
+                    log::error("unable to open memory archive ", r, ": ", archive_error_string(in_));
+                    cleanup();
+                    return PREP_FAILURE;
+                }
             }
             out_ = archive_write_disk_new();
 

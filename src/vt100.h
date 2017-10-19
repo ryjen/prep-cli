@@ -200,7 +200,7 @@ namespace micrantha {
             /**
              * initialize the terminal
              */
-            void init();
+            void init(bool simple);
 
             /**
              * turn off user input

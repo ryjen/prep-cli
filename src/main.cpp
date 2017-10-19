@@ -77,7 +77,7 @@ int main(int argc, char *const argv[])
         }
     }
 
-    vt100::init();
+    vt100::init(options.verbose);
 
     try {
         if (prep.initialize(options) != PREP_SUCCESS) {
