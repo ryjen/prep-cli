@@ -18,6 +18,7 @@ namespace micrantha {
 
             // indicates good terminal support
             bool valid_term;
+            bool advanced_term;
 
             // size of the terminal
             // TODO: window resize
@@ -234,13 +235,13 @@ namespace micrantha {
                 }
 
                 void set(int rows, int cols) {
-                    if (internal::valid_term && rows > 0 && cols > 0) {
+                    if (internal::advanced_term && rows > 0 && cols > 0) {
                         print("\033[", rows, ";", cols, "H") << std::flush;
                     }
                 }
 
                 void get(int *row, int *col) {
-                    if (!internal::valid_term) {
+                    if (!internal::advanced_term) {
                         return;
                     }
 
@@ -275,14 +276,16 @@ namespace micrantha {
                 }
             }
 
-            void init() {
+            void init(bool simple) {
                 // get the type of terminal
                 auto term = std::getenv("TERM");
 
                 // test validity
                 internal::valid_term = term != nullptr && internal::init(term);
 
-                if (internal::valid_term) {
+                internal::advanced_term = !simple && internal::valid_term;
+
+                if (internal::advanced_term) {
 
                     cursor::Savepoint savepoint(cursor::get_mutex());
 
@@ -315,7 +318,7 @@ namespace micrantha {
             Progress::Progress() noexcept : alive_(false), row_(0), callback_(),
                                             bg_() {
 
-                if (internal::valid_term) {
+                if (internal::advanced_term) {
                     init();
 
                     // start updating
@@ -339,7 +342,7 @@ namespace micrantha {
             }
 
             void Progress::reset() {
-                if (!internal::valid_term) {
+                if (!internal::advanced_term) {
                     return;
                 }
 
