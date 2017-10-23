@@ -10,6 +10,7 @@ I no longer have time to maintain this project, so I'm releasing to open source.
 
 ![Prep Building Itself](prep.gif)
 
+
 Plugins
 =======
 
@@ -17,7 +18,7 @@ Plugins can be written in **any language that supports stdin/stdout** using the 
 
 The plugins are forked to run in a seperate pseudo terminal. (See TODO for security)
 
-The default plugins are currently written in Perl for prototyping purposes, so right now there is a dependency on perl.  Ideally, they'd be compiled when prep is built.
+-The default plugins are currently written in Perl for prototyping purposes, so right now there is a dependency on perl.  Ideally, they'd be compiled when prep is built.-
 
 
 ## plugin types:
@@ -147,6 +148,7 @@ Under the repository:
 packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep setpath```
 
 
+
 Configuration
 =============
 
@@ -172,6 +174,7 @@ an array of this configuration type objects defining each dependency.  Dependenc
 
 #### &lt;plugin&gt;
 A plugin can define its own options to override.  For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
+
 
 ```JSON
 {
@@ -249,7 +252,7 @@ TODO
 - [ ] consider sqlite storage
 - [ ] test suite
 - [ ] convert plugins to compiled language
-- [ ] plugin communication will for sure need a better specification
+- [ ] plugin communication may need a better specification as more plugins are needed
 - [ ] plugins may need to be interactive, currently not supported
 - [ ] repository cleanup (builds, old versions, etc)
 
