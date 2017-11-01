@@ -14,18 +14,18 @@ namespace micrantha
         /**
          * used to decompress a file or memory
          */
-        class decompressor
+        class Decompressor
         {
            public:
             /* constructors */
-            decompressor(const void *buf, size_t size, const std::string &topath);
-            decompressor(const std::string &path);
-            decompressor(const std::string &path, const std::string &topath);
-            ~decompressor();
+            Decompressor(const void *buf, size_t size, const std::string &topath);
+            Decompressor(const std::string &path);
+            Decompressor(const std::string &path, const std::string &topath);
+            ~Decompressor();
 
             // disable copying
-            decompressor &operator=(const decompressor &other) = delete;
-            decompressor(const decompressor &other) = delete;
+            Decompressor &operator=(const Decompressor &other) = delete;
+            Decompressor(const Decompressor &other) = delete;
 
             /**
              * performs the decompression

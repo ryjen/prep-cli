@@ -10,7 +10,8 @@ namespace micrantha
     {
         PackageBuilder::PackageBuilder() = default;
 
-        int PackageBuilder::initialize(const Options &opts) {
+        int PackageBuilder::initialize(const Options &opts)
+        {
             if (repo_.initialize(opts)) {
                 return PREP_FAILURE;
             }
@@ -22,8 +23,8 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int PackageBuilder::load(const Options &opts) {
-
+        int PackageBuilder::load(const Options &opts)
+        {
             vt100::Progress progress;
 
             if (repo_.validate_plugins(opts) == PREP_FAILURE) {
@@ -49,8 +50,8 @@ namespace micrantha
 
             vt100::print("\n", color::g("ENV"), ":\n\n");
 
-            for(const auto &entry : envVars) {
-               vt100::print(color::c(entry.first), "=", color::w(entry.second), "\n\n");
+            for (const auto &entry : envVars) {
+                vt100::print(color::c(entry.first), "=", color::w(entry.second), "\n\n");
             }
         }
 
@@ -202,7 +203,13 @@ namespace micrantha
                 }
 
                 // setup a callback to get the return value
-                auto callback = [&package_dir](const Plugin::Result &result) { package_dir = result.values.front(); };
+                auto callback = [&package_dir, &p](const Plugin::Result &result) {
+                    if (!result.values.empty()) {
+                        package_dir = result.values.front();
+                    } else {
+                        log::debug("did not resolve ", p.name());
+                    }
+                };
 
                 if (repo_.notify_plugins_resolve(p, callback) != PREP_SUCCESS || package_dir.empty()) {
                     log::error("[", config.name(), "] could not resolve dependency [", p.name(), "]");

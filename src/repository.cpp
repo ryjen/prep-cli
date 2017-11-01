@@ -1,14 +1,14 @@
 
+#include <dirent.h>
+#include <fts.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
-#include <dirent.h>
 #include <fstream>
-#include <fts.h>
 #include <iostream>
 #include <map>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "common.h"
 #include "decompressor.h"
@@ -22,14 +22,14 @@ namespace micrantha
     {
         const char *const Repository::get_local_repo()
         {
-            char buf[BUFSIZ] = { 0 };
+            char buf[BUFSIZ] = {0};
 
             if (!getcwd(buf, BUFSIZ)) {
                 log::error("no current directory");
                 return nullptr;
             }
 
-            const char *prefix       = buf;
+            const char *prefix = buf;
             const char *current_path = build_sys_path(prefix, LOCAL_REPO_NAME, NULL);
 
             while (directory_exists(current_path) == 1) {
@@ -43,7 +43,7 @@ namespace micrantha
             return current_path;
         }
 
-        int Repository::initialize(const options &opts)
+        int Repository::initialize(const Options &opts)
         {
             if (opts.global) {
                 path_ = GLOBAL_REPO;
@@ -79,11 +79,11 @@ namespace micrantha
                 mkpath(lib, 0700);
             }
 
-            char *temp          = getenv("PATH");
+            char *temp = getenv("PATH");
             std::string binPath = build_sys_path(path_.c_str(), BIN_FOLDER, NULL);
 
             if (temp != nullptr) {
-                char buf[BUFSIZ] = { 0 };
+                char buf[BUFSIZ] = {0};
 
                 strncpy(buf, temp, BUFSIZ);
 
@@ -105,7 +105,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int Repository::validate_plugins(const options &opts) const
+        int Repository::validate_plugins(const Options &opts) const
         {
             const std::string pluginPath = get_plugin_path();
 
@@ -123,9 +123,9 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int Repository::init_plugins(const options &opts, const std::string &path) const
+        int Repository::init_plugins(const Options &opts, const std::string &path) const
         {
-            decompressor unzip(default_plugins_archive, default_plugins_archive_size, path);
+            Decompressor unzip(default_plugins_archive, default_plugins_archive_size, path);
 
             return unzip.decompress();
         }
@@ -235,9 +235,9 @@ namespace micrantha
         {
             DIR *dir;
             struct dirent *d_ent;
-            char buf[PATH_MAX + 1] = { 0 };
-            struct stat st         = {};
-            int count              = 0;
+            char buf[PATH_MAX + 1] = {0};
+            struct stat st = {};
+            int count = 0;
             std::string metaDir;
 
             if (path_.empty()) {
@@ -294,17 +294,17 @@ namespace micrantha
 
         int Repository::link_directory(const std::string &path) const
         {
-            FTS *file_system       = nullptr;
-            FTSENT *parent         = nullptr;
-            int rval               = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = { 0 };
+            FTS *file_system = nullptr;
+            FTSENT *parent = nullptr;
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
 
             if (!directory_exists(path.c_str())) {
                 log::error(path, " is not a directory");
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = { (char *const)path.c_str(), nullptr };
+            char *const paths[] = {(char *const)path.c_str(), nullptr};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
@@ -375,10 +375,10 @@ namespace micrantha
 
         int Repository::unlink_directory(const std::string &path) const
         {
-            FTS *file_system       = nullptr;
-            FTSENT *parent         = nullptr;
-            int rval               = PREP_SUCCESS;
-            char buf[PATH_MAX + 1] = { 0 };
+            FTS *file_system = nullptr;
+            FTSENT *parent = nullptr;
+            int rval = PREP_SUCCESS;
+            char buf[PATH_MAX + 1] = {0};
             std::string installDir;
 
             if (!directory_exists(path.c_str())) {
@@ -386,7 +386,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            char *const paths[] = { (char *const)path.c_str(), nullptr };
+            char *const paths[] = {(char *const)path.c_str(), nullptr};
 
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
@@ -468,7 +468,7 @@ namespace micrantha
             }
 
             struct dirent *d = nullptr;
-            DIR *dir         = opendir(path.c_str());
+            DIR *dir = opendir(path.c_str());
 
             if (dir == nullptr) {
                 log::perror(errno);
@@ -487,22 +487,22 @@ namespace micrantha
                 auto plugin = std::make_shared<Plugin>(d->d_name);
 
                 switch (plugin->load(pluginPath)) {
-                case PREP_SUCCESS:
-                    plugin->set_verbose(opts.verbose);
-                    plugins_.push_back(plugin);
-                    if (!plugin->is_internal()) {
-                        log::trace("loaded plugin ", color::m(plugin->name()), " version [",
-                                   color::y(plugin->version()), "]");
-                    }
-                    break;
-                case PREP_FAILURE:
-                    log::warn("unable to load plugin [", d->d_name, "]");
-                    break;
-                case PREP_ERROR:
-                    log::trace("skipping non-plugin [", d->d_name, "]");
-                    break;
-                default:
-                    break;
+                    case PREP_SUCCESS:
+                        plugin->set_verbose(opts.verbose);
+                        plugins_.push_back(plugin);
+                        if (!plugin->is_internal()) {
+                            log::trace("loaded plugin ", color::m(plugin->name()), " version [",
+                                       color::y(plugin->version()), "]");
+                        }
+                        break;
+                    case PREP_FAILURE:
+                        log::warn("unable to load plugin [", d->d_name, "]");
+                        break;
+                    case PREP_ERROR:
+                        log::trace("skipping non-plugin [", d->d_name, "]");
+                        break;
+                    default:
+                        break;
                 }
             }
 

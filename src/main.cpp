@@ -1,9 +1,9 @@
 
+#include <getopt.h>
 #include <unistd.h>
+#include <clocale>
 #include <iostream>
 #include <vector>
-#include <clocale>
-#include <getopt.h>
 
 #include "common.h"
 #include "log.h"
@@ -13,17 +13,44 @@
 
 using namespace micrantha::prep;
 
-void print_help(char *exe)
+void print_help(char *exe, const Options &options)
 {
-    printf("Syntax: %s [-g -f -v] install <package url, git url, plugin, archive or directory>\n", exe);
-    printf("      : %s [-g -v] remove <package or plugin>\n", exe);
-    printf("      : %s [-g -v] update <package or plugin>\n", exe);
-    printf("      : %s [-g -v] link <package> [version]\n", exe);
-    printf("      : %s [-g -v] unlink <package>\n", exe);
+    printf("Syntax: %s install <package url, git url, plugin, archive or directory>\n", exe);
+    printf("      : %s remove <package or plugin>\n", exe);
+    printf("      : %s link <package> [version]\n", exe);
+    printf("      : %s unlink <package>\n", exe);
     printf("      : %s run\n", exe);
     printf("      : %s env\n", exe);
-    printf("      : %s -h\n", exe);
     printf("      : %s check\n", exe);
+
+    if (!options.verbose) {
+        return;
+    }
+
+    printf("\n");
+    printf("Options:\n");
+    printf(" -h, --help     : displays this help");
+    printf(" -f, --force    : forces an action");
+    printf(" -g, --global   : uses the global repository for an action");
+    printf(" -v, --verbose  : uses verbose output");
+    printf("\n");
+    printf("Commands:\n");
+    printf("\n  install <package url, git url, plugin, archive or directory>\n");
+    printf(
+        "     resolves, builds, and installs a package or plugin to the repository.  "
+        "argument can be a url to an archive, git repository\n");
+    printf("\n  remove <package or plugin>\n");
+    printf("     removes a package or plugin from the repository\n");
+    printf("\n  link <package> [version]\n");
+    printf("     links a built package to the path\n");
+    printf("\n  unlink <package>\n");
+    printf("     unlinks an installed package from the path\n");
+    printf("\n  run\n");
+    printf("     runs a built package in the path\n");
+    printf("\n  env\n");
+    printf("     prints out the repository environment\n");
+    printf("\n  check\n");
+    printf("     checks the repository structure for errors\n");
 }
 
 int main(int argc, char *const argv[])
@@ -38,16 +65,16 @@ int main(int argc, char *const argv[])
     const char *command = nullptr;
     int option;
     int option_index = 0;
-    static struct option args[] = {
-            {"global",  no_argument,       0,  'g' },
-            {"package", required_argument, 0,  'p' },
-            {"force",   no_argument,       0,  'f' },
-            {"verbose", no_argument,       0,  'v' },
-            {"log",     required_argument, 0,  'l' },
-            {"defaults",no_argument,       0,   1, },
-            {"help",    no_argument,       0,   0  },
-            {0,         0,                 0,   0  }
-    };
+    static struct option args[] = {{"global", no_argument, 0, 'g'},
+                                   {"package", required_argument, 0, 'p'},
+                                   {"force", no_argument, 0, 'f'},
+                                   {"verbose", no_argument, 0, 'v'},
+                                   {"log", required_argument, 0, 'l'},
+                                   {
+                                       "defaults", no_argument, 0, 1,
+                                   },
+                                   {"help", no_argument, 0, 0},
+                                   {0, 0, 0, 0}};
 
     while ((option = getopt_long(argc, argv, "vhgfp:l:", args, &option_index)) != EOF) {
         switch (option) {
@@ -67,7 +94,7 @@ int main(int argc, char *const argv[])
                 log::level::set(optarg);
                 break;
             case 'h':
-                print_help(argv[0]);
+                print_help(argv[0], options);
                 return PREP_FAILURE;
             case 1:
                 options.defaults = true;
@@ -156,7 +183,6 @@ int main(int argc, char *const argv[])
         return prep.remove(config, options);
     }
 
-
     if (!strcmp(command, "unlink")) {
         PackageConfig config;
 
@@ -213,6 +239,6 @@ int main(int argc, char *const argv[])
 
     printf("Unknown command '%s'\n", command ? command : "null");
 
-    print_help(argv[0]);
+    print_help(argv[0], options);
     return PREP_FAILURE;
 }

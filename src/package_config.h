@@ -13,7 +13,7 @@ namespace micrantha
         /**
          * options passed from the command line
          */
-        typedef struct options {
+        typedef struct Options {
             // use global repository
             bool global;
             // the package file/name
