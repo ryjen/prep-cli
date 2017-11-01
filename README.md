@@ -6,7 +6,7 @@ Prep is a modular package manager and build tool for c/c++ projects.  Yes, the c
 
 **Prep will manage dependencies, paths and flags for building and running c/c++ projects.**
 
-I no longer have time to maintain this project, so I'm releasing to open source.  Why use this over [conan.io](http://conan.io)? Well, I wanted a system that could work with any distribution format.  Conan.io may require separate recipe repositories.
+I no longer have time to maintain this project, so I'm releasing to open source.
 
 ![Prep Building Itself](prep.gif)
 
