@@ -110,11 +110,11 @@ Any other **output** by the plugin is forwarded to prep's output when in **verbo
 ## current plugins:
 
 - **archive**: a resolver plugin that downloads and extracts different archived formats
-- **autotools**: a build plugin that uses a configure script to generate makefiles
+- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
 - **cmake**: a build plugin that uses cmake to generate makefiles
 - **git**: a resolver plugin that clones a git repository
 - **homebrew**: a resolver plugin that installs packages using homebrew on OSX
-- **make**: a build plugin that executes make on a makefile
+- **make**: a build plugin that executes make on a makefile.  requires install param
 
 ## plugin manifest:
 
