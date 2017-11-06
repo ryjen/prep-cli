@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/termios.h>
+#include <deque>
 
 #include "common.h"
 #include "log.h"
@@ -17,39 +18,6 @@
 
 namespace micrantha {
     namespace prep {
-
-        CStringVector::CStringVector() {}
-
-        CStringVector::CStringVector(const std::vector<std::string> &args) {
-            for (const auto &str : args) {
-                add(str);
-            }
-        }
-
-        CStringVector::~CStringVector() {
-            for (auto &str : *this) {
-                delete[] str;
-            }
-        }
-
-        CStringVector &CStringVector::add(const std::string &value) {
-            char *const conv = new char[value.size() + 1];
-            strncpy(conv, value.c_str(), value.size());
-            push_back(conv);
-            return *this;
-        }
-
-        char *const *CStringVector::data() const {
-            return &container::operator[](0);
-        }
-
-        CStringVector::reference CStringVector::operator[](size_t index) {
-            return container::operator[](index);
-        }
-
-        CStringVector::const_reference CStringVector::operator[](size_t index) const {
-            return container::operator[](index);
-        }
 
         std::string make_temp_dir() {
             char buf[BUFSIZ] = {0};
@@ -123,7 +91,7 @@ namespace micrantha {
         }
 
         int
-        fork_command(const CStringVector &argv, const char *directory, const CStringVector &envp) {
+        fork_command(const std::string &command, char *const argv[], const char *directory, char *const envp[]) {
             int rval = EXIT_FAILURE;
 
             pid_t pid = fork();
@@ -140,7 +108,7 @@ namespace micrantha {
                 }
 
                 // we are the child
-                execve(argv[0], argv.data(), envp.data());
+                execve(command.c_str(), argv, envp);
 
                 exit(EXIT_FAILURE); // exec never returns
             } else {

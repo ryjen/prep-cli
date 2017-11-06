@@ -137,6 +137,70 @@ int main(int argc, char *const argv[])
         return PREP_SUCCESS;
     }
 
+    if (!strcmp(command, "unlink")) {
+        PackageConfig config;
+
+        if (optind < 0 || optind >= argc) {
+            log::error("Unlink which package?");
+            return PREP_FAILURE;
+        }
+        if (config.load(argv[optind], options) == PREP_FAILURE) {
+            log::error("unable to load config at ", argv[optind]);
+            return PREP_FAILURE;
+        }
+
+        return prep.unlink_package(config);
+    }
+    if (!strcmp(command, "link")) {
+        PackageConfig config;
+
+        if (optind < 0 || optind >= argc) {
+            log::error("Link which package?");
+            return PREP_FAILURE;
+        }
+        if (config.load(argv[optind], options) == PREP_FAILURE) {
+            log::error("unable to load config at ", argv[optind]);
+            return PREP_FAILURE;
+        }
+
+        return prep.link_package(config);
+    }
+
+    if (!strcmp(command, "check")) {
+        log::error("Not Implemented.");
+        return PREP_FAILURE;
+    }
+
+    if (!strcmp(command, "run")) {
+        PackageConfig config;
+
+        if (optind < 0 || optind >= argc) {
+            char cwd[PATH_MAX] = {0};
+            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
+        } else {
+            options.location = argv[optind++];
+        }
+
+        // if not a directory...
+        if (directory_exists(options.location) != PREP_SUCCESS) {
+
+            // try to resolve to a directory
+            auto result = prep.repository()->notify_plugins_resolve(options.location);
+
+            if (result == PREP_SUCCESS && !result.values.empty()) {
+                options.location = result.values.front();
+            }
+        }
+
+        // load a package.json config
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config at ", options.location);
+            return PREP_FAILURE;
+        }
+
+        return prep.execute(config, argc - optind, &argv[optind]);
+    }
+
     try {
         if (prep.load(options) != PREP_SUCCESS) {
             return PREP_FAILURE;
@@ -292,73 +356,6 @@ int main(int argc, char *const argv[])
         }
 
         return prep.remove(config, options);
-    }
-
-    if (!strcmp(command, "unlink")) {
-        PackageConfig config;
-
-        if (optind < 0 || optind >= argc) {
-            log::error("Unlink which package?");
-            return PREP_FAILURE;
-        }
-        if (config.load(argv[optind], options) == PREP_FAILURE) {
-            log::error("unable to load config at ", argv[optind]);
-            return PREP_FAILURE;
-        }
-
-        return prep.unlink_package(config);
-    }
-    if (!strcmp(command, "link")) {
-        PackageConfig config;
-
-        if (optind < 0 || optind >= argc) {
-            log::error("Link which package?");
-            return PREP_FAILURE;
-        }
-        if (config.load(argv[optind], options) == PREP_FAILURE) {
-            log::error("unable to load config at ", argv[optind]);
-            return PREP_FAILURE;
-        }
-
-        return prep.link_package(config);
-    }
-
-    if (!strcmp(command, "check")) {
-        log::error("Not Implemented.");
-        return PREP_FAILURE;
-    }
-
-    if (!strcmp(command, "run")) {
-        PackageConfig config;
-
-        if (optind < 0 || optind >= argc) {
-            char cwd[PATH_MAX] = {0};
-            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
-        } else {
-            options.location = argv[optind++];
-        }
-
-        // if not a directory...
-        if (directory_exists(options.location) != PREP_SUCCESS) {
-
-            // try to resolve to a directory
-            auto result = prep.repository()->notify_plugins_resolve(options.location);
-
-            if (result == PREP_FAILURE || result.values.empty()) {
-                log::error(options.location, " is not a valid prep package");
-                return PREP_FAILURE;
-            }
-
-            options.location = result.values.front();
-        }
-
-        // load a package.json config
-        if (config.load(options.location, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", options.location);
-            return PREP_FAILURE;
-        }
-
-        return prep.execute(config, argc - optind, &argv[optind]);
     }
 
     printf("Unknown command '%s'\n", command ? command : "null");

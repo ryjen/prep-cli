@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "package_builder.h"
 #include "common.h"
 #include "log.h"
@@ -380,7 +381,16 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            return repo_.execute(config.executable(), argc, argv);
+            int err = system(executable.c_str());
+
+            switch (err) {
+                case -1:
+                return PREP_ERROR;
+                case 127:
+                    return PREP_FAILURE;
+                default:
+                    return PREP_SUCCESS;
+            }
         }
     }
 }

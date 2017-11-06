@@ -456,25 +456,6 @@ namespace micrantha
             return rval;
         }
 
-        int Repository::execute(const std::string &executable, int argc, char *const *argv) const
-        {
-            if (executable.empty()) {
-                return PREP_FAILURE;
-            }
-
-            std::vector<std::string> args;
-
-            args.push_back(build_sys_path(get_bin_path(), executable));
-
-            for (int i = 0; i < argc; i++) {
-                args.push_back(argv[i]);
-            }
-
-            int rval = fork_command(args);
-
-            return rval;
-        }
-
         int Repository::load_plugins(const Options &opts)
         {
             std::string path = get_plugin_path();

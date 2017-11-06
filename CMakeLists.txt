@@ -9,7 +9,7 @@ option(CODE_COVERAGE "Enable code coverage testing." OFF)
 option(MEMORY_CHECK "Enable testing for memory leaks." OFF)
 
 # define project name
-project (prep VERSION 0.1)
+project (prep VERSION 0.1.0)
 
 # set path to custom cmake modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)

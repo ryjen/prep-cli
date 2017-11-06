@@ -9,35 +9,12 @@ namespace micrantha
 {
     namespace prep
     {
-        class CStringVector : protected std::vector<char *> {
-        public:
-            typedef std::vector<char *> container;
-            typedef container::value_type value_type;
-            typedef container::reference reference;
-            typedef container::const_reference  const_reference;
-
-            CStringVector();
-            CStringVector(const std::vector<std::string> &args);
-            ~CStringVector();
-            CStringVector(const CStringVector &) = delete;
-            CStringVector(CStringVector &&) = default;
-            CStringVector &operator=(const CStringVector &) = delete;
-            CStringVector &operator=(CStringVector &&) = default;
-
-            CStringVector &add(const std::string &value);
-
-            char * const *data() const;
-
-            reference operator[](size_t index);
-
-            const_reference operator[](size_t index) const;
-        };
 
         /**
          * runs a command in a forked process
          * @return PREP_SUCCESS or PREP_FAILURE upon error
          */
-        int fork_command(const CStringVector &argv, const char *directory = nullptr, const CStringVector &envp = CStringVector());
+        int fork_command(const std::string &command, char *const argv[], const char *directory, char *const envp[]);
 
         /**
          * removes an entire directory hierarchy

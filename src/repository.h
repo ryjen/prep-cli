@@ -159,11 +159,6 @@ namespace micrantha {
             int validate_plugins(const Options &opts) const;
 
             /**
-             * executes a binary from the repository bin path
-             */
-            int execute(const std::string &executable, int argc, char *const *argv) const;
-
-            /**
              * runs the install callback on plugins for a config
              */
             int notify_plugins_add(const Package &config);
