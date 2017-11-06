@@ -69,7 +69,7 @@ namespace micrantha
              * @param plugin the plugin to get configuration for
              * @return the JSON configuration
              */
-            json_type get_plugin_config(const Plugin *plugin) const;
+            json_type get_value(const std::string &key) const;
 
             /**
              * counts the number of dependencies for a package in the configuration

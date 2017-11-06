@@ -34,7 +34,7 @@ namespace micrantha
                 }
                 r = static_cast<int>(archive_write_data_block(aw, buff, size, offset));
                 if (r != ARCHIVE_OK) {
-                    printf("unable to write archive data block %d:%s", r, archive_error_string(aw));
+                    log::error("unable to write archive data block ", r, ":", archive_error_string(aw));
                     return (r);
                 }
             }
@@ -129,7 +129,7 @@ namespace micrantha
 
             strncpy(folderName, archive_entry_pathname(entry), PATH_MAX);
 
-            strncpy(buf, build_sys_path(outPath_.c_str(), folderName, NULL), PATH_MAX);
+            strncpy(buf, build_sys_path(outPath_, folderName).c_str(), PATH_MAX);
 
             archive_entry_set_pathname(entry, buf);
 
@@ -150,7 +150,7 @@ namespace micrantha
                 if (r == ARCHIVE_OK) {
                     const char *entryName = archive_entry_pathname(entry);
 
-                    strncpy(buf, build_sys_path(outPath_.c_str(), entryName, NULL), PATH_MAX);
+                    strncpy(buf, build_sys_path(outPath_, entryName).c_str(), PATH_MAX);
 
                     archive_entry_set_pathname(entry, buf);
 

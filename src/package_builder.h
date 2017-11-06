@@ -33,7 +33,21 @@ namespace micrantha
             // @param opts the session options
             // @param path the path the source is in
             // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
-            int build(const Package &config, const Options &opts, const char *path);
+            int build(const Package &config, const Options &opts, const std::string &path);
+
+            //! tests a package in a path
+            // @param config the package config
+            // @param opts the session options
+            // @param path the path the source is in
+            // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
+            int test(const Package &config, const Options &opts);
+
+            //! installs a package in a path
+            // @param config the package config
+            // @param opts the session options
+            // @param path the path the source is in
+            // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
+            int install(const Package &config, const Options &opts);
 
             /**
              * removes a package from the repository
@@ -97,7 +111,24 @@ namespace micrantha
              * @param path the path to build in
              * @return PREP_SUCCESS if built, otherwise PREP_FAILURE
              */
-            int build_package(const Package &p, const Options &opts, const char *path);
+            int build_package(const Package &p, const Options &opts, const std::string &path);
+
+            /**
+             * internal method to build a package
+             * @param p the package
+             * @param path the path to build in
+             * @return PREP_SUCCESS if built, otherwise PREP_FAILURE
+             */
+            int install_package(const Package &p, const std::string &path);
+
+
+            /**
+             * internal method to build a package
+             * @param p the package
+             * @param path the path to build in
+             * @return PREP_SUCCESS if built, otherwise PREP_FAILURE
+             */
+            int test_package(const Package &p, const std::string &path);
 
             // fields
             Repository repo_;

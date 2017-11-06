@@ -1,6 +1,5 @@
 
 #include <getopt.h>
-#include <unistd.h>
 #include <clocale>
 #include <iostream>
 #include <vector>
@@ -9,13 +8,15 @@
 #include "log.h"
 #include "package_builder.h"
 #include "util.h"
-#include "vt100.h"
 
 using namespace micrantha::prep;
 
 void print_help(char *exe, const Options &options)
 {
-    printf("Syntax: %s install <package url, git url, plugin, archive or directory>\n", exe);
+    printf("Syntax: %s build <package>\n", exe);
+    printf("      : %s test <package>\n", exe);
+    printf("      : %s install <package>\n", exe);
+    printf("      : %s add <package or plugin>\n", exe);
     printf("      : %s remove <package or plugin>\n", exe);
     printf("      : %s link <package> [version]\n", exe);
     printf("      : %s unlink <package>\n", exe);
@@ -34,11 +35,17 @@ void print_help(char *exe, const Options &options)
     printf(" -g, --global   : uses the global repository for an action");
     printf(" -v, --verbose  : uses verbose output");
     printf("\n");
+    printf("Concepts:\n");
+    printf(" <package> can be a package url, git url, plugin, archive file or directory\n\n");
     printf("Commands:\n");
-    printf("\n  install <package url, git url, plugin, archive or directory>\n");
-    printf(
-        "     resolves, builds, and installs a package or plugin to the repository.  "
-        "argument can be a url to an archive, git repository\n");
+    printf("\n  build <package>\n");
+    printf("     resolves and builds a package or plugin to the repository.\n");
+    printf("\n  test <package>\n");
+    printf("     test a package or plugin that has already been built.\n");
+    printf("\n  install <package>\n");
+    printf("     installs a package or plugin to the repository.\n");
+    printf("\n  add <package or plugin>\n");
+    printf("     adds a package or plugin to the repository\n");
     printf("\n  remove <package or plugin>\n");
     printf("     removes a package or plugin from the repository\n");
     printf("\n  link <package> [version]\n");
@@ -52,6 +59,7 @@ void print_help(char *exe, const Options &options)
     printf("\n  check\n");
     printf("     checks the repository structure for errors\n");
 }
+
 
 int main(int argc, char *const argv[])
 {
@@ -119,7 +127,7 @@ int main(int argc, char *const argv[])
     vt100::disable_user();
 
     if (optind >= argc) {
-        command = "install";
+        command = "build";
     } else {
         command = argv[optind++];
     }
@@ -139,6 +147,66 @@ int main(int argc, char *const argv[])
         return PREP_FAILURE;
     }
 
+    if (!strcmp(command, "build")) {
+        PackageConfig config;
+
+        if (optind < 0 || optind >= argc) {
+            char cwd[PATH_MAX] = {0};
+            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
+        } else {
+            options.location = argv[optind++];
+        }
+
+        // if not a directory...
+        if (directory_exists(options.location) != PREP_SUCCESS) {
+
+            // try to resolve to a directory
+            auto result = prep.repository()->notify_plugins_resolve(options.location);
+
+            if (result == PREP_FAILURE || result.values.empty()) {
+                log::error(options.location, " is not a valid prep package");
+                return PREP_FAILURE;
+            }
+
+            options.location = result.values.front();
+        }
+
+        // load a package.json config
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config at ", options.location);
+            return PREP_FAILURE;
+        }
+
+
+        // build
+        return prep.build(config, options, options.location);
+    }
+
+    if (!strcmp(command, "test")) {
+        PackageConfig config;
+
+        if (optind < 0 || optind >= argc) {
+            char cwd[PATH_MAX] = {0};
+            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
+        } else {
+            options.location = argv[optind++];
+        }
+
+        // if not a directory...
+        if (directory_exists(options.location) != PREP_SUCCESS) {
+
+            options.location = prep.get_package_directory(options.location);
+        }
+
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config for ", argv[optind]);
+            return PREP_FAILURE;
+        }
+
+        // build
+        return prep.test(config, options);
+    }
+
     if (!strcmp(command, "install")) {
         PackageConfig config;
 
@@ -149,20 +217,63 @@ int main(int argc, char *const argv[])
             options.location = argv[optind++];
         }
 
-        auto callback = [&options](const Plugin::Result &result) { options.location = result.values.front(); };
+        // if not a directory...
+        if (directory_exists(options.location) != PREP_SUCCESS) {
 
-        if (!directory_exists(options.location.c_str()) &&
-            prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
-            log::error(options.location, " is not a valid prep package");
+            options.location = prep.get_package_directory(options.location);
+        }
+
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config for ", argv[optind]);
             return PREP_FAILURE;
         }
 
+        // build
+        return prep.install(config, options);
+    }
+
+
+    if (!strcmp(command, "add")) {
+        PackageConfig config;
+
+        if (optind < 0 || optind >= argc) {
+            char cwd[PATH_MAX] = {0};
+            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
+        } else {
+            options.location = argv[optind++];
+        }
+
+        // if not a directory...
+        if (directory_exists(options.location) != PREP_SUCCESS) {
+
+            // try to resolve to a directory
+            auto result = prep.repository()->notify_plugins_resolve(options.location);
+
+            if (result == PREP_FAILURE || result.values.empty()) {
+                log::error(options.location, " is not a valid prep package");
+                return PREP_FAILURE;
+            }
+
+            options.location = result.values.front();
+        }
+
+        // load a package.json config
         if (config.load(options.location, options) == PREP_FAILURE) {
             log::error("unable to load config at ", options.location);
             return PREP_FAILURE;
         }
 
-        return prep.build(config, options, options.location.c_str());
+        // build
+        if (prep.build(config, options, options.location) == PREP_FAILURE) {
+            return PREP_FAILURE;
+        }
+
+        if (prep.test(config, options) == PREP_FAILURE) {
+            return PREP_FAILURE;
+        }
+
+        // install
+        return prep.install(config, options);
     }
 
     if (!strcmp(command, "remove")) {
@@ -219,18 +330,31 @@ int main(int argc, char *const argv[])
 
     if (!strcmp(command, "run")) {
         PackageConfig config;
-        char cwd[PATH_MAX];
 
-        if (getcwd(cwd, sizeof(cwd))) {
-            options.location = cwd;
+        if (optind < 0 || optind >= argc) {
+            char cwd[PATH_MAX] = {0};
+            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
         } else {
-            options.location = ".";
+            options.location = argv[optind++];
         }
 
-        auto callback = [&options](const Plugin::Result &result) { options.location = result.values.front(); };
+        // if not a directory...
+        if (directory_exists(options.location) != PREP_SUCCESS) {
 
-        if (prep.repository()->notify_plugins_resolve(options.location, callback) == PREP_FAILURE) {
-            micrantha::prep::log::error("%s is not a valid prep package", options.location.c_str());
+            // try to resolve to a directory
+            auto result = prep.repository()->notify_plugins_resolve(options.location);
+
+            if (result == PREP_FAILURE || result.values.empty()) {
+                log::error(options.location, " is not a valid prep package");
+                return PREP_FAILURE;
+            }
+
+            options.location = result.values.front();
+        }
+
+        // load a package.json config
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config at ", options.location);
             return PREP_FAILURE;
         }
 

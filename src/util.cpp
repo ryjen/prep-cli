@@ -5,8 +5,11 @@
 #include <cstring>
 #include <fstream>
 #include <fts.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/termios.h>
 
 #include "common.h"
 #include "log.h"
@@ -15,13 +18,112 @@
 namespace micrantha {
     namespace prep {
 
-        char *make_temp_dir(char *buffer, size_t size) {
-            strncpy(buffer, "/tmp/prep-XXXXXX", size);
+        CStringVector::CStringVector() {}
 
-            return mkdtemp(buffer);
+        CStringVector::CStringVector(const std::vector<std::string> &args) {
+            for (const auto &str : args) {
+                add(str);
+            }
         }
 
-        int fork_command(const char *argv[], const char *directory, char *const envp[]) {
+        CStringVector::~CStringVector() {
+            for (auto &str : *this) {
+                delete[] str;
+            }
+        }
+
+        CStringVector &CStringVector::add(const std::string &value) {
+            char *const conv = new char[value.size() + 1];
+            strncpy(conv, value.c_str(), value.size());
+            push_back(conv);
+            return *this;
+        }
+
+        char *const *CStringVector::data() const {
+            return &container::operator[](0);
+        }
+
+        CStringVector::reference CStringVector::operator[](size_t index) {
+            return container::operator[](index);
+        }
+
+        CStringVector::const_reference CStringVector::operator[](size_t index) const {
+            return container::operator[](index);
+        }
+
+        std::string make_temp_dir() {
+            char buf[BUFSIZ] = {0};
+
+            strncpy(buf, "/tmp/prep-XXXXXX", BUFSIZ);
+
+            auto temp = mkdtemp(buf);
+
+            if (temp == nullptr) {
+                return "";
+            }
+
+            return temp;
+        }
+
+        int posix_forkpty(int *master, char *name, struct termios *termp, struct winsize *winp) {
+
+            int fdm = posix_openpt(O_RDWR);
+
+            if (fdm < 0) {
+                log::perror("unable to open pseudo term");
+                return PREP_FAILURE;
+            }
+
+            if (master != nullptr) {
+                *master = fdm;
+            }
+
+            int rc = grantpt(fdm);
+            if (rc != 0) {
+                log::perror("unable to grant pseudo term");
+                return PREP_FAILURE;
+            }
+
+            rc = unlockpt(fdm);
+            if (rc != 0) {
+                log::perror("unable to unlock pseudo term");
+                return PREP_FAILURE;
+            }
+
+            name = ptsname(fdm);
+
+            // Open the slave PTY
+            int fds = open(name, O_RDWR);
+
+            // Creation of a child process
+            pid_t pid = fork();
+
+            if (pid == 0) {
+                if (termp != nullptr) {
+                    tcsetattr (fds, TCSANOW, termp);
+                }
+                close(STDIN_FILENO); // Close standard input (current terminal)
+                close(STDOUT_FILENO); // Close standard output (current terminal)
+                close(STDERR_FILENO); // Close standard error (current terminal)
+
+                dup(fds); // PTY becomes standard input (0)
+                dup(fds); // PTY becomes standard output (1)
+                dup(fds); // PTY becomes standard error (2)
+
+                close(fds);
+
+                setsid();
+
+                ioctl(0, TIOCSCTTY, 1);
+            } else {
+
+            }
+
+            return pid;
+        }
+
+        int
+        fork_command(const CStringVector &argv, const char *directory, const CStringVector &envp) {
             int rval = EXIT_FAILURE;
 
             pid_t pid = fork();
@@ -32,13 +134,13 @@ namespace micrantha {
             }
 
             if (pid == 0) {
-                if (chdir(directory)) {
-                    log::perror("unable to change directory [%s]", directory);
+                if (directory != nullptr && chdir(directory)) {
+                    log::perror("unable to change directory ", directory);
                     return EXIT_FAILURE;
                 }
 
                 // we are the child
-                execve(argv[0], (char *const *) &argv[0], envp);
+                execve(argv[0], argv.data(), envp.data());
 
                 exit(EXIT_FAILURE); // exec never returns
             } else {
@@ -68,7 +170,7 @@ namespace micrantha {
             return rval;
         }
 
-        int remove_directory(const char *dir) {
+        int remove_directory(const std::string &dir) {
             int ret = PREP_SUCCESS;
             FTS *ftsp = nullptr;
             FTSENT *curr = nullptr;
@@ -76,7 +178,7 @@ namespace micrantha {
             // Cast needed (in C) because fts_open() takes a "char * const *", instead
             // of a "const char * const *", which is only allowed in C++. fts_open()
             // does not modify the argument.
-            char *files[] = {(char *) dir, nullptr};
+            char *files[] = {const_cast<char *>(dir.c_str()), nullptr};
 
             // FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
             //                in multithreaded programs
@@ -86,7 +188,7 @@ namespace micrantha {
             ftsp = fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, nullptr);
 
             if (!ftsp) {
-                log::perror("failed to open %s [%s]", dir, strerror(errno));
+                log::perror("failed to open ", dir);
                 return PREP_FAILURE;
             }
 
@@ -95,7 +197,7 @@ namespace micrantha {
                     case FTS_NS:
                     case FTS_DNR:
                     case FTS_ERR:
-                        log::perror("%s: fts_read error: %s", curr->fts_accpath, strerror(curr->fts_errno));
+                        log::error(curr->fts_accpath, ": ", strerror(curr->fts_errno));
                         break;
 
                     case FTS_DC:
@@ -116,7 +218,7 @@ namespace micrantha {
                     case FTS_SLNONE:
                     case FTS_DEFAULT:
                         if (remove(curr->fts_accpath) < 0) {
-                            log::perror("%s: Failed to remove: %s", curr->fts_path, strerror(errno));
+                            log::perror(curr->fts_path, ": Failed to remove");
                             ret = PREP_FAILURE;
                         }
                         break;
@@ -130,32 +232,32 @@ namespace micrantha {
             return ret;
         }
 
-        int directory_exists(const char *path) {
+        int directory_exists(const std::string &path) {
             struct stat s{
             };
-            int err = stat(path, &s);
+            int err = stat(path.c_str(), &s);
             if (-1 == err) {
                 if (ENOENT == errno) {
                     /* does not exist */
-                    return 0;
+                    return PREP_ERROR;
                 } else {
-                    log::perror("%s [%s]", strerror(errno), path);
+                    log::perror(path);
                     exit(1);
                 }
             } else {
                 if (S_ISDIR(s.st_mode)) {
                     /* it's a dir */
-                    return 1;
+                    return PREP_SUCCESS;
                 } else {
-                    return 2;
+                    return PREP_FAILURE;
                 }
             }
         }
 
-        bool file_exists(const char *path) {
+        bool file_exists(const std::string &path) {
             struct stat s{
             };
-            int err = stat(path, &s);
+            int err = stat(path.c_str(), &s);
             if (-1 == err) {
                 if (ENOENT != errno) {
                     perror("stat");
@@ -172,10 +274,10 @@ namespace micrantha {
             }
         }
 
-        bool file_executable(const char *path) {
+        bool file_executable(const std::string &path) {
             struct stat s{
             };
-            int err = stat(path, &s);
+            int err = stat(path.c_str(), &s);
             if (-1 == err) {
                 if (ENOENT != errno) {
                     perror("stat");
@@ -191,12 +293,16 @@ namespace micrantha {
             }
         }
 
-        int mkpath(const char *file_path, mode_t mode) {
+        int mkpath(const std::string &file, mode_t mode) {
             char *p = nullptr;
+            char *file_path = nullptr;
 
-            if (!file_path || !*file_path) {
+            if (file.empty()) {
                 return PREP_FAILURE;
             }
+
+            file_path = const_cast<char *>(file.c_str());
+
             for (p = const_cast<char *>(strchr(file_path + 1, '/')); p; p = strchr(p + 1, '/')) {
                 *p = '\0';
                 if (mkdir(file_path, mode) == -1) {
@@ -266,13 +372,13 @@ namespace micrantha {
             struct stat st{
             };
 
-            if (!directory_exists(from.c_str())) {
-                log::perror("%s is not a directory", from.c_str());
+            if (directory_exists(from) != PREP_SUCCESS) {
+                log::perror(from, " is not a directory");
                 return PREP_FAILURE;
             }
 
-            if (!directory_exists(to.c_str())) {
-                if (mkdir(to.c_str(), 0777)) {
+            if (directory_exists(to) != PREP_SUCCESS) {
+                if (mkpath(to, 0777)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
@@ -283,7 +389,7 @@ namespace micrantha {
             file_system = fts_open(paths, FTS_COMFOLLOW | FTS_NOCHDIR, nullptr);
 
             if (file_system == nullptr) {
-                log::perror("unable to open file system [%s]", strerror(errno));
+                log::perror("unable to open file system");
                 return PREP_FAILURE;
             }
 
@@ -297,7 +403,7 @@ namespace micrantha {
                         if (S_ISDIR(st.st_mode)) {
                             log::trace("directory ", buf, " already exists");
                         } else {
-                            log::perror("non-directory file already found for %s", buf);
+                            log::perror("non-directory file already found for ", buf);
                             rval = PREP_FAILURE;
                         }
                         continue;
@@ -305,7 +411,7 @@ namespace micrantha {
 
                     // doesn't exist, create the repo path directory
                     if (mkdir(buf, 0777)) {
-                        log::perror("Could not create %s [%s]", buf, strerror(errno));
+                        log::perror("Could not create ", buf);
                         rval = PREP_FAILURE;
                         break;
                     }
@@ -339,42 +445,47 @@ namespace micrantha {
             return rval;
         }
 
-        const char *build_sys_path(const char *start, ...) {
-            static char sbuf[3][PATH_MAX + 1];
-            static int i = 0;
+        namespace internal {
+            void build_sys_path(std::ostream &buf) {}
 
-            i++, i %= 3;
-
-            va_list args;
-            char *buf = sbuf[i];
-
-            memset(buf, 0, PATH_MAX);
-
-            va_start(args, start);
-
-            if (start != nullptr) {
-                strcat(buf, start);
-            }
-
-            const char *next = va_arg(args, const char *);
-
-            while (next != nullptr) {
-#ifdef _WIN32
-                if (buf[strlen(buf) - 1] != '\\')
-                    strcat(buf, "\\");
-#else
-                if (buf[strlen(buf) - 1] != '/')
-                    strcat(buf, "/");
-#endif
-                strcat(buf, next);
-
-                next = va_arg(args, const char *);
-            }
-
-            va_end(args);
-
-            return buf;
         }
+
+//        const char *build_sys_path(const char *start, ...) {
+//            static char sbuf[3][PATH_MAX + 1];
+//            static int i = 0;
+//
+//            i++, i %= 3;
+//
+//            va_list args;
+//            char *buf = sbuf[i];
+//
+//            memset(buf, 0, PATH_MAX);
+//
+//            va_start(args, start);
+//
+//            if (start != nullptr) {
+//                strcat(buf, start);
+//            }
+//
+//            const char *next = va_arg(args, const char *);
+//
+//            while (next != nullptr) {
+//#ifdef _WIN32
+//                if (buf[strlen(buf) - 1] != '\\')
+//                    strcat(buf, "\\");
+//#else
+//                if (buf[strlen(buf) - 1] != '/')
+//                    strcat(buf, "/");
+//#endif
+//                strcat(buf, next);
+//
+//                next = va_arg(args, const char *);
+//            }
+//
+//            va_end(args);
+//
+//            return buf;
+//        }
     }
 }
 

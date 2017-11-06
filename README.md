@@ -31,6 +31,10 @@ resolves system packages
 
 resolves package files for building
 
+#### configuration
+
+build system plugin for configuring a build
+
 #### build
 
 build system plugin for compiling
@@ -52,7 +56,7 @@ Occurs when a plugin is loaded for custom initialization
 
 Occurs when a plugin is unloaded for custom cleanup
 
-#### INSTALL
+#### ADD
 
 Occurs when a dependency wants to be installed.  Only affects plugins of type "resolver".
 
@@ -66,9 +70,21 @@ parameters: [**package, version**]
 
 #### BUILD
 
-Occurs when a package wants to be built. Only affects plugins of type "build".
+Occurs when a package wants to be built. Only affects plugins of type "build" and "configuration".
 
 parameters: [**package, version, sourcePath, buildPath, installPath, buildOpts, envVar=value...**]
+
+#### TEST
+
+Occurs when a package wants to be tested. Only affects plugins of type "build".
+
+parameters: [**package, version, sourcePath, buildPath, envVar=value...**]
+
+#### INSTALL
+
+Occurs when a package wants to be installed. Only affects plugins of type "build".
+
+parameters: [**package, version, sourcePath, buildPath, envVar=value...**]
 
 
 ## plugin input header:
