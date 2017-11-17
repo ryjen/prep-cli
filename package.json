@@ -20,25 +20,13 @@
 			]
 		},
 		{
-			"name": "minisign",
-			"version": "0.7",
+			"name": "libdigidocpp",
+			"version": "3.13.2",
 			"archive": {
-				"location": "https://github.com/jedisct1/minisign/archive/0.7.tar.gz"
+				"location": "https://github.com/open-eid/libdigidocpp/releases/download/v3.13.2/libdigidocpp-3.13.2.tar.gz"
 			},
 			"build_system": [
 				"cmake", "make"
-			],
-			"dependencies": [
-				{
-					"name": "libsodium",
-					"version": "1.0.15",
-					"archive": {
-						"location": "https://download.libsodium.org/libsodium/releases/libsodium-1.0.15.tar.gz"
-					},
-					"build_system": [
-						"autotools", "make"
-					]
-				}
 			]
 		}
 	]

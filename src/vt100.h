@@ -5,31 +5,33 @@
 #ifndef MICRANTHA_PREP_VT100_H
 #define MICRANTHA_PREP_VT100_H
 
-#include <thread>
-#include <string>
-#include <map>
-#include <iostream>
-#include <mutex>
 #include <functional>
+#include <iostream>
+#include <map>
+#include <mutex>
+#include <string>
+#include <thread>
 #include <vector>
 
-namespace micrantha {
-    namespace prep {
-
+namespace micrantha
+{
+    namespace prep
+    {
         // do some fun stuff with output
-        namespace vt100 {
-
+        namespace vt100
+        {
             // define a mutex type
             typedef std::recursive_mutex Mutex;
 
             // output related functions
-            namespace output {
-
+            namespace output
+            {
                 /**
                  * utility class for output callbacks
                  */
-                class Callback {
-                public:
+                class Callback
+                {
+                   public:
                     // a callback function type
                     typedef std::function<void()> Type;
                     // a list of callbacks
@@ -39,7 +41,7 @@ namespace micrantha {
                      * executes the callbacks
                      * @return a reference to this instance
                      */
-                    Callback& operator()();
+                    Callback &operator()();
 
                     /**
                      * adds a callback to this
@@ -47,15 +49,16 @@ namespace micrantha {
                      * @param value the callback value
                      * @return a reference to this instance
                      */
-                    Callback& add(std::size_t key, const Type &value);
+                    Callback &add(std::size_t key, const Type &value);
 
                     /**
                      * removes a callback from this
                      * @param key the unique key of the callback
                      * @return
                      */
-                    Callback& remove(std::size_t key);
-                private:
+                    Callback &remove(std::size_t key);
+
+                   private:
                     List values_;
                     Mutex mutex_;
                 };
@@ -70,7 +73,7 @@ namespace micrantha {
                  * @param os the output stream
                  * @return the output stream
                  */
-                std::ostream& print(std::ostream& os);
+                std::ostream &print(std::ostream &os);
 
                 /**
                  * variadic print
@@ -81,9 +84,9 @@ namespace micrantha {
                  * @param args the remaining arguments
                  * @return
                  */
-                template<class A0, class ...Args>
-                std::ostream &
-                print(std::ostream &os, const A0 &a0, const Args &...args) {
+                template <class A0, class... Args>
+                std::ostream &print(std::ostream &os, const A0 &a0, const Args &... args)
+                {
                     // print the argument
                     os << a0;
                     // print the remaining arguments
@@ -97,9 +100,9 @@ namespace micrantha {
                  * @param args the arguments
                  * @return the output stream
                  */
-                template<class ...Args>
-                std::ostream &
-                print(std::ostream &os, const Args &...args) {
+                template <class... Args>
+                std::ostream &print(std::ostream &os, const Args &... args)
+                {
                     // pass the first argument to the printer
                     return print(os, args...);
                 }
@@ -117,16 +120,16 @@ namespace micrantha {
              * @param args the arguments
              * @return the output stream
              */
-            template <class ...Args>
-            std::ostream&
-            print(const Args& ...args)
+            template <class... Args>
+            std::ostream &print(const Args &... args)
             {
                 std::lock_guard<Mutex> _(output::get_mutex());
                 return output::print(std::cout, args...);
             }
 
             // cursor related
-            namespace cursor {
+            namespace cursor
+            {
                 /**
                  * saves a cursor position and attributes
                  */
@@ -156,22 +159,25 @@ namespace micrantha {
                  * sets the cursor position
                  * @param rows
                  * @param cols
+                 * @return PREP_SUCCESS or PREP_FAILURE
                  */
-                void set(int rows, int cols);
+                int set(int rows, int cols);
 
                 /**
                  * gets the cursor position
                  * NOTE: may be blocking
                  * @param rows
                  * @param cols
+                 * @return PREP_SUCCESS or PREP_FAILURE
                  */
-                void get(int &rows, int &cols);
+                int get(int &rows, int &cols);
 
                 /**
                  * RAII class to save and restore a cursor position
                  */
-                class Savepoint {
-                public:
+                class Savepoint
+                {
+                   public:
                     /**
                      * @param mutex the mutex to lock
                      */
@@ -179,16 +185,18 @@ namespace micrantha {
                     ~Savepoint() = default;
                     Savepoint(const Savepoint &) = delete;
                     Savepoint(Savepoint &&) = delete;
-                    Savepoint &operator=(const Savepoint&) = delete;
+                    Savepoint &operator=(const Savepoint &) = delete;
                     Savepoint &operator=(Savepoint &&) = delete;
-                private:
-                    class Restore {
-                    public:
+
+                   private:
+                    class Restore
+                    {
+                       public:
                         Restore() = default;
                         ~Restore();
                         Restore(const Restore &) = delete;
                         Restore(Restore &&) = delete;
-                        Restore &operator=(const Restore&) = delete;
+                        Restore &operator=(const Restore &) = delete;
                         Restore &operator=(Restore &&) = delete;
                     };
                     // deconstruct restore first
@@ -210,8 +218,9 @@ namespace micrantha {
             /**
              * RAII class to display a progress indicator, will disappear on scope loss
              */
-            class Progress {
-            public:
+            class Progress
+            {
+               public:
                 Progress() noexcept;
                 ~Progress();
                 Progress(const Progress &) = delete;
@@ -219,7 +228,7 @@ namespace micrantha {
                 Progress &operator=(const Progress &) = delete;
                 Progress &operator=(Progress &&) = delete;
 
-            private:
+               private:
                 /**
                  * a hash code for this object
                  * @return a unique code for this object
@@ -255,28 +264,26 @@ namespace micrantha {
         }
 
         // color related utils
-        namespace color {
+        namespace color
+        {
             typedef unsigned Value;
 
             // foreground colors
-            namespace fg {
-                typedef enum {
-                    BLACK = 30, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE
-                } Type;
+            namespace fg
+            {
+                typedef enum { BLACK = 30, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE } Type;
             }
 
             // background colors
-            namespace bg {
-                typedef enum {
-                    BLACK = 40, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE
-                } Type;
+            namespace bg
+            {
+                typedef enum { BLACK = 40, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE } Type;
             }
 
             // color attributes
-            namespace attr {
-                typedef enum {
-                    NORMAL, BOLD
-                } Type;
+            namespace attr
+            {
+                typedef enum { NORMAL, BOLD } Type;
             }
 
             using Foreground = fg::Type;
@@ -295,7 +302,7 @@ namespace micrantha {
              * @param reset true if the colors should reset after the value is displayed
              * @return a string with vt100 color information
              */
-            std::string colorize(const std::vector <Value> &colors, const std::string &value, bool reset = true);
+            std::string colorize(const std::vector<Value> &colors, const std::string &value, bool reset = true);
 
             /**
              * apply BLACK to text
@@ -325,7 +332,6 @@ namespace micrantha {
              */
             std::string y(const std::string &value);
 
-
             /**
              * apply BLUE to a value
              * @param value the text
@@ -354,8 +360,7 @@ namespace micrantha {
              */
             std::string w(const std::string &value);
         }
-
     }
 }
 
-#endif //PREP_VT100_H
+#endif  // PREP_VT100_H

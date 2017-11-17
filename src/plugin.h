@@ -28,7 +28,7 @@ namespace micrantha
         {
           public:
             // types of hooks a plugin supports
-            typedef enum { LOAD, UNLOAD, INSTALL, REMOVE, RESOLVE, BUILD } Hooks;
+            typedef enum { LOAD, UNLOAD, ADD, REMOVE, RESOLVE, BUILD, TEST, INSTALL } Hooks;
 
             /**
              * the plugin manifest file
@@ -52,6 +52,10 @@ namespace micrantha
                 bool operator==(int value) const
                 {
                     return code == value;
+                }
+                bool operator!=(int value) const
+                {
+                    return code != value;
                 }
             } Result;
 
@@ -79,12 +83,13 @@ namespace micrantha
             // callbacks for the different hooks
             Result on_load() const;
             Result on_unload() const;
-            Result on_resolve(const std::string &location) const;
-            Result on_resolve(const Package &config) const;
-            Result on_install(const Package &config, const std::string &path) const;
+            Result on_resolve(const std::string &location, const std::string &sourcePath) const;
+            Result on_resolve(const Package &config, const std::string &sourcePath) const;
+            Result on_add(const Package &config, const std::string &path) const;
             Result on_remove(const Package &config, const std::string &path) const;
-            Result on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
-                            const std::string &installPath) const;
+            Result on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath) const;
+            Result on_test(const Package &config, const std::string &sourcePath, const std::string &buildPath) const;
+            Result on_install(const Package &config, const std::string &sourcePath, const std::string &buildPath) const;
 
             /**
              * loads a plugin
@@ -94,20 +99,6 @@ namespace micrantha
             int load(const std::string &path);
 
           private:
-            /**
-             * gets this plugins name.  can be overriden by config
-             * @param config the package config
-             * @return the configured name
-             */
-            std::string plugin_name(const Package &config) const;
-
-            /**
-             * gets this plugins location. can be overriden by config.
-             * @param config the package config
-             * @return the configured location
-             */
-            std::string plugin_location(const Package &config) const;
-
             /**
              * executes this plugin.  this is where the magic happens
              * @param method the type of hook being executed

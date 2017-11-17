@@ -84,7 +84,7 @@ namespace micrantha {
 
             template<class ...Args>
             void perror(const Args &...args) {
-                error(std::to_string(errno), ": ", strerror(errno));
+                error(std::to_string(errno), ": ", strerror(errno), " - ", args...);
             }
         }
     }

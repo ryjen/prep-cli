@@ -7,7 +7,7 @@ namespace micrantha
     {
          unsigned char default_plugins_archive[] = {
              @PLUGINS_ARCHIVE@
-        };
+         };
 
          size_t default_plugins_archive_size = sizeof(default_plugins_archive) / sizeof(default_plugins_archive[0]);
     }

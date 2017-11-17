@@ -10,3 +10,4 @@ tags
 cmake-build-*
 *.inc
 plugins_archive.cpp
+release

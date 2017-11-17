@@ -26,16 +26,16 @@ add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
 #link libraries to the executable
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS})
 
-set(PLUGINS_ARCHIVE_STAMP ${CMAKE_CURRENT_BINARY_DIR}/source_stamp)
+set(PLUGINS_ARCHIVE_SOURCE ${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp)
 
 # generate the plugins archive source file
-add_custom_command(OUTPUT ${PLUGINS_ARCHIVE_STAMP} COMMAND ${CMAKE_COMMAND} -DWORKING_DIR=${PROJECT_BINARY_DIR} -P
-    ${CMAKE_CURRENT_LIST_DIR}/CMakeGenerateSource.txt COMMAND ${CMAKE_COMMAND} -E touch ${PLUGINS_ARCHIVE_STAMP}
+add_custom_command(OUTPUT ${PLUGINS_ARCHIVE_SOURCE} COMMAND ${CMAKE_COMMAND} -DWORKING_DIR=${PROJECT_BINARY_DIR} -P
+    ${CMAKE_CURRENT_LIST_DIR}/CMakeGenerateSource.txt
         DEPENDS bin2csv build_plugins )
 
-add_custom_target(generate_source ALL DEPENDS ${PLUGINS_ARCHIVE_STAMP})
+add_custom_target(generate_source ALL DEPENDS ${PLUGINS_ARCHIVE_SOURCE})
 
-set_source_files_properties(${PLUGINS_ARCHIVE_STAMP} PROPERTIES OBJECT_DEPENDS plugins_archive.cpp.in)
+set_source_files_properties(${PLUGINS_ARCHIVE_SOURCE} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp.in)
 
 add_dependencies(${PROJECT_NAME} generate_source)
 
