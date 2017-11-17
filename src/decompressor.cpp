@@ -34,32 +34,32 @@ namespace micrantha
                 }
                 r = static_cast<int>(archive_write_data_block(aw, buff, size, offset));
                 if (r != ARCHIVE_OK) {
-                    printf("unable to write archive data block %d:%s", r, archive_error_string(aw));
+                    log::error("unable to write archive data block ", r, ":", archive_error_string(aw));
                     return (r);
                 }
             }
         }
 
-        decompressor::decompressor(const std::string &path) : decompressor(path, path)
+        Decompressor::Decompressor(const std::string &path) : Decompressor(path, path)
         {
         }
 
-        decompressor::decompressor(const void *from, size_t size, const std::string &topath)
+        Decompressor::Decompressor(const void *from, size_t size, const std::string &topath)
             : from_(from), size_(size), type_(MEMORY), outPath_(topath), in_(nullptr), out_(nullptr)
         {
         }
 
-        decompressor::decompressor(const std::string &path, const std::string &topath)
+        Decompressor::Decompressor(const std::string &path, const std::string &topath)
             : from_(path.c_str()), size_(10240), type_(FILE), outPath_(topath), in_(nullptr), out_(nullptr)
         {
         }
 
-        decompressor::~decompressor()
+        Decompressor::~Decompressor()
         {
             cleanup();
         }
 
-        void decompressor::cleanup()
+        void Decompressor::cleanup()
         {
             if (in_ != nullptr) {
 #if ARCHIVE_VERSION_NUMBER < 3000000
@@ -79,12 +79,12 @@ namespace micrantha
                 out_ = nullptr;
             }
         }
-        int decompressor::decompress()
+        int Decompressor::decompress()
         {
             int r;
             struct archive_entry *entry;
-            char folderName[PATH_MAX + 1] = { 0 };
-            char buf[PATH_MAX + 1]        = { 0 };
+            char folderName[PATH_MAX + 1] = {0};
+            char buf[PATH_MAX + 1] = {0};
 
             if (in_ != nullptr || out_ != nullptr) {
                 log::perror(EINVAL);
@@ -100,19 +100,19 @@ namespace micrantha
             archive_read_support_compression_all(in_);
 #endif
             switch (type_) {
-            case FILE:
-                if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), size_))) {
-                    log::error("unable to open file ", r, ": ", archive_error_string(in_));
-                    cleanup();
-                    return PREP_FAILURE;
-                }
-                break;
-            case MEMORY:
-                if ((r = archive_read_open_memory(in_, from_, size_))) {
-                    log::error("unable to open memory archive ", r, ": ", archive_error_string(in_));
-                    cleanup();
-                    return PREP_FAILURE;
-                }
+                case FILE:
+                    if ((r = archive_read_open_filename(in_, static_cast<const char *>(from_), size_))) {
+                        log::error("unable to open file ", r, ": ", archive_error_string(in_));
+                        cleanup();
+                        return PREP_FAILURE;
+                    }
+                    break;
+                case MEMORY:
+                    if ((r = archive_read_open_memory(in_, from_, size_))) {
+                        log::error("unable to open memory archive ", r, ": ", archive_error_string(in_));
+                        cleanup();
+                        return PREP_FAILURE;
+                    }
             }
             out_ = archive_write_disk_new();
 
@@ -129,7 +129,7 @@ namespace micrantha
 
             strncpy(folderName, archive_entry_pathname(entry), PATH_MAX);
 
-            strncpy(buf, build_sys_path(outPath_.c_str(), folderName, NULL), PATH_MAX);
+            strncpy(buf, build_sys_path(outPath_, folderName).c_str(), PATH_MAX);
 
             archive_entry_set_pathname(entry, buf);
 
@@ -150,7 +150,7 @@ namespace micrantha
                 if (r == ARCHIVE_OK) {
                     const char *entryName = archive_entry_pathname(entry);
 
-                    strncpy(buf, build_sys_path(outPath_.c_str(), entryName, NULL), PATH_MAX);
+                    strncpy(buf, build_sys_path(outPath_, entryName).c_str(), PATH_MAX);
 
                     archive_entry_set_pathname(entry, buf);
 

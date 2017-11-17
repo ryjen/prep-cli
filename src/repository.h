@@ -9,67 +9,70 @@
 #include "package_config.h"
 #include "plugin.h"
 
-namespace micrantha
-{
-    namespace prep
-    {
+namespace micrantha {
+    namespace prep {
         /**
          * a representation of a repository.  can be local or global
          */
-        class Repository
-        {
-           public:
+        class Repository {
+        public:
 #ifdef _WIN32
             constexpr static const char *const UNKNOWN_INSTALL_FOLDER = "C:\\Windows\\Temp\\Unknown";
             constexpr static const char *const GLOBAL_REPO = "C:\\prep";
 #else
-            constexpr static const char *const UNKNOWN_INSTALL_FOLDER = "/tmp/unknown";
-            constexpr static const char *const GLOBAL_REPO = "/usr/local/share/prep";
+            constexpr static const char *UNKNOWN_INSTALL_FOLDER = "/tmp/unknown";
+            constexpr static const char *GLOBAL_REPO = "/usr/local/share/prep";
 #endif
             /**
              * the repository name
              */
-            constexpr static const char *const LOCAL_REPO_NAME = ".prep";
+            constexpr static const char *LOCAL_REPO_NAME = ".prep";
 
             /**
              * meta data folder in the repository
              */
-            constexpr static const char *const META_FOLDER = "meta";
+            constexpr static const char *META_FOLDER = "meta";
 
             /**
              * install folder in the repository
              */
-            constexpr static const char *const INSTALL_FOLDER = "install";
+            constexpr static const char *INSTALL_FOLDER = "install";
 
             /**
              * build folder in the repository
              */
-            constexpr static const char *const BUILD_FOLDER = "build";
+            constexpr static const char *BUILD_FOLDER = "build";
+
+
+            /**
+             * source folder in the repository
+             */
+            constexpr static const char *SOURCE_FOLDER = "source";
 
             /**
              * kitchen folder in the repository
              */
-            constexpr static const char *const KITCHEN_FOLDER = "kitchen";
+            constexpr static const char *KITCHEN_FOLDER = "kitchen";
 
             /**
              * binary folder in the repository
              */
-            constexpr static const char *const BIN_FOLDER = "bin";
+            constexpr static const char *BIN_FOLDER = "bin";
 
             /**
              * plugins folder in the repository
              */
-            constexpr static const char *const PLUGIN_FOLDER = "plugins";
+            constexpr static const char *PLUGIN_FOLDER = "plugins";
 
             /**
              * version information file
              */
-            constexpr static const char *const VERSION_FILE = "version";
+            constexpr static const char *VERSION_FILE = "version";
 
             /**
              * the file name for package configuration
              */
-            constexpr static const char *const PACKAGE_FILE = "package.json";
+            constexpr static const char *PACKAGE_FILE = "package.json";
 
             /**
              * a callback for resolving plugins
@@ -79,7 +82,7 @@ namespace micrantha
             /**
              * gets the user local repository on the system
              */
-            static const char *const get_local_repo();
+            static std::string const get_local_repo();
 
             /**
              * unlinks a folder in this repository
@@ -128,8 +131,20 @@ namespace micrantha
             // build path property
             std::string get_build_path(const std::string &package_name) const;
 
+
+            // build path property
+            std::string get_source_path(const std::string &package_name) const;
+
+
             // plugin path property
             std::string get_plugin_path() const;
+
+            /**
+             * check if a package exists in either the global or local repository
+             * @param config the package config to check
+             * @return true if a package matching the config exists
+             */
+            bool exists(const Package &config) const;
 
             /**
              * validates the repository
@@ -144,24 +159,19 @@ namespace micrantha
             int validate_plugins(const Options &opts) const;
 
             /**
-             * executes a binary from the repository bin path
-             */
-            int execute(const std::string &executable, int argc, char *const *argv) const;
-
-            /**
              * runs the install callback on plugins for a config
              */
-            int notify_plugins_install(const Package &config);
+            int notify_plugins_add(const Package &config);
 
             /**
              * runs the resolve callback on plugins for a config
              */
-            int notify_plugins_resolve(const Package &config, const resolver_callback &callback = nullptr);
+            Plugin::Result notify_plugins_resolve(const Package &config);
 
             /**
              * runs the resolve callback on plugins for a config
              */
-            int notify_plugins_resolve(const std::string &location, const resolver_callback &callback = nullptr);
+            Plugin::Result notify_plugins_resolve(const std::string &location);
 
             /**
              * runs the remove callback on plugins for a config
@@ -175,6 +185,17 @@ namespace micrantha
                                      const std::string &installPath);
 
             /**
+             * runs the build callback on plugins for a config
+             */
+            int notify_plugins_test(const Package &config, const std::string &sourcePath, const std::string &buildPath);
+
+            /**
+             * runs the build callback on plugins for a config
+             */
+            int
+            notify_plugins_install(const Package &config, const std::string &sourcePath, const std::string &buildPath);
+
+            /**
              * gets a plugin by name
              */
             std::shared_ptr<Plugin> get_plugin_by_name(const std::string &name) const;
@@ -185,7 +206,7 @@ namespace micrantha
              */
             int load_plugins(const Options &opts);
 
-           private:
+        private:
             /**
              * initializes / loads the plugins
              * @param opts the command line options

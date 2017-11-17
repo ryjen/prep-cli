@@ -5,6 +5,8 @@ if (NOT TAR_EXECUTABLE)
 	message(FATAL "tar archive program required")
 endif()
 
+message("compressing and converting plugins")
+
 # compress the plugins output and convert it into a byte array
 execute_process(COMMAND ${TAR_EXECUTABLE} -C plugins -cj . COMMAND ${WORKING_DIR}/util/bin2csv
 	WORKING_DIRECTORY ${WORKING_DIR}/gen RESULT_VARIABLE OUTPUT_RESULT OUTPUT_VARIABLE PLUGINS_ARCHIVE)

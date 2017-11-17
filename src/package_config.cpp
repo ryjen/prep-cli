@@ -92,7 +92,7 @@ namespace micrantha
         int PackageConfig::resolve_package_file(const std::string &path, const std::string &filename,
                                                 std::ifstream &file)
         {
-            auto buf = build_sys_path(path.c_str(), filename.c_str(), NULL);
+            auto buf = build_sys_path(path, filename);
 
             if (!file_exists(buf)) {
                 return PREP_FAILURE;
@@ -135,7 +135,7 @@ namespace micrantha
 
             init_build_system();
 
-            path_ = build_sys_path(path.c_str(), opts.package_file.c_str(), NULL);
+            path_ = build_sys_path(path, opts.package_file);
 
             return PREP_SUCCESS;
         }
@@ -201,13 +201,9 @@ namespace micrantha
             return values_.count("name") > 0;
         }
 
-        Package::json_type Package::get_plugin_config(const Plugin *plugin) const
+        Package::json_type Package::get_value(const std::string &key) const
         {
-            if (plugin == nullptr) {
-                return json_type();
-            }
-
-            auto config = values_.find(plugin->name());
+            auto config = values_.find(key);
 
             if (config == values_.end()) {
                 return json_type();
