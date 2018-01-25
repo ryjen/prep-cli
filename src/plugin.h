@@ -24,11 +24,16 @@ namespace micrantha
         /**
          * represents a plugin
          */
-        class Plugin
-        {
-          public:
+        class Plugin {
+        public:
             // types of hooks a plugin supports
-            typedef enum { LOAD, UNLOAD, ADD, REMOVE, RESOLVE, BUILD, TEST, INSTALL } Hooks;
+            enum class Hooks : int {
+                LOAD, UNLOAD, ADD, REMOVE, RESOLVE, BUILD, TEST, INSTALL
+            };
+
+            enum class Types : int {
+                INTERNAL, CONFIGURATION, DEPENDENCY, RESOLVER, BUILD
+            };
 
             /**
              * the plugin manifest file
@@ -43,52 +48,67 @@ namespace micrantha
                 int code;
                 std::vector<std::string> values;
 
-                Result(int c) : code(c)
-                {
+                Result(int c) : code(c) {
                 }
-                Result(int c, std::vector<std::string> r) : code(c), values(std::move(r))
-                {
+
+                Result(int c, std::vector<std::string> r) : code(c), values(std::move(r)) {
                 }
-                bool operator==(int value) const
-                {
+
+                bool operator==(int value) const {
                     return code == value;
                 }
-                bool operator!=(int value) const
-                {
+
+                bool operator!=(int value) const {
                     return code != value;
                 }
             } Result;
 
             /* constructors*/
             explicit Plugin(const std::string &name);
+
             ~Plugin();
 
             /* non-copyable, non-movable */
             Plugin(const Plugin &other) = delete;
-            Plugin(Plugin &&other)      = default;
+
+            Plugin(Plugin &&other) = default;
+
             Plugin &operator=(const Plugin &other) = delete;
+
             Plugin &operator=(Plugin &&other) = default;
 
             // validators
             bool is_valid() const;
+
             bool is_enabled() const;
 
             // properties
             std::string name() const;
-            std::string type() const;
+
             std::string version() const;
-            bool is_internal() const;
+
+            Types type() const;
+
             Plugin &set_verbose(bool value);
 
             // callbacks for the different hooks
             Result on_load() const;
+
             Result on_unload() const;
+
             Result on_resolve(const std::string &location, const std::string &sourcePath) const;
+
             Result on_resolve(const Package &config, const std::string &sourcePath) const;
+
             Result on_add(const Package &config, const std::string &path) const;
+
             Result on_remove(const Package &config, const std::string &path) const;
-            Result on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath, const std::string &installPath) const;
+
+            Result on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
+                            const std::string &installPath) const;
+
             Result on_test(const Package &config, const std::string &sourcePath, const std::string &buildPath) const;
+
             Result on_install(const Package &config, const std::string &sourcePath, const std::string &buildPath) const;
 
             /**
@@ -98,7 +118,7 @@ namespace micrantha
              */
             int load(const std::string &path);
 
-          private:
+        private:
             /**
              * executes this plugin.  this is where the magic happens
              * @param method the type of hook being executed
@@ -114,9 +134,11 @@ namespace micrantha
             std::string executablePath_;
             std::string version_;
             std::string basePath_;
-            std::string type_;
+            Types type_;
             bool verbose_;
         };
+
+        std::ostream &operator<<(std::ostream &out, const Plugin::Result &result);
     }
 }
 

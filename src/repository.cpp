@@ -125,6 +125,8 @@ namespace micrantha
 
         int Repository::init_plugins(const Options &opts, const std::string &path) const
         {
+            log::info("initializing plugins");
+
             Decompressor unzip(default_plugins_archive, default_plugins_archive_size, path);
 
             return unzip.decompress();
@@ -487,9 +489,10 @@ namespace micrantha
                     case PREP_SUCCESS:
                         plugin->set_verbose(opts.verbose);
                         plugins_.push_back(plugin);
-                        if (!plugin->is_internal()) {
+                        if (plugin->type() != Plugin::Types::INTERNAL) {
                             log::trace("loaded plugin ", color::m(plugin->name()), " version [",
                                        color::y(plugin->version()), "]");
+                            validPlugins_.push_back(plugin);
                         }
                         break;
                     case PREP_FAILURE:
@@ -505,13 +508,10 @@ namespace micrantha
 
             closedir(dir);
 
-            plugins_.sort(
-                [](const std::shared_ptr<Plugin> &a, const std::shared_ptr<Plugin> &b) { return a->is_internal(); });
-
             for (const auto &plugin : plugins_) {
                 vt100::Progress progress;
 
-                log::info("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
+                log::debug("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
 
                 if (plugin->on_load() == PREP_ERROR) {
                     return PREP_FAILURE;
@@ -525,7 +525,7 @@ namespace micrantha
         {
             log::trace("checking plugins for resolving [", config.name(), "]...");
 
-            for (const auto &plugin : plugins_) {
+            for (const auto &plugin : validPlugins_) {
                 auto result = plugin->on_resolve(config, get_source_path(config.name()));
                 if (result == PREP_SUCCESS) {
                     log::info("resolved ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
@@ -541,7 +541,7 @@ namespace micrantha
 
             auto tempDir = make_temp_dir();
 
-            for (const auto &plugin : plugins_) {
+            for (const auto &plugin : validPlugins_) {
                 auto result = plugin->on_resolve(location, tempDir);
 
                 if (result == PREP_SUCCESS) {
@@ -556,7 +556,7 @@ namespace micrantha
         {
             log::trace("checking plugins for install of [", config.name(), "]...");
 
-            for (const auto &plugin : plugins_) {
+            for (const auto &plugin : validPlugins_) {
                 if (plugin->on_add(config, path_) == PREP_SUCCESS) {
                     log::info("installed ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     return PREP_SUCCESS;
@@ -569,7 +569,7 @@ namespace micrantha
         {
             log::trace("checking plugins for removal of [", config.name(), "]...");
 
-            for (const auto &plugin : plugins_) {
+            for (const auto &plugin : validPlugins_) {
                 if (plugin->on_remove(config, path_) == PREP_SUCCESS) {
                     log::info("removed ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     return PREP_SUCCESS;
@@ -580,7 +580,7 @@ namespace micrantha
 
         std::shared_ptr<Plugin> Repository::get_plugin_by_name(const std::string &name) const
         {
-            for (const auto &plugin : plugins_) {
+            for (const auto &plugin : validPlugins_) {
                 if (plugin->name() == name) {
                     return plugin;
                 }

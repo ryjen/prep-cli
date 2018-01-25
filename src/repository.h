@@ -215,6 +215,8 @@ namespace micrantha {
              */
             int init_plugins(const Options &opts, const std::string &path) const;
 
+            std::list<std::shared_ptr<Plugin>> validPlugins_;
+
             // a list of plugins
             std::list<std::shared_ptr<Plugin>> plugins_;
             // the repository path

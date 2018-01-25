@@ -11,8 +11,7 @@
 
 using namespace micrantha::prep;
 
-void print_help(char *exe, const Options &options)
-{
+void print_help(char *exe, const Options &options) {
     printf("Syntax: %s build <package>\n", exe);
     printf("      : %s test <package>\n", exe);
     printf("      : %s install <package>\n", exe);
@@ -20,6 +19,7 @@ void print_help(char *exe, const Options &options)
     printf("      : %s remove <package or plugin>\n", exe);
     printf("      : %s link <package> [version]\n", exe);
     printf("      : %s unlink <package>\n", exe);
+    printf("      : %s cleanup [package]\n", exe);
     printf("      : %s run\n", exe);
     printf("      : %s env\n", exe);
     printf("      : %s check\n", exe);
@@ -58,31 +58,52 @@ void print_help(char *exe, const Options &options)
     printf("     prints out the repository environment\n");
     printf("\n  check\n");
     printf("     checks the repository structure for errors\n");
+    printf("\n  cleanup [package]\n");
+    printf("     cleans temp files and folders for a package or the entire repository\n");
 }
 
+int find_package_directory(PackageBuilder &prep, Options &options, int argc, int index, char *const argv[]) {
+    if (index < 0 || index >= argc) {
+        char cwd[PATH_MAX] = {0};
+        options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
+    } else {
+        options.location = argv[index++];
+    }
 
-int main(int argc, char *const argv[])
-{
+    // if not a directory...
+    if (directory_exists(options.location) != PREP_SUCCESS) {
+
+        // try to resolve to a directory
+        auto result = prep.repository()->notify_plugins_resolve(options.location);
+
+        if (result == PREP_SUCCESS && !result.values.empty()) {
+            options.location = result.values.front();
+        }
+    }
+    return PREP_SUCCESS;
+}
+
+int main(int argc, char *const argv[]) {
     PackageBuilder prep;
     Options options{.package_file = Repository::PACKAGE_FILE,
-                    .global = false,
-                    .location = ".",
-                    .force_build = false,
-                    .verbose = false,
-                    .defaults = false};
+            .global = false,
+            .location = ".",
+            .force_build = false,
+            .verbose = false,
+            .defaults = false};
     const char *command = nullptr;
     int option;
     int option_index = 0;
-    static struct option args[] = {{"global", no_argument, 0, 'g'},
-                                   {"package", required_argument, 0, 'p'},
-                                   {"force", no_argument, 0, 'f'},
-                                   {"verbose", no_argument, 0, 'v'},
-                                   {"log", required_argument, 0, 'l'},
+    static struct option args[] = {{"global",   no_argument,       0, 'g'},
+                                   {"package",  required_argument, 0, 'p'},
+                                   {"force",    no_argument,       0, 'f'},
+                                   {"verbose",  no_argument,       0, 'v'},
+                                   {"log",      required_argument, 0, 'l'},
                                    {
-                                       "defaults", no_argument, 0, 1,
+                                    "defaults", no_argument,       0, 1,
                                    },
-                                   {"help", no_argument, 0, 0},
-                                   {0, 0, 0, 0}};
+                                   {"help",     no_argument,       0, 0},
+                                   {0, 0,                          0, 0}};
 
     while ((option = getopt_long(argc, argv, "vhgfp:l:", args, &option_index)) != EOF) {
         switch (option) {
@@ -112,7 +133,7 @@ int main(int argc, char *const argv[])
         }
     }
 
-    vt100::init(options.verbose);
+    vt100::init(true);
 
     try {
         if (prep.initialize(options) != PREP_SUCCESS) {
@@ -174,25 +195,11 @@ int main(int argc, char *const argv[])
     if (!strcmp(command, "run")) {
         PackageConfig config;
 
-        if (optind < 0 || optind >= argc) {
-            char cwd[PATH_MAX] = {0};
-            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
-        } else {
-            options.location = argv[optind++];
+        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
+            log::error("unable to find a directory containing a package");
+            return PREP_FAILURE;
         }
 
-        // if not a directory...
-        if (directory_exists(options.location) != PREP_SUCCESS) {
-
-            // try to resolve to a directory
-            auto result = prep.repository()->notify_plugins_resolve(options.location);
-
-            if (result == PREP_SUCCESS && !result.values.empty()) {
-                options.location = result.values.front();
-            }
-        }
-
-        // load a package.json config
         if (config.load(options.location, options) == PREP_FAILURE) {
             log::error("unable to load config at ", options.location);
             return PREP_FAILURE;
@@ -211,28 +218,28 @@ int main(int argc, char *const argv[])
         return PREP_FAILURE;
     }
 
+    if (!strcmp(command, "cleanup") || !strcmp(command, "clean")) {
+        PackageConfig config;
+
+        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
+            log::error("unable to find a directory containing a package");
+            return PREP_FAILURE;
+        }
+
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config at ", options.location);
+            return PREP_FAILURE;
+        }
+
+        return prep.cleanup(config, options);
+    }
+
     if (!strcmp(command, "build")) {
         PackageConfig config;
 
-        if (optind < 0 || optind >= argc) {
-            char cwd[PATH_MAX] = {0};
-            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
-        } else {
-            options.location = argv[optind++];
-        }
-
-        // if not a directory...
-        if (directory_exists(options.location) != PREP_SUCCESS) {
-
-            // try to resolve to a directory
-            auto result = prep.repository()->notify_plugins_resolve(options.location);
-
-            if (result == PREP_FAILURE || result.values.empty()) {
-                log::error(options.location, " is not a valid prep package");
-                return PREP_FAILURE;
-            }
-
-            options.location = result.values.front();
+        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
+            log::error("unable to find directory containing a package");
+            return PREP_FAILURE;
         }
 
         // load a package.json config
@@ -240,7 +247,6 @@ int main(int argc, char *const argv[])
             log::error("unable to load config at ", options.location);
             return PREP_FAILURE;
         }
-
 
         // build
         return prep.build(config, options, options.location);

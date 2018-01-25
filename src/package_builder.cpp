@@ -49,10 +49,8 @@ namespace micrantha
         {
             auto envVars = environment::build_map();
 
-            vt100::print("\n", color::g("ENV"), ":\n\n");
-
             for (const auto &entry : envVars) {
-                vt100::print(color::c(entry.first), "=", color::w(entry.second), "\n\n");
+                vt100::print(color::c(entry.first), "=", color::w(entry.second), "\n");
             }
         }
 
@@ -184,6 +182,20 @@ namespace micrantha
             return remove(config.name(), opts);
         }
 
+				int PackageBuilder::cleanup(const Package &config, const Options &opts) {
+
+								auto buildDir = repo_.get_build_path(config.name());
+
+								if (directory_exists(buildDir) == PREP_SUCCESS) {
+											if (remove_directory(buildDir) == PREP_FAILURE) {
+															log::error("unable to clean ", buildDir);
+															return PREP_FAILURE;
+											}
+											return PREP_SUCCESS;
+								}
+								log::error("Already clean!");
+								return PREP_FAILURE;
+				}
         int PackageBuilder::remove(const std::string &package_name, const Options &opts)
         {
             std::string installDir = repo_.get_install_path(package_name);
@@ -283,7 +295,6 @@ namespace micrantha
 
             return build_package(config, opts, path);
         }
-
 
         int PackageBuilder::test(const Package &config, const Options &opts) {
 
