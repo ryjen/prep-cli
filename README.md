@@ -268,9 +268,11 @@ TODO
 - [ ] consider sqlite storage
 - [ ] test suite
 - [ ] convert plugins to compiled language
-- [ ] plugin communication may need a better specification as more plugins are needed
 - [ ] plugins may need to be interactive, currently not supported
 - [ ] repository cleanup (builds, old versions, etc)
+- [ ] clion/intellij plugin
+- [ ] ability for plugins to add commands to prep
+- [ ] plugin sdks for languages
 
 
 Building

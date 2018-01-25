@@ -5,16 +5,13 @@
 #include "package_config.h"
 #include "repository.h"
 
-namespace micrantha
-{
-    namespace prep
-    {
+namespace micrantha {
+    namespace prep {
         /**
          * the executor of package building and repository actions
          */
-        class PackageBuilder
-        {
-           public:
+        class PackageBuilder {
+        public:
             //! constructor
             PackageBuilder();
 
@@ -58,6 +55,14 @@ namespace micrantha
             int remove(const Package &config, const Options &opts);
 
             /**
+             * cleans up temporary files and folders for a package
+             * @config the package to remove
+             * @opts the command line options
+             * @return PREP_SUCCESS if cleaned, otherwise PREP_FAILURE
+             */
+            int cleanup(const Package &config, const Options &opts);
+
+            /**
              * links a package to bin path
              * TODO: a specific version
              * @param config the package to link
@@ -97,7 +102,7 @@ namespace micrantha
              */
             std::string get_package_directory(const std::string &name) const;
 
-           private:
+        private:
             /**
              * internal method to remove a package directory structure
              * @param package_name the name of the package

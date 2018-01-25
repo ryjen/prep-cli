@@ -10,6 +10,11 @@ namespace micrantha
     namespace prep
     {
 
+#ifdef _WIN32
+        constexpr const char *const DIR_SYM = "\\";
+#else
+        constexpr const char *const DIR_SYM = "/";
+#endif
         /**
          * runs a command in a forked process
          * @return PREP_SUCCESS or PREP_FAILURE upon error
@@ -74,11 +79,9 @@ namespace micrantha
 
             template<class A0, class... Args>
             void build_sys_path(std::ostream &buf, const A0 &path, const Args &... args) {
-#ifdef _WIN32
-                buf << "\\";
-#else
-                buf << "/";
-#endif
+
+                buf << DIR_SYM;
+
                 buf << path;
 
                 build_sys_path(buf, args...);
