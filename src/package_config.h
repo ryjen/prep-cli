@@ -10,6 +10,12 @@ namespace micrantha
 {
     namespace prep
     {
+        enum class ForceLevel {
+            None,
+            All,
+            Project
+        };
+
         /**
          * options passed from the command line
          */
@@ -21,7 +27,7 @@ namespace micrantha
             // the package location
             std::string location;
             // forces a build
-            bool force_build;
+            ForceLevel force_build;
             // display plugin output
             bool verbose;
             // accept default options

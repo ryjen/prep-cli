@@ -63,7 +63,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            if (!opts.force_build && repo_.has_meta(config) == PREP_SUCCESS) {
+            if (opts.force_build == ForceLevel::None && repo_.has_meta(config) == PREP_SUCCESS) {
                 return PREP_SUCCESS;
             }
 
@@ -182,20 +182,21 @@ namespace micrantha
             return remove(config.name(), opts);
         }
 
-				int PackageBuilder::cleanup(const Package &config, const Options &opts) {
+                int PackageBuilder::cleanup(const Package &config, const Options &opts) {
 
-								auto buildDir = repo_.get_build_path(config.name());
+                                auto buildDir = repo_.get_build_path(config.name());
 
-								if (directory_exists(buildDir) == PREP_SUCCESS) {
-											if (remove_directory(buildDir) == PREP_FAILURE) {
-															log::error("unable to clean ", buildDir);
-															return PREP_FAILURE;
-											}
-											return PREP_SUCCESS;
-								}
-								log::error("Already clean!");
-								return PREP_FAILURE;
-				}
+                                if (directory_exists(buildDir) == PREP_SUCCESS) {
+                                            if (remove_directory(buildDir) == PREP_FAILURE) {
+                                                            log::error("unable to clean ", buildDir);
+                                                            return PREP_FAILURE;
+                                            }
+                                            return PREP_SUCCESS;
+                                }
+                                log::error("Already clean!");
+                                return PREP_FAILURE;
+                }
+
         int PackageBuilder::remove(const std::string &package_name, const Options &opts)
         {
             std::string installDir = repo_.get_install_path(package_name);
@@ -248,7 +249,7 @@ namespace micrantha
             for (const auto &c : config.dependencies()) {
                 std::string package_dir;
 
-                if (!opts.force_build && repo_.exists(c)) {
+                if (opts.force_build != ForceLevel::All && repo_.exists(c)) {
                     log::info("using cached version of ", color::m(config.name()), " dependency ", color::c(c.name()),
                         " [", color::y(c.version()),  "]");
                     continue;
@@ -288,7 +289,7 @@ namespace micrantha
                 }
             }
 
-            if (!opts.force_build && repo_.exists(config)) {
+            if (opts.force_build == ForceLevel::None && repo_.exists(config)) {
                 log::warn("used cached version of ", color::m(config.name()), " [", color::y(config.version()), "]");
                 return PREP_SUCCESS;
             }
