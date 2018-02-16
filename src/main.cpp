@@ -13,16 +13,16 @@ using namespace micrantha::prep;
 
 void print_help(char *exe, const Options &options) {
     printf("Syntax: %s build <package>\n", exe);
-    printf("      : %s test <package>\n", exe);
-    printf("      : %s install <package>\n", exe);
-    printf("      : %s add <package or plugin>\n", exe);
-    printf("      : %s remove <package or plugin>\n", exe);
-    printf("      : %s link <package> [version]\n", exe);
-    printf("      : %s unlink <package>\n", exe);
-    printf("      : %s cleanup [package]\n", exe);
-    printf("      : %s run\n", exe);
-    printf("      : %s env\n", exe);
-    printf("      : %s check\n", exe);
+    printf("        %s test <package>\n", exe);
+    printf("        %s install <package>\n", exe);
+    printf("        %s add <package or plugin>\n", exe);
+    printf("        %s remove <package or plugin>\n", exe);
+    printf("        %s link <package> [version]\n", exe);
+    printf("        %s unlink <package>\n", exe);
+    printf("        %s cleanup [package]\n", exe);
+    printf("        %s run\n", exe);
+    printf("        %s env\n", exe);
+    printf("        %s check\n", exe);
 
     if (!options.verbose) {
         return;
@@ -85,10 +85,11 @@ int find_package_directory(PackageBuilder &prep, Options &options, int argc, int
 
 int main(int argc, char *const argv[]) {
     PackageBuilder prep;
-    Options options{.package_file = Repository::PACKAGE_FILE,
+    Options options{
+			.package_file = Repository::PACKAGE_FILE,
             .global = false,
             .location = ".",
-            .force_build = false,
+            .force_build = ForceLevel::None,
             .verbose = false,
             .defaults = false};
     const char *command = nullptr;
@@ -99,10 +100,8 @@ int main(int argc, char *const argv[]) {
                                    {"force",    no_argument,       0, 'f'},
                                    {"verbose",  no_argument,       0, 'v'},
                                    {"log",      required_argument, 0, 'l'},
-                                   {
-                                    "defaults", no_argument,       0, 1,
-                                   },
-                                   {"help",     no_argument,       0, 0},
+                                   {"defaults", no_argument,       0, 1 },
+                                   {"help",     no_argument,       0, 'h'},
                                    {0, 0,                          0, 0}};
 
     while ((option = getopt_long(argc, argv, "vhgfp:l:", args, &option_index)) != EOF) {
@@ -114,7 +113,7 @@ int main(int argc, char *const argv[]) {
                 options.package_file = optarg;
                 break;
             case 'f':
-                options.force_build = true;
+                options.force_build = ForceLevel::All;
                 break;
             case 'v':
                 options.verbose = true;
@@ -139,18 +138,16 @@ int main(int argc, char *const argv[]) {
         if (prep.initialize(options) != PREP_SUCCESS) {
             return PREP_FAILURE;
         }
-
     } catch (const std::exception &e) {
         log::error(e.what());
         return PREP_FAILURE;
     }
 
-    vt100::disable_user();
-
     if (optind >= argc) {
         command = "build";
     } else {
         command = argv[optind++];
+        options.force_build = ForceLevel::Project;
     }
 
     if (!strcmp(command, "env")) {
@@ -301,7 +298,6 @@ int main(int argc, char *const argv[]) {
         // build
         return prep.install(config, options);
     }
-
 
     if (!strcmp(command, "add")) {
         PackageConfig config;
