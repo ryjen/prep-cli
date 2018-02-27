@@ -264,7 +264,7 @@ TODO
 - [ ] secure plugins (enforce digital signature?, chroot?)
 - [ ] a way to install new plugins
 - [ ] consider RPATH flags
-- [ ] dependencies might be better as a tree rather than a list
+- [ ] dependencies will be better as a tree rather than a list
 - [ ] consider sqlite storage
 - [ ] test suite
 - [ ] convert plugins to compiled language
@@ -273,7 +273,7 @@ TODO
 - [ ] clion/intellij plugin
 - [ ] ability for plugins to add commands to prep
 - [ ] plugin sdks for languages
-
+- [ ] package.json in subdirectory support
 
 Building
 ========
