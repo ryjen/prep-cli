@@ -19,17 +19,17 @@ namespace micrantha
                 auto temp = Repository::get_local_repo();
 
                 if (directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
-                    buf << flag << build_sys_path(Repository::GLOBAL_REPO, folder);
+                    buf << " " << flag << build_sys_path(Repository::GLOBAL_REPO, folder);
                 }
 
                 if (directory_exists(temp) == PREP_SUCCESS) {
-                    buf << flag << build_sys_path(temp, folder);
+                    buf << " " << flag << build_sys_path(temp, folder);
                 }
 
                 temp = environment::get(varName);
 
                 if (!temp.empty()) {
-                    buf << temp;
+                    buf << " " << temp;
                 }
 
                 return buf.str();
