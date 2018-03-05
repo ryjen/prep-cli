@@ -54,11 +54,15 @@ namespace micrantha
              */
             std::map<std::string,std::string> build_map();
 
+            std::map<std::string,std::string> run_map();
+
             /**
              * creates a list of build environment variables
              * @return list of key=value strings
              */
             std::vector<std::string> build_env();
+
+            std::vector<std::string> run_env();
         }
     }
 }

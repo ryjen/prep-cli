@@ -19,7 +19,7 @@ namespace micrantha
            public:
             /* constructors */
             Decompressor(const void *buf, size_t size, const std::string &topath);
-            Decompressor(const std::string &path);
+            explicit Decompressor(const std::string &path);
             Decompressor(const std::string &path, const std::string &topath);
             ~Decompressor();
 

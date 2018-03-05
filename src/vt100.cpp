@@ -174,7 +174,7 @@ namespace micrantha
                 class TTYRead
                 {
                    public:
-                    TTYRead()
+                    TTYRead() : state_(), saved_()
                     {
                         // get state
                         tcgetattr(STDIN_FILENO, &state_);
@@ -336,7 +336,7 @@ namespace micrantha
 
             void disable_user()
             {
-                struct termios state;
+                struct termios state = {};
 
                 // get state
                 tcgetattr(STDIN_FILENO, &state);

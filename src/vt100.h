@@ -181,7 +181,7 @@ namespace micrantha
                     /**
                      * @param mutex the mutex to lock
                      */
-                    Savepoint(Mutex &mutex) noexcept;
+                    explicit Savepoint(Mutex &mutex) noexcept;
                     ~Savepoint() = default;
                     Savepoint(const Savepoint &) = delete;
                     Savepoint(Savepoint &&) = delete;
