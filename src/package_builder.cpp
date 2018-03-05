@@ -194,11 +194,13 @@ namespace micrantha {
                 return PREP_SUCCESS;
             }
 
-            int depCount = repo_.dependency_count(package_name, opts);
+            if (opts.force_build == ForceLevel::None) {
+                int depCount = repo_.dependency_count(package_name, opts);
 
-            if (depCount > 0) {
-                log::warn(depCount, " packages depend on ", package_name);
-                return PREP_FAILURE;
+                if (depCount > 0) {
+                    log::warn(depCount, " packages depend on ", package_name);
+                    return PREP_FAILURE;
+                }
             }
 
             if (repo_.unlink_directory(installDir)) {
