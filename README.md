@@ -258,22 +258,23 @@ This is what prep's configuration to build itself looks like:
 TODO
 ====
 - [ ] website/api for plugins and and configurations for common dependencies
-- [ ] parse archive versions from filename
+- [-] parse archive versions from filename (2018-03-05 currently done in archive plugin)
 - [ ] store md5 hash of configs in meta to detect changes
+- [✓] store sub package.json in meta for dependencies
 - [ ] a way to rebuild a dependency or all dependencies
-- [ ] secure plugins (enforce digital signature?, chroot?)
+- [ ] more security plugins (enforce digital signature?, chroot?)
 - [ ] a way to install new plugins
-- [ ] consider RPATH flags
-- [ ] dependencies will be better as a tree rather than a list
+- [ ] consider RPATH flags for runtime
+- [ ] dependencies will be better as a tree rather than a list (need a good graph lib)
 - [ ] consider sqlite storage
 - [ ] test suite
-- [ ] convert plugins to compiled language
+- [✓] convert plugins to compiled language
 - [ ] plugins may need to be interactive, currently not supported
-- [ ] repository cleanup (builds, old versions, etc)
+- [-] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
 - [ ] clion/intellij plugin
 - [ ] ability for plugins to add commands to prep
 - [ ] plugin sdks for languages
-- [ ] package.json in subdirectory support
+- [ ] package.json in subdirectory support (recursive)
 
 Building
 ========
