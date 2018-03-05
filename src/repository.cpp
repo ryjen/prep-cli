@@ -203,7 +203,11 @@ namespace micrantha
                 log::trace("copying ", config.path(), " to ", metaDir, "...");
 
                 if (copy_file(config.path(), build_sys_path(metaDir, PACKAGE_FILE))) {
-                    log::error("no unable to copy package file ", config.path());
+                    log::error("unable to copy package file ", config.path());
+                }
+            } else {
+                if (config.save(build_sys_path(metaDir, PACKAGE_FILE))) {
+                    log::error("unable to write package file ", config.name());
                 }
             }
 

@@ -86,7 +86,7 @@ int find_package_directory(PackageBuilder &prep, Options &options, int argc, int
 int main(int argc, char *const argv[]) {
     PackageBuilder prep;
     Options options{
-			.package_file = Repository::PACKAGE_FILE,
+            .package_file = Repository::PACKAGE_FILE,
             .global = false,
             .location = ".",
             .force_build = ForceLevel::None,
@@ -95,14 +95,14 @@ int main(int argc, char *const argv[]) {
     const char *command = nullptr;
     int option;
     int option_index = 0;
-    static struct option args[] = {{"global",   no_argument,       0, 'g'},
-                                   {"package",  required_argument, 0, 'p'},
-                                   {"force",    no_argument,       0, 'f'},
-                                   {"verbose",  no_argument,       0, 'v'},
-                                   {"log",      required_argument, 0, 'l'},
-                                   {"defaults", no_argument,       0, 1 },
-                                   {"help",     no_argument,       0, 'h'},
-                                   {0, 0,                          0, 0}};
+    static struct option args[] = {{"global",   no_argument,       nullptr, 'g'},
+                                   {"package",  required_argument, nullptr, 'p'},
+                                   {"force",    no_argument,       nullptr, 'f'},
+                                   {"verbose",  no_argument,       nullptr, 'v'},
+                                   {"log",      required_argument, nullptr, 'l'},
+                                   {"defaults", no_argument,       nullptr, 1},
+                                   {"help",     no_argument,       nullptr, 'h'},
+                                   {nullptr,    0,           nullptr, 0}};
 
     while ((option = getopt_long(argc, argv, "vhgfp:l:", args, &option_index)) != EOF) {
         switch (option) {
@@ -353,7 +353,7 @@ int main(int argc, char *const argv[]) {
         auto directory = prep.get_package_directory(argv[optind]);
 
         if (config.load(directory, options) == PREP_FAILURE) {
-            log::error("unable to load config for ", argv[optind]);
+            log::error("unable to load config at ", directory);
             return PREP_FAILURE;
         }
 

@@ -121,7 +121,7 @@ namespace micrantha {
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
 
-                    log::perror("child process signal %d", sig);
+                    log::perror("child process signal ", sig);
 
                     if (WCOREDUMP(status)) {
                         log::perror("child produced core dump");
@@ -129,7 +129,7 @@ namespace micrantha {
                 } else if (WIFSTOPPED(status)) {
                     int sig = WSTOPSIG(status);
 
-                    log::perror("child process stopped signal %d", sig);
+                    log::perror("child process stopped signal ", sig);
                 } else {
                     log::perror("child process did not exit cleanly");
                 }

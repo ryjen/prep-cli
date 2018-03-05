@@ -3,16 +3,12 @@
 #include "common.h"
 #include "log.h"
 #include "util.h"
-#include "vt100.h"
 
-namespace micrantha
-{
-    namespace prep
-    {
+namespace micrantha {
+    namespace prep {
         PackageBuilder::PackageBuilder() = default;
 
-        int PackageBuilder::initialize(const Options &opts)
-        {
+        int PackageBuilder::initialize(const Options &opts) {
             if (repo_.initialize(opts)) {
                 return PREP_FAILURE;
             }
@@ -24,8 +20,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int PackageBuilder::load(const Options &opts)
-        {
+        int PackageBuilder::load(const Options &opts) {
             vt100::Progress progress;
 
             if (repo_.validate_plugins(opts) == PREP_FAILURE) {
@@ -40,13 +35,11 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        Repository *PackageBuilder::repository()
-        {
+        Repository *PackageBuilder::repository() {
             return &repo_;
         }
 
-        void PackageBuilder::print_env() const
-        {
+        void PackageBuilder::print_env() const {
             auto envVars = environment::build_map();
 
             for (const auto &entry : envVars) {
@@ -54,8 +47,7 @@ namespace micrantha
             }
         }
 
-        int PackageBuilder::build_package(const Package &config, const Options &opts, const std::string &path)
-        {
+        int PackageBuilder::build_package(const Package &config, const Options &opts, const std::string &path) {
             std::string installPath, buildPath;
 
             if (!config.is_loaded()) {
@@ -102,8 +94,7 @@ namespace micrantha
         }
 
 
-        int PackageBuilder::test_package(const Package &config, const std::string &path)
-        {
+        int PackageBuilder::test_package(const Package &config, const std::string &path) {
             std::string installPath, buildPath;
 
             if (!config.is_loaded()) {
@@ -132,8 +123,7 @@ namespace micrantha
         }
 
 
-        int PackageBuilder::install_package(const Package &config, const std::string &path)
-        {
+        int PackageBuilder::install_package(const Package &config, const std::string &path) {
             std::string buildPath;
 
             if (!config.is_loaded()) {
@@ -160,13 +150,12 @@ namespace micrantha
 
             return PREP_SUCCESS;
         }
-        std::string PackageBuilder::get_package_directory(const std::string &name) const
-        {
+
+        std::string PackageBuilder::get_package_directory(const std::string &name) const {
             return repo_.get_meta_path(name);
         }
 
-        int PackageBuilder::remove(const Package &config, const Options &opts)
-        {
+        int PackageBuilder::remove(const Package &config, const Options &opts) {
             // otherwise were removing this package
             if (!config.is_loaded()) {
                 log::error("configuration not loaded");
@@ -182,23 +171,22 @@ namespace micrantha
             return remove(config.name(), opts);
         }
 
-                int PackageBuilder::cleanup(const Package &config, const Options &opts) {
+        int PackageBuilder::cleanup(const Package &config, const Options &opts) {
 
-                                auto buildDir = repo_.get_build_path(config.name());
+            auto buildDir = repo_.get_build_path(config.name());
 
-                                if (directory_exists(buildDir) == PREP_SUCCESS) {
-                                            if (remove_directory(buildDir) == PREP_FAILURE) {
-                                                            log::error("unable to clean ", buildDir);
-                                                            return PREP_FAILURE;
-                                            }
-                                            return PREP_SUCCESS;
-                                }
-                                log::error("Already clean!");
-                                return PREP_FAILURE;
+            if (directory_exists(buildDir) == PREP_SUCCESS) {
+                if (remove_directory(buildDir) == PREP_FAILURE) {
+                    log::error("unable to clean ", buildDir);
+                    return PREP_FAILURE;
                 }
+                return PREP_SUCCESS;
+            }
+            log::error("Already clean!");
+            return PREP_FAILURE;
+        }
 
-        int PackageBuilder::remove(const std::string &package_name, const Options &opts)
-        {
+        int PackageBuilder::remove(const std::string &package_name, const Options &opts) {
             std::string installDir = repo_.get_install_path(package_name);
 
             if (directory_exists(installDir) != PREP_SUCCESS) {
@@ -251,7 +239,7 @@ namespace micrantha
 
                 if (opts.force_build != ForceLevel::All && repo_.exists(c)) {
                     log::info("using cached version of ", color::m(config.name()), " dependency ", color::c(c.name()),
-                        " [", color::y(c.version()),  "]");
+                              " [", color::y(c.version()), "]");
                     continue;
                 }
 
@@ -350,8 +338,7 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int PackageBuilder::link_package(const Package &config) const
-        {
+        int PackageBuilder::link_package(const Package &config) const {
             if (!config.is_loaded()) {
                 log::error("config is not loaded");
                 return PREP_FAILURE;
@@ -362,8 +349,7 @@ namespace micrantha
             return repo_.link_directory(packageInstall);
         }
 
-        int PackageBuilder::unlink_package(const Package &config) const
-        {
+        int PackageBuilder::unlink_package(const Package &config) const {
             if (!config.is_loaded()) {
                 log::error("config is not loaded");
                 return PREP_FAILURE;
@@ -374,8 +360,7 @@ namespace micrantha
             return repo_.unlink_directory(packageInstall);
         }
 
-        int PackageBuilder::execute(const Package &config, int argc, char *const *argv) const
-        {
+        int PackageBuilder::execute(const Package &config, int argc, char *const *argv) const {
             if (!config.is_loaded()) {
                 log::error("config is not loaded");
                 return PREP_FAILURE;
@@ -393,11 +378,33 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            int err = system(executable.c_str());
+            std::vector<char*> args;
+
+            auto fname = config.executable();
+
+            args.push_back(&fname[0]);
+
+            for (int i = 1; i < argc; i++) {
+                args.push_back(argv[i]);
+            }
+
+            args.push_back(nullptr);
+
+            auto runEnv = environment::run_env();
+
+            std::vector<char*> envp;
+
+            for (auto e : runEnv) {
+                envp.push_back(&e[0]);
+            }
+
+            envp.push_back(nullptr);
+
+            int err = fork_command(executable, const_cast<char*const*>(&args[0]), nullptr, const_cast<char*const*>(&envp[0]));
 
             switch (err) {
                 case -1:
-                return PREP_ERROR;
+                    return PREP_ERROR;
                 case 127:
                     return PREP_FAILURE;
                 default:

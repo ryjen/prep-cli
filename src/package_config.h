@@ -70,6 +70,8 @@ namespace micrantha
              */
             virtual int load(const std::string &path, const Options &opts) = 0;
 
+            int save(const std::string &path) const;
+
             /**
              * gets the plugin specific configuration defined the package configuration
              * @param plugin the plugin to get configuration for

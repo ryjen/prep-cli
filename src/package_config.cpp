@@ -103,6 +103,31 @@ namespace micrantha
             return file.is_open() ? PREP_SUCCESS : PREP_FAILURE;
         }
 
+        int Package::save(const std::string &path) const
+        {
+            std::ofstream file;
+
+            if (path.empty()) {
+                return PREP_FAILURE;
+            }
+
+            if (values_.empty()) {
+                log::debug("invalid config for ", path);
+                return PREP_FAILURE;
+            }
+
+            file.open(path);
+
+            if (!file.is_open()) {
+                log::debug("unable to open ", path);
+                return PREP_FAILURE;
+            }
+
+            file << values_.dump();
+
+            return PREP_SUCCESS;
+        }
+
         int PackageConfig::load(const std::string &path, const Options &opts)
         {
             std::ifstream file;

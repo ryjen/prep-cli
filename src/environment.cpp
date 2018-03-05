@@ -79,6 +79,16 @@ namespace micrantha
             setenv(key.c_str(), value.c_str(), overwrite);
         }
 
+        std::vector<std::string> environment::run_env() {
+
+            std::vector<std::string> env;
+
+            for( const auto &entry : run_map()) {
+                env.push_back(entry.first + "=" + entry.second);
+            }
+            return env;
+        }
+
         std::vector<std::string> environment::build_env() {
             std::vector<std::string> env;
 
@@ -88,19 +98,27 @@ namespace micrantha
             return env;
         }
 
+
+        std::map<std::string, std::string> environment::run_map()
+        {
+            return {
+                    { "LD_LIBRARY_PATH", build::path("LD_LIBRARY_PATH", "lib")},
+                    { "PATH", build::path("PATH", "bin") },
+#ifdef __APPLE__
+                    { "DYLD_FALLBACK_LIBRARY_PATH", build::path("DYLD_FALLBACK_LIBRARY_PATH", "lib") },
+#endif
+            };
+        }
+
         std::map<std::string, std::string> environment::build_map()
         {
-            return { { "CXXFLAGS", build::flags("CXXFLAGS", "-I", "include") },
-                     { "LDFLAGS", build::flags("LDFLAGS", "-L", "lib") },
-                     { "PATH", build::path("PATH", "bin") },
-                     { "PKG_CONFIG_PATH", build::path("PKG_CONFIG_PATH", "lib/pkgconfig") },
-                     {
-#ifdef __APPLE__
-                            "DYLD_LIBRARY_PATH", build::path("DYLD_LIBRARY_PATH", "lib")
-#else
-                            "LD_LIBRARY_PATH", build::path("LD_LIBRARY_PATH", "lib")
-#endif
-                    }};
+            auto map = run_map();
+
+            map["CXXFLAGS"] = build::flags("CXXFLAGS", "-I", "include");
+            map["LDFLAGS"] = build::flags("LDFLAGS", "-L", "lib");
+            map["PKG_CONFIG_PATH"] = build::path("PKG_CONFIG_PATH", "lib/pkgconfig");
+
+            return map;
         }
     }
 }

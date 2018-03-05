@@ -1,6 +1,6 @@
 
 #include <fstream>
-#include <signal.h>
+#include <csignal>
 #include <sstream>
 #include <thread>
 #include <unistd.h>
@@ -9,9 +9,9 @@
 #include <vector>
 
 #include "common.h"
+#include "package_config.h"
 #include "environment.h"
 #include "log.h"
-#include "package_config.h"
 #include "plugin.h"
 #include "util.h"
 
@@ -242,7 +242,7 @@ namespace micrantha
 
             auto config = Package::json_type::parse(buf.str().c_str());
 
-            if (config.size() == 0) {
+            if (config.empty()) {
                 log::error("invalid configuration for plugin [", name_, "]");
                 return PREP_FAILURE;
             }
@@ -468,7 +468,7 @@ namespace micrantha
                 // otherwise we are the parent process...
                 int status = 0;
                 internal::Interpreter interpreter;
-                struct termios tios;
+                struct termios tios = {};
 
                 // set some terminal flags to remove local echo
                 tcgetattr(master, &tios);
@@ -485,8 +485,8 @@ namespace micrantha
 
                 // start the io loop with child
                 for (;;) {
-                    fd_set read_fd;
-                    fd_set write_fd;
+                    fd_set read_fd = {};
+                    fd_set write_fd = {};
                     fd_set except_fd;
                     std::string line;
 
