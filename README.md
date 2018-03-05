@@ -275,6 +275,7 @@ TODO
 - [ ] ability for plugins to add commands to prep
 - [ ] plugin sdks for languages
 - [ ] package.json in subdirectory support (recursive)
+- [ ] a strategy to lose dependency on 'prep run' (move library dependencies to system path)
 
 Building
 ========
