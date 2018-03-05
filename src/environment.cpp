@@ -55,8 +55,16 @@ namespace micrantha
                     paths.push_back(temp);
                 }
 
+
                 ostringstream buf;
-                std::copy(paths.begin(), paths.end(), std::ostream_iterator<std::string>(buf, ":"));
+
+                for (auto it = paths.begin(); it != paths.end(); ++it) {
+                    buf << *it;
+
+                    if (it + 1 != paths.end()) {
+                        buf << ":";
+                    }
+                }
                 return buf.str();
             }
         }

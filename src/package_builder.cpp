@@ -39,12 +39,37 @@ namespace micrantha {
             return &repo_;
         }
 
-        void PackageBuilder::print_env() const {
+        int PackageBuilder::print_env(char *const var) const {
+
+            if (var && !strcasecmp(var, "prefix")) {
+                auto temp = Repository::get_local_repo();
+
+                if (directory_exists(temp) == PREP_SUCCESS) {
+                   vt100::print(temp, "\n");
+                    return PREP_SUCCESS;
+                }
+
+                if (directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
+                    vt100::print(Repository::GLOBAL_REPO);
+                    return PREP_SUCCESS;
+                }
+                return PREP_FAILURE;
+            }
+
             auto envVars = environment::build_map();
 
+            bool found = !var;
+
             for (const auto &entry : envVars) {
-                vt100::print(color::c(entry.first), "=", color::w(entry.second), "\n");
+
+                if (!var) {
+                    vt100::print(entry.first, "=", entry.second, "\n");
+                } else if (!strcasecmp(var, entry.first.c_str())) {
+                    vt100::print(entry.second, "\n");
+                    found = true;
+                }
             }
+            return found ? PREP_SUCCESS : PREP_FAILURE;
         }
 
         int PackageBuilder::build_package(const Package &config, const Options &opts, const std::string &path) {
