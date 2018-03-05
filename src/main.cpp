@@ -151,8 +151,11 @@ int main(int argc, char *const argv[]) {
     }
 
     if (!strcmp(command, "env")) {
-        prep.print_env();
-        return PREP_SUCCESS;
+        if (optind < argc) {
+            return prep.print_env(argv[optind]);
+        } else {
+            return prep.print_env(nullptr);
+        }
     }
 
     if (!strcmp(command, "unlink")) {

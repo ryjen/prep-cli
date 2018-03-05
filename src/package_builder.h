@@ -87,10 +87,11 @@ namespace micrantha {
             int execute(const Package &config, int argc, char *const *argv) const;
 
             /**
-             * adds preps bin path to shell configuration
-             * TODO: might deprecate this
+             * prints sourceable environment variables
+             * @param var print a specific variable value
+             * @return PREP_SUCCESS if something was printed, otherwise PREP_FAILURE
              */
-            void print_env() const;
+            int print_env(char *const var) const;
 
             /**
              * gets the repository used for building
