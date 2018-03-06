@@ -34,6 +34,7 @@ namespace micrantha
 
             /**
              * creates LDFLAGS for linking using the specified var name
+             * NOTE: paths are based on the current repository if exists
              * @param varName the name of the variable to append preps link flags with
              * @return the link flags with preps link flags
              */
@@ -41,27 +42,44 @@ namespace micrantha
 
             /**
              * creates the bin path with preps bin path
+             * NOTE: paths are based on the current repository if exists
+             * @return a colon separated path string
              */
             std::string build_path(const std::string &varName);
 
             /**
              * creates the link path with preps link path
+             * NOTE: paths are based on the current repository if exists
+             * @return a colon separated path string
              */
             std::string build_ldpath(const std::string &varName);
 
             /**
              * creates a map of build variable keys and values (build, link, and paths)
+             * NOTE: paths are based on the current repository if exists
+             * @return a map of environment variables
              */
             std::map<std::string,std::string> build_map();
 
+            /**
+             * creates a map of runtime variable keys and values
+             * NOTE: paths are based on the current repository if exists
+             * @return a map of environment variables
+             */
             std::map<std::string,std::string> run_map();
 
             /**
              * creates a list of build environment variables
+             * NOTE: paths are based on the current repository if exists
              * @return list of key=value strings
              */
             std::vector<std::string> build_env();
 
+            /**
+             * creates a list of runtime environment variables
+             * NOTE: paths are based on the current repository if exists
+             * @return a list of key=value strings
+             */
             std::vector<std::string> run_env();
         }
     }

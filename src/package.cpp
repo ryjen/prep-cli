@@ -4,7 +4,7 @@
 
 #include "common.h"
 #include "log.h"
-#include "package_config.h"
+#include "package.h"
 #include "plugin.h"
 #include "repository.h"
 #include "util.h"
