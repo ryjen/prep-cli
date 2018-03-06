@@ -5,35 +5,12 @@
 #include <string>
 #include <vector>
 #include "json.hpp"
+#include "options.h"
 
 namespace micrantha
 {
     namespace prep
     {
-        enum class ForceLevel {
-            None,
-            All,
-            Project
-        };
-
-        /**
-         * options passed from the command line
-         */
-        typedef struct Options {
-            // use global repository
-            bool global;
-            // the package file/name
-            std::string package_file;
-            // the package location
-            std::string location;
-            // forces a build
-            ForceLevel force_build;
-            // display plugin output
-            bool verbose;
-            // accept default options
-            bool defaults;
-        } Options;
-
         // forward declarations
         class PackageDependency;
         class Plugin;

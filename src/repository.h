@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-#include "package_config.h"
+#include "package.h"
 #include "plugin.h"
 
 namespace micrantha {

@@ -6,7 +6,8 @@
 
 #include "common.h"
 #include "log.h"
-#include "package_builder.h"
+#include "controller.h"
+#include "options.h"
 #include "util.h"
 
 using namespace micrantha::prep;
@@ -62,7 +63,7 @@ void print_help(char *exe, const Options &options) {
     printf("     cleans temp files and folders for a package or the entire repository\n");
 }
 
-int find_package_directory(PackageBuilder &prep, Options &options, int argc, int index, char *const argv[]) {
+int find_package_directory(Controller &prep, Options &options, int argc, int index, char *const argv[]) {
     if (index < 0 || index >= argc) {
         char cwd[PATH_MAX] = {0};
         options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
@@ -84,7 +85,7 @@ int find_package_directory(PackageBuilder &prep, Options &options, int argc, int
 }
 
 int main(int argc, char *const argv[]) {
-    PackageBuilder prep;
+    Controller prep;
     Options options{
             .package_file = Repository::PACKAGE_FILE,
             .global = false,
@@ -170,7 +171,7 @@ int main(int argc, char *const argv[]) {
             return PREP_FAILURE;
         }
 
-        return prep.unlink_package(config);
+        return prep.unlink(config);
     }
     if (!strcmp(command, "link")) {
         PackageConfig config;
@@ -184,7 +185,7 @@ int main(int argc, char *const argv[]) {
             return PREP_FAILURE;
         }
 
-        return prep.link_package(config);
+        return prep.link(config);
     }
 
     if (!strcmp(command, "check")) {

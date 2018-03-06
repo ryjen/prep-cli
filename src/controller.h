@@ -2,7 +2,7 @@
 #define MICRANTHA_PREP_PACKAGE_BUILDER_H
 
 #include "environment.h"
-#include "package_config.h"
+#include "package.h"
 #include "repository.h"
 
 namespace micrantha {
@@ -10,10 +10,10 @@ namespace micrantha {
         /**
          * the executor of package building and repository actions
          */
-        class PackageBuilder {
+        class Controller {
         public:
             //! constructor
-            PackageBuilder();
+            Controller();
 
             //! initializes this instance
             // @param opts the options to initialize with
@@ -68,14 +68,14 @@ namespace micrantha {
              * @param config the package to link
              * @return PREP_SUCCESS if linked, otherwise PREP_FAILURE
              */
-            int link_package(const Package &config) const;
+            int link(const Package &config) const;
 
             /**
              * unlinks a package from bin path
              * @param config the package to unlink
              * @return PREP_SUCCESS if unlinked, otherwise PREP_FAILURE
              */
-            int unlink_package(const Package &config) const;
+            int unlink(const Package &config) const;
 
             /**
              * executes a package from bin path
@@ -91,7 +91,7 @@ namespace micrantha {
              * @param var print a specific variable value
              * @return PREP_SUCCESS if something was printed, otherwise PREP_FAILURE
              */
-            int print_env(char *const var) const;
+            int print_env(char *const name = nullptr) const;
 
             /**
              * gets the repository used for building

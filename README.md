@@ -6,7 +6,7 @@ Prep is a modular package manager and build tool for c/c++ projects.  Yes, the c
 
 **Prep will manage dependencies, paths and flags for building and running c/c++ projects.**
 
-I no longer have time to maintain this project, so I'm releasing to open source.
+I don't have time to maintain this project, so I'm releasing to open source.
 
 ![Prep Building Itself](prep.gif)
 
@@ -161,7 +161,7 @@ Under the repository:
 
 **/kitchen/build** : a separate directory for compiling
 
-packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep setpath```
+packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep setpath```  (TODO: Clarify this more)
 
 
 
@@ -171,34 +171,36 @@ Configuration
 The configuration for a project is simple a **package.json** file containing the json.  The fields are as follows:
 
 #### name
-the name of the project
+the name of the project as a string
 
 #### version
-the version of the project
+the version of the project as a string
 
 #### build_system
-an array of build plugins that define how to make a build.  So if your project uses cmake, you would define **cmake**, then **make**.  the plugins are executed in order of specification.
+an array of strings identifying build plugins that define how to make a build.  So if your project uses cmake, you would define **cmake**, then **make**.  the plugins are executed in the order of specified.
 
 #### build_options
-an array of options to pass directly to the build system.  You also have the option of using CXXFLAGS and LDFLAGS environment variables. (Might switch to RPATH, see TODO)
+an array of strings to pass directly to the build system.  You have the option of using environment variables or compiler switches.
 
 #### executable
-the name of the executable or library to build
+the name of the executable or library to build as a string
 
 #### dependencies
-an array of this configuration type objects defining each dependency.  Dependencies can be resolved using **resolver** plugins. Dependencies can also have dependencies. 
+an array of this configuration type defining each dependency.  Dependencies will be resolved using **resolver** plugins in the order specified. Dependencies can also have dependencies. 
 
 #### &lt;plugin&gt;
 A plugin can define its own options to override.  For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
 
 
 ```JSON
-{
+"dependencies": [
+  {
 	"name": "somelib",
 	"homebrew": {
 		"name": "altlibname"
 	}
-}
+  }
+],
 ```
 
 ### Example configuration:
@@ -280,11 +282,11 @@ TODO
 Building
 ========
 
-Just make sure you do a ```git submodule update --init --recursive``` and have libarchive and perl installed
+Just make sure you do a ```git submodule update --init --recursive```.  The rest I leave up to you. 
 
 Contributing
 ============
 
 Create an issue/feature, fork, build, send pull request.  Upon approval add your name to AUTHORS.
-Also looking for maintainers.
+Also looking for maintainers, start a conversation.
 

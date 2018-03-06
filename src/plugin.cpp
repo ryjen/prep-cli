@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "common.h"
-#include "package_config.h"
+#include "package.h"
 #include "environment.h"
 #include "log.h"
 #include "plugin.h"

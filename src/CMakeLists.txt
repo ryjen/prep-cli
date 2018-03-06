@@ -9,8 +9,8 @@ set(LIBRARY_FILES
 
 # define source files for the binary
 set(SOURCE_FILES
-    package_builder.cpp
-    package_config.cpp
+    controller.cpp
+    package.cpp
     plugin.cpp
     plugins_archive.cpp
     repository.cpp)
