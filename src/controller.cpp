@@ -21,8 +21,6 @@ namespace micrantha {
         }
 
         int Controller::load(const Options &opts) {
-            vt100::Progress progress;
-
             if (repo_.validate_plugins(opts) == PREP_FAILURE) {
                 return PREP_FAILURE;
             }
@@ -260,8 +258,6 @@ namespace micrantha {
                 return PREP_FAILURE;
             }
 
-            vt100::Progress progress;
-
             log::info("preparing package ", color::m(config.name()), " [", color::y(config.version()), "]");
 
             for (const auto &c : config.dependencies()) {
@@ -315,6 +311,61 @@ namespace micrantha {
             return build_package(config, opts, path);
         }
 
+        int Controller::get(const Package &config, const Options &opts, const std::string &path) {
+
+            if (!config.is_loaded()) {
+                log::error("config is not loaded");
+                return PREP_FAILURE;
+            }
+
+            log::info("preparing package ", color::m(config.name()), " [", color::y(config.version()), "]");
+
+            for (const auto &c : config.dependencies()) {
+                std::string package_dir;
+
+                if (opts.force_build != ForceLevel::All && repo_.exists(c)) {
+                    log::info("using cached version of ", color::m(config.name()), " dependency ", color::c(c.name()),
+                              " [", color::y(c.version()), "]");
+                    continue;
+                }
+
+                log::info("preparing ", color::m(config.name()), " dependency ", color::c(c.name()), " [",
+                          color::y(c.version()), "]");
+
+                // try to add via plugin
+                if (repo_.notify_plugins_add(c) == PREP_SUCCESS) {
+
+                    if (repo_.save_meta(c)) {
+                        log::warn("unable to save meta data for ", config.name());
+                    }
+                    continue;
+                }
+
+                // then try to resolve the source
+                auto result = repo_.notify_plugins_resolve(c);
+
+                if (result != PREP_SUCCESS || result.values.empty()) {
+                    log::error("[", config.name(), "] could not resolve dependency [", c.name(), "]");
+                    return PREP_FAILURE;
+                }
+
+                package_dir = result.values.front();
+
+                // build the dependency source
+                if (build(c, opts, package_dir) != PREP_SUCCESS) {
+                    log::error("unable to build dependency ", c.name());
+                    return PREP_FAILURE;
+                }
+
+                if (install(c, opts) != PREP_SUCCESS) {
+                    log::error("unable to install dependency ", c.name());
+                    return PREP_FAILURE;
+                }
+            }
+
+            return PREP_SUCCESS;
+        }
+
         int Controller::test(const Package &config, const Options &opts) {
 
             if (!config.is_loaded()) {
@@ -326,8 +377,6 @@ namespace micrantha {
                 log::error("Cannot test ", config.name(), " try building first");
                 return PREP_FAILURE;
             }
-
-            vt100::Progress progress;
 
             log::info("testing package ", color::m(config.name()), " [", color::y(config.version()), "]");
 
@@ -347,8 +396,6 @@ namespace micrantha {
                 log::error("Cannot install ", config.name(), " try building first");
                 return PREP_FAILURE;
             }
-
-            vt100::Progress progress;
 
             log::info("installing package ", color::m(config.name()), " [", color::y(config.version()), "]");
 

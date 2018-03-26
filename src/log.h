@@ -4,6 +4,7 @@
 #include <cstring>
 #include <ostream>
 #include <cerrno>
+#include <iostream>
 
 #include "vt100.h"
 
@@ -27,23 +28,81 @@ namespace micrantha {
                             Trace = 5
                 } Type;
 
-                void set(const char *name);
+                bool set(const char *name);
 
                 bool valid(Type value);
 
                 std::string format(level::Type value);
             }
 
+            namespace output {
+
+                std::ostream &get();
+
+                bool set(const char *name);
+
+                bool is_file();
+
+                /**
+                 * utility method for variadic print
+                 * @param os the output stream
+                 * @return the output stream
+                 */
+                std::ostream &print(std::ostream &os);
+
+                /**
+                 * variadic print
+                 * @tparam A0 the type of argument
+                 * @tparam Args the remaining arguments
+                 * @param os the output stream
+                 * @param a0 the argument
+                 * @param args the remaining arguments
+                 * @return
+                 */
+                template <class A0, class... Args>
+                std::ostream &print(std::ostream &os, const A0 &a0, const Args &... args)
+                {
+                    // print the argument
+                    os << a0;
+                    // print the remaining arguments
+                    return print(os, args...);
+                }
+
+                /**
+                 * variadic print
+                 * @tparam Args the arguments
+                 * @param os the output stream
+                 * @param args the arguments
+                 * @return the output stream
+                 */
+                template <class... Args>
+                std::ostream &print(std::ostream &os, const Args &... args)
+                {
+                    // pass the first argument to the printer
+                    return print(os, args...);
+                }
+
+                /**
+                 * variadic print
+                 * @tparam Args the type of arguments
+                 * @param args the arguments
+                 * @return the output stream
+                 */
+                template <class... Args>
+                std::ostream &print(const Args &... args)
+                {
+                    return print(get(), args...);
+                }
+            }
+
             using namespace level;
-            namespace callback = vt100::output;
 
             template<class ...Args>
             void info(const Args &...args) {
                 if (!valid(Info)) {
                     return;
                 }
-                vt100::print(format(Info), args..., "\n") << std::flush;
-                callback::on_newline();
+                output::print(format(Info), args..., "\n") << std::flush;
             }
 
             template<class ...Args>
@@ -51,8 +110,7 @@ namespace micrantha {
                 if (!valid(Debug)) {
                     return;
                 }
-                vt100::print(format(Debug), args..., "\n") << std::flush;
-                callback::on_newline();
+                output::print(format(Debug), args..., "\n") << std::flush;
             }
 
             template<class ...Args>
@@ -60,8 +118,7 @@ namespace micrantha {
                 if (!valid(Error)) {
                     return;
                 }
-                vt100::print(format(Error), args..., "\n") << std::flush;
-                callback::on_newline();
+                output::print(format(Error), args..., "\n") << std::flush;
             }
 
             template<class ...Args>
@@ -69,8 +126,7 @@ namespace micrantha {
                 if (!valid(Warn)) {
                     return;
                 }
-                vt100::print(format(Warn), args..., "\n") << std::flush;
-                callback::on_newline();
+                output::print(format(Warn), args..., "\n") << std::flush;
             }
 
             template<class ...Args>
@@ -78,8 +134,7 @@ namespace micrantha {
                 if (!valid(Trace)) {
                     return;
                 }
-                vt100::print(format(Trace), args..., "\n") << std::flush;
-                callback::on_newline();
+                output::print(format(Trace), args..., "\n") << std::flush;
             }
 
             template<class ...Args>

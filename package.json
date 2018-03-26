@@ -21,12 +21,26 @@
 		},
 		{
 			"name": "libdigidocpp",
-			"version": "3.13.2",
-			"archive": {
-				"location": "https://github.com/open-eid/libdigidocpp/releases/download/v3.13.2/libdigidocpp-3.13.2.tar.gz"
+			"version": "3.13.4",
+			"git": {
+				"location": "https://github.com/open-eid/libdigidocpp.git#v3.13.4"
 			},
 			"build_system": [
 				"cmake", "make"
+			],
+			"dependencies": [
+				{
+					"name": "xerces-c",
+					"version": "3.2.1"
+				},
+				{
+					"name": "xml-security-c",
+					"version": "1.7.3"
+				},
+				{
+					"name": "xsd",
+					"version": "4.0.0"
+				}
 			]
 		}
 	]

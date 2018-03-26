@@ -27,48 +27,6 @@ namespace micrantha
             namespace output
             {
                 /**
-                 * utility class for output callbacks
-                 */
-                class Callback
-                {
-                   public:
-                    // a callback function type
-                    typedef std::function<void()> Type;
-                    // a list of callbacks
-                    typedef std::map<std::size_t, Type> List;
-
-                    /**
-                     * executes the callbacks
-                     * @return a reference to this instance
-                     */
-                    Callback &operator()();
-
-                    /**
-                     * adds a callback to this
-                     * @param key the unique key of the callback
-                     * @param value the callback value
-                     * @return a reference to this instance
-                     */
-                    Callback &add(std::size_t key, const Type &value);
-
-                    /**
-                     * removes a callback from this
-                     * @param key the unique key of the callback
-                     * @return
-                     */
-                    Callback &remove(std::size_t key);
-
-                   private:
-                    List values_;
-                    Mutex mutex_;
-                };
-
-                /**
-                 * callback for output new lines
-                 */
-                extern Callback on_newline;
-
-                /**
                  * utility method for variadic print
                  * @param os the output stream
                  * @return the output stream
@@ -150,12 +108,6 @@ namespace micrantha
                 constexpr static const char *const REPORT = "\033[6n";
 
                 /**
-                 * cursor methods have their own mutex
-                 * @return the single instance mutex
-                 */
-                Mutex &get_mutex();
-
-                /**
                  * sets the cursor position
                  * @param rows
                  * @param cols
@@ -171,38 +123,6 @@ namespace micrantha
                  * @return PREP_SUCCESS or PREP_FAILURE
                  */
                 int get(int &rows, int &cols);
-
-                /**
-                 * RAII class to save and restore a cursor position
-                 */
-                class Savepoint
-                {
-                   public:
-                    /**
-                     * @param mutex the mutex to lock
-                     */
-                    explicit Savepoint(Mutex &mutex) noexcept;
-                    ~Savepoint() = default;
-                    Savepoint(const Savepoint &) = delete;
-                    Savepoint(Savepoint &&) = delete;
-                    Savepoint &operator=(const Savepoint &) = delete;
-                    Savepoint &operator=(Savepoint &&) = delete;
-
-                   private:
-                    class Restore
-                    {
-                       public:
-                        Restore() = default;
-                        ~Restore();
-                        Restore(const Restore &) = delete;
-                        Restore(Restore &&) = delete;
-                        Restore &operator=(const Restore &) = delete;
-                        Restore &operator=(Restore &&) = delete;
-                    };
-                    // deconstruct restore first
-                    Restore restore_;
-                    std::lock_guard<Mutex> guard_;
-                };
             }
 
             /**
@@ -214,53 +134,6 @@ namespace micrantha
              * turn off user input
              */
             void disable_user();
-
-            /**
-             * RAII class to display a progress indicator, will disappear on scope loss
-             */
-            class Progress
-            {
-               public:
-                Progress() noexcept;
-                ~Progress();
-                Progress(const Progress &) = delete;
-                Progress(Progress &&) = delete;
-                Progress &operator=(const Progress &) = delete;
-                Progress &operator=(Progress &&) = delete;
-
-               private:
-                /**
-                 * a hash code for this object
-                 * @return a unique code for this object
-                 */
-                std::size_t key() const;
-
-                /**
-                 * updates the progress indicator
-                 */
-                void update();
-
-                /**
-                 * resets and removes the progress indicator
-                 */
-                void reset();
-
-                /**
-                 * runs the animation
-                 */
-                void run();
-
-                /**
-                 * initializes the progress state
-                 */
-                void init();
-
-                bool alive_;
-                int row_;
-                output::Callback::Type callback_;
-                std::thread bg_;
-                Mutex mutex_;
-            };
         }
 
         // color related utils
@@ -303,6 +176,14 @@ namespace micrantha
              * @return a string with vt100 color information
              */
             std::string colorize(const std::vector<Value> &colors, const std::string &value, bool reset = true);
+
+            /**
+             * parse a string into a color:
+             * Can be r,g,b,y,c,w
+             * @param value
+             * @return the color value
+             */
+            std::string apply(const std::string &color, const std::string &value, bool reset = true);
 
             /**
              * apply BLACK to text
@@ -359,6 +240,7 @@ namespace micrantha
              * @return the text wrapped in WHITE
              */
             std::string w(const std::string &value);
+
         }
     }
 }

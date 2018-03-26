@@ -32,6 +32,13 @@ namespace micrantha {
             // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
             int build(const Package &config, const Options &opts, const std::string &path);
 
+            //! gets dependencies for a package in a path
+            // @param config the package config
+            // @param opts the session options
+            // @param path the path the source is in
+            // @returns PREP_SUCCESS or PREP_FAILURE if an error occurred
+            int get(const Package &config, const Options &opts, const std::string &path);
+
             //! tests a package in a path
             // @param config the package config
             // @param opts the session options

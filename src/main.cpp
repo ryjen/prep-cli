@@ -13,9 +13,10 @@
 using namespace micrantha::prep;
 
 void print_help(char *exe, const Options &options) {
-    printf("Syntax: %s build <package>\n", exe);
-    printf("        %s test <package>\n", exe);
-    printf("        %s install <package>\n", exe);
+    printf("Syntax: %s build [package]\n", exe);
+    printf("        %s test [package]\n", exe);
+    printf("        %s install [package]\n", exe);
+    printf("        %s get [package]\n", exe);
     printf("        %s add <package or plugin>\n", exe);
     printf("        %s remove <package or plugin>\n", exe);
     printf("        %s link <package> [version]\n", exe);
@@ -39,12 +40,14 @@ void print_help(char *exe, const Options &options) {
     printf("Concepts:\n");
     printf(" <package> can be a package url, git url, plugin, archive file or directory\n\n");
     printf("Commands:\n");
-    printf("\n  build <package>\n");
+    printf("\n  build [package]\n");
     printf("     resolves and builds a package or plugin to the repository.\n");
-    printf("\n  test <package>\n");
+    printf("\n  test [package]\n");
     printf("     test a package or plugin that has already been built.\n");
-    printf("\n  install <package>\n");
+    printf("\n  install [package]\n");
     printf("     installs a package or plugin to the repository.\n");
+    printf("\n  get [package]\n");
+    printf("     gets a package or packages for dependencies only.\n");
     printf("\n  add <package or plugin>\n");
     printf("     adds a package or plugin to the repository\n");
     printf("\n  remove <package or plugin>\n");
@@ -120,7 +123,20 @@ int main(int argc, char *const argv[]) {
                 options.verbose = true;
                 break;
             case 'l':
-                log::level::set(optarg);
+                if (!log::level::set(optarg)) {
+
+                    if (strcasecmp(optarg, "FILE")) {
+                        puts("Unknown log level");
+                        return PREP_FAILURE;
+                    }
+
+                    if (optind >= argc) {
+                        puts("You must specify a log file");
+                        return PREP_FAILURE;
+                    }
+
+                    log::output::set(argv[optind++]);
+                }
                 break;
             case 'h':
                 print_help(argv[0], options);
@@ -133,7 +149,7 @@ int main(int argc, char *const argv[]) {
         }
     }
 
-    vt100::init(true);
+    vt100::init(false);
 
     try {
         if (prep.initialize(options) != PREP_SUCCESS) {
@@ -145,7 +161,7 @@ int main(int argc, char *const argv[]) {
     }
 
     if (optind >= argc) {
-        command = "build";
+        command = "get";
     } else {
         command = argv[optind++];
         options.force_build = ForceLevel::Project;
@@ -251,6 +267,22 @@ int main(int argc, char *const argv[]) {
 
         // build
         return prep.build(config, options, options.location);
+    }
+
+    if (!strcmp(command, "get")) {
+        PackageConfig config;
+
+        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
+            log::error("unable to find directory containg a package");
+            return PREP_FAILURE;
+        }
+
+        if (config.load(options.location, options) == PREP_FAILURE) {
+            log::error("unable to load config at ", options.location);
+            return PREP_FAILURE;
+        }
+
+        return prep.get(config, options, options.location);
     }
 
     if (!strcmp(command, "test")) {
