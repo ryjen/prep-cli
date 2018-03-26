@@ -115,6 +115,33 @@ namespace micrantha
             {
                 return colorize({fg::WHITE}, value, true);
             }
+
+            std::string apply(const std::string &color, const std::string &value, bool reset) {
+                std::map<std::string, std::vector<Value>> mapping = {
+                        {"r", {attr::NORMAL, fg::RED}},
+                        {"g", {attr::NORMAL, fg::GREEN}},
+                        {"y", {attr::NORMAL, fg::YELLOW}},
+                        {"b", {attr::NORMAL, fg::BLUE}},
+                        {"m", {attr::NORMAL, fg::MAGENTA}},
+                        {"c", {attr::NORMAL, fg::CYAN}},
+                        {"w", {attr::NORMAL, fg::WHITE}},
+                        {"R", {attr::BOLD, fg::RED}},
+                        {"G", {attr::BOLD, fg::GREEN}},
+                        {"Y", {attr::BOLD, fg::YELLOW}},
+                        {"B", {attr::BOLD, fg::BLUE}},
+                        {"M", {attr::BOLD, fg::MAGENTA}},
+                        {"C", {attr::BOLD, fg::CYAN}},
+                        {"W", {attr::BOLD, fg::WHITE}}
+                };
+
+                auto it = mapping.find(color);
+
+                if (it == mapping.end()) {
+                    return value;
+                }
+
+                return colorize(it->second, value, reset);
+            }
         }
 
         // other terminal codes
@@ -123,8 +150,6 @@ namespace micrantha
             namespace internal
             {
                 using namespace prep::internal;
-
-                static bool scrolling = false;
 
                 // reads a cursor report response from the terminal
                 static ssize_t read_cursor(int fd, std::string &buf)
@@ -232,32 +257,6 @@ namespace micrantha
             // output related functions
             namespace output
             {
-                // called when a new line is added
-                Callback on_newline;
-
-                Callback &Callback::operator()()
-                {
-                    std::lock_guard<Mutex> lock(mutex_);
-
-                    for (const auto &entry : values_) {
-                        entry.second();
-                    }
-                    return *this;
-                }
-
-                Callback &Callback::add(std::size_t key, const Type &value)
-                {
-                    std::lock_guard<Mutex> lock(mutex_);
-                    values_[key] = value;
-                    return *this;
-                }
-                Callback &Callback::remove(std::size_t key)
-                {
-                    std::lock_guard<Mutex> lock(mutex_);
-                    values_.erase(key);
-                    return *this;
-                }
-
                 // utility for variadic print
                 std::ostream &print(std::ostream &os)
                 {
@@ -299,22 +298,14 @@ namespace micrantha
 
                     return ttyRead.read_cursor(row, col);
                 }
-
-                Savepoint::Savepoint(Mutex &mutex) noexcept : restore_(), guard_(mutex)
-                {
-                    // save the cursor position
-                    print(SAVE) << std::flush;
-                }
-
-                Savepoint::Restore::~Restore()
-                {
-                    // restore the cursor position
-                    print(RESTORE) << std::flush;
-                }
             }
 
             void init(bool simple)
             {
+                if (log::output::is_file()) {
+                    return;
+                }
+
                 // get the type of terminal
                 auto term = std::getenv("TERM");
 
@@ -324,7 +315,6 @@ namespace micrantha
                 internal::advanced_term = !simple && internal::valid_term;
 
                 if (internal::advanced_term) {
-                    cursor::Savepoint savepoint(cursor::get_mutex());
 
                     // find the screen height by setting the cursor to a extreme value
                     cursor::set(99999, 99999);
@@ -350,113 +340,6 @@ namespace micrantha
 
                 // set the new terminal attributes.
                 tcsetattr(STDIN_FILENO, TCSANOW, &state);
-            }
-
-            Progress::Progress() noexcept : alive_(false), row_(0), callback_(), bg_()
-            {
-                if (internal::advanced_term) {
-                    init();
-
-                    // start updating
-                    bg_ = std::thread(std::bind(&Progress::run, this));
-                }
-            }
-
-            Progress::~Progress()
-            {
-                alive_ = false;
-
-                if (bg_.joinable()) {
-                    bg_.join();
-                }
-
-                reset();
-            }
-
-            std::size_t Progress::key() const
-            {
-                return std::hash<const Progress *>()(this);
-            }
-
-            void Progress::reset()
-            {
-                if (!internal::advanced_term) {
-                    return;
-                }
-
-                // use a save point to reset the current cursor position
-                cursor::Savepoint savepoint(cursor::get_mutex());
-
-                // restore the cursor to this progress indicator
-                cursor::set(row_, 2);
-
-                // and erase the line
-                print(cursor::ERASE_BACK) << std::flush;
-            }
-
-            void Progress::init()
-            {
-                int col = 0;
-
-                std::lock_guard<Mutex> lock(cursor::get_mutex());
-
-                // get the current row
-                cursor::get(&row_, &col);
-
-                internal::scrolling = row_ == internal::rows;
-
-                // if we're going to scroll at the last row...
-                callback_ = [&]() {
-                    if (!internal::scrolling) {
-                        return;
-                    }
-
-                    // move the reset point back
-                    cursor::Savepoint savepoint(cursor::get_mutex());
-
-                    // go to current row
-                    cursor::set(row_--, 1);
-
-                    // and erase the line
-                    print(" ") << std::flush;
-                };
-
-                // add the callback for new lines
-                output::on_newline.add(key(), callback_);
-            }
-
-            void Progress::run()
-            {
-                using namespace std::chrono_literals;
-
-                alive_ = true;
-
-                while (alive_) {
-                    update();
-                    std::this_thread::sleep_for(100ms);
-                }
-
-                // remove the new line callback
-                output::on_newline.remove(key());
-            }
-
-            void Progress::update()
-            {
-                static unsigned frame = 0;
-                constexpr static const char *FRAMES[] = {"◜", "◠", "◝", "◞", "◡", "◟"};
-                constexpr static size_t FRAME_SIZE = (sizeof(FRAMES) / sizeof(FRAMES[0]));
-
-                ++frame;
-                frame %= FRAME_SIZE;
-
-                // use a save point to reset the current cursor position
-                cursor::Savepoint savepoint(cursor::get_mutex());
-
-                // set the cursor to the saved position
-                cursor::set(row_, 1);
-
-                // send the frame and move the cursor back one character to print again
-                print(color::colorize({color::attr::BOLD, color::fg::GREEN}, FRAMES[frame], true)) << std::flush;
             }
         }
     }

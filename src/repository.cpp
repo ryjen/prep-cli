@@ -513,7 +513,6 @@ namespace micrantha
             closedir(dir);
 
             for (const auto &plugin : plugins_) {
-                vt100::Progress progress;
 
                 log::debug("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
 

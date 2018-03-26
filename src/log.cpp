@@ -2,15 +2,33 @@
 #include "log.h"
 
 #include <cstdarg>
+#include <fstream>
 
 namespace micrantha {
     namespace prep {
-        namespace internal {
-            extern bool valid_term;
-        }
 
         namespace log {
             namespace output {
+                std::ofstream __file;
+
+                std::ostream &get() {
+                    if (__file.is_open()) {
+                        return __file;
+                    }
+                    return std::cout;
+                }
+
+                bool set(const char *name) {
+
+                    __file.open(name);
+
+                    return __file.is_open();
+                }
+
+                bool is_file() {
+                    return __file.is_open();
+                }
+
                 std::ostream &print(std::ostream &os) {
                     return os;
                 }
@@ -19,8 +37,7 @@ namespace micrantha {
 
                 const char *NAMES[] = {"UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", nullptr};
 
-                const char *COLORS[] = {"", "\033[1;31m", "\033[1;33m", "\033[1;32m",
-                                        "\033[1;36m", "\033[1;37m", nullptr};
+                const char *COLORS[] = {"", "r", "y", "g", "c", "w", nullptr};
 
                 Type __current_log_level = Info;
 
@@ -28,31 +45,30 @@ namespace micrantha {
                     return (value <= __current_log_level);
                 }
 
-                void set(const char *name) {
+                bool set(const char *name) {
                     int i = 0;
 
                     if (name == nullptr || *name == 0) {
-                        return;
+                        return false;
                     }
 
                     for (; NAMES[i] != nullptr; i++) {
                         if (!strcasecmp(name, NAMES[i])) {
                             __current_log_level = (Type) i;
+                            return true;
                         }
                     }
+
+                    return false;
                 }
 
                 std::string format(Type level) {
                     std::string buf("  ");
 
-                    if (internal::valid_term) {
-                        buf += COLORS[level];
-                    }
-                    buf += NAMES[level];
-                    if (internal::valid_term) {
-                        buf += color::CLEAR;
-                    }
+                    buf += color::apply(COLORS[level], NAMES[level]);
+
                     buf += ": ";
+
                     return buf;
                 }
             }
