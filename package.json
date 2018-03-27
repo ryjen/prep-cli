@@ -5,28 +5,27 @@
 		"name": "Ryan Jennings",
 		"email": "ryan@micrantha.com"
 	},
-	"build_system": ["cmake", "make"],
+	"build_system": [
+		"cmake",
+		"make"
+	],
 	"executable": "prep",
 	"dependencies": [
 		{
-			"name": "libarchive",
-			"version": "3.3.2",
 			"archive": {
 				"location": "http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz"
 			},
 			"build_system": [
 				"autotools",
 				"make"
-			]
+			],
+			"name": "libarchive",
+			"version": "3.3.2"
 		},
 		{
-			"name": "libdigidocpp",
-			"version": "3.13.4",
-			"git": {
-				"location": "https://github.com/open-eid/libdigidocpp.git#v3.13.4"
-			},
 			"build_system": [
-				"cmake", "make"
+				"cmake",
+				"make"
 			],
 			"dependencies": [
 				{
@@ -41,8 +40,12 @@
 					"name": "xsd",
 					"version": "4.0.0"
 				}
-			]
+			],
+			"git": {
+				"location": "https://github.com/open-eid/libdigidocpp.git#v3.13.4"
+			},
+			"name": "libdigidocpp",
+			"version": "3.13.4"
 		}
 	]
-
 }
