@@ -41,7 +41,7 @@ function(prep_init)
 
     message(STATUS "Using prep repository at ${PREP_INSTALL_PREFIX}")
 
-    add_custom_target(prep-dependencies COMMAND ${PREP_PROGRAM} -f get
+    add_custom_target(prep-dependencies COMMAND ${PREP_PROGRAM} get
             WORKING_DIRECTORY "${PREP_INIT_REPOSITORY}"
             DEPENDS ${PREP_INIT_PACKAGE_FILE})
 
