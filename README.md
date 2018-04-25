@@ -63,6 +63,15 @@ The plugins are forked to run in a seperate pseudo terminal. (See TODO for secur
 
 The default plugins and SDK is written in Go.  They are compiled, compressed, and included in the prep binary. When you initialize a repository for the first time they will be extracted. (TODO: use installers and shared files)
 
+### Current default plugins:
+
+- **archive**: a resolver plugin that downloads and extracts different archived formats
+- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
+- **cmake**: a build plugin that uses cmake to generate makefiles
+- **git**: a resolver plugin that clones a git repository
+- **homebrew**: a resolver plugin that installs packages using homebrew on OSX
+- **make**: a build plugin that executes make on a makefile.  requires install param
+
 
 ## Plugin Types:
 
@@ -160,15 +169,6 @@ ECHO <message>\n
 
 
 Any other **output** by the plugin is forwarded to prep's output when in **verbose mode**.
-
-## Current default plugins:
-
-- **archive**: a resolver plugin that downloads and extracts different archived formats
-- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
-- **cmake**: a build plugin that uses cmake to generate makefiles
-- **git**: a resolver plugin that clones a git repository
-- **homebrew**: a resolver plugin that installs packages using homebrew on OSX
-- **make**: a build plugin that executes make on a makefile.  requires install param
 
 ## Plugin manifest:
 
