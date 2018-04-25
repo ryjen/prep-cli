@@ -235,7 +235,7 @@ The configuration was also inpsired by node. A project is simple a **package.jso
 `dependencies`
   - an array of this configuration type defining each dependency.  Dependencies will be resolved using **resolver** plugins in the order specified. Dependencies can also have dependencies. 
 
-`&lt;plugin&gt;`
+`<plugin>`
   - A plugin can define its own options to override.  For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
 
 
