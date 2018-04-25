@@ -9,26 +9,6 @@ namespace micrantha {
 
         namespace log {
             namespace output {
-                std::ofstream __file;
-
-                std::ostream &get() {
-                    if (__file.is_open()) {
-                        return __file;
-                    }
-                    return std::cout;
-                }
-
-                bool set(const char *name) {
-
-                    __file.open(name);
-
-                    return __file.is_open();
-                }
-
-                bool is_file() {
-                    return __file.is_open();
-                }
-
                 std::ostream &print(std::ostream &os) {
                     return os;
                 }

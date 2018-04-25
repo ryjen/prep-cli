@@ -128,12 +128,7 @@ namespace micrantha
             /**
              * initialize the terminal
              */
-            void init(bool simple);
-
-            /**
-             * turn off user input
-             */
-            void disable_user();
+            void init();
         }
 
         // color related utils

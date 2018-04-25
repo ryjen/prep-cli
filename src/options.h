@@ -11,8 +11,14 @@ namespace micrantha {
 
         enum class ForceLevel {
             None,
-            All,
-            Project
+            Project,
+            All
+        };
+
+        enum class Verbosity {
+            None,
+            Project,
+            All
         };
 
         /**
@@ -28,7 +34,7 @@ namespace micrantha {
             // forces a build
             ForceLevel force_build;
             // display plugin output
-            bool verbose;
+            Verbosity verbose;
             // accept default options
             bool defaults;
         } Options;

@@ -160,12 +160,8 @@ namespace micrantha
                 }
             }
 
-            void init(bool simple)
+            void init()
             {
-                if (log::output::is_file()) {
-                    return;
-                }
-
                 // get the type of terminal
                 auto term = std::getenv("TERM");
 

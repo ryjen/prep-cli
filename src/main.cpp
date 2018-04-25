@@ -13,6 +13,8 @@
 using namespace micrantha::prep;
 
 void print_help(char *exe, const Options &options) {
+
+    //TODO replace with man page
     printf("Syntax: %s build [package]\n", exe);
     printf("        %s test [package]\n", exe);
     printf("        %s install [package]\n", exe);
@@ -26,7 +28,7 @@ void print_help(char *exe, const Options &options) {
     printf("        %s env\n", exe);
     printf("        %s check\n", exe);
 
-    if (!options.verbose) {
+    if (options.verbose != Verbosity::All) {
         return;
     }
 
@@ -94,7 +96,7 @@ int main(int argc, char *const argv[]) {
             .global = false,
             .location = ".",
             .force_build = ForceLevel::None,
-            .verbose = false,
+            .verbose = Verbosity::None,
             .defaults = false};
     const char *command = nullptr;
     int option;
@@ -102,7 +104,7 @@ int main(int argc, char *const argv[]) {
     static struct option args[] = {{"global",   no_argument,       nullptr, 'g'},
                                    {"package",  required_argument, nullptr, 'p'},
                                    {"force",    no_argument,       nullptr, 'f'},
-                                   {"verbose",  no_argument,       nullptr, 'v'},
+                                   {"verbose",  optional_argument, nullptr, 'v'},
                                    {"log",      required_argument, nullptr, 'l'},
                                    {"defaults", no_argument,       nullptr, 1},
                                    {"help",     no_argument,       nullptr, 'h'},
@@ -120,22 +122,12 @@ int main(int argc, char *const argv[]) {
                 options.force_build = ForceLevel::All;
                 break;
             case 'v':
-                options.verbose = true;
+                options.verbose = Verbosity::All;
                 break;
             case 'l':
                 if (!log::level::set(optarg)) {
-
-                    if (strcasecmp(optarg, "FILE")) {
-                        puts("Unknown log level");
-                        return PREP_FAILURE;
-                    }
-
-                    if (optind >= argc) {
-                        puts("You must specify a log file");
-                        return PREP_FAILURE;
-                    }
-
-                    log::output::set(argv[optind++]);
+                    puts("Unknown log level");
+                    return PREP_FAILURE;
                 }
                 break;
             case 'h':
@@ -149,7 +141,7 @@ int main(int argc, char *const argv[]) {
         }
     }
 
-    vt100::init(false);
+    vt100::init();
 
     try {
         if (prep.initialize(options) != PREP_SUCCESS) {
@@ -165,6 +157,7 @@ int main(int argc, char *const argv[]) {
     } else {
         command = argv[optind++];
         options.force_build = ForceLevel::Project;
+        options.verbose = Verbosity::Project;
     }
 
     if (!strcmp(command, "env")) {

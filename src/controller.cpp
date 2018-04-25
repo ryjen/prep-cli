@@ -148,7 +148,6 @@ namespace micrantha {
             return PREP_SUCCESS;
         }
 
-
         int Controller::install_package(const Package &config, const std::string &path) {
             std::string buildPath;
 
@@ -253,62 +252,22 @@ namespace micrantha {
 
         int Controller::build(const Package &config, const Options &opts, const std::string &path) {
 
-            if (!config.is_loaded()) {
-                log::error("config is not loaded");
+            // get the dependencies first
+            if (get(config, opts, path) != PREP_SUCCESS) {
                 return PREP_FAILURE;
             }
 
-            log::info("preparing package ", color::m(config.name()), " [", color::y(config.version()), "]");
-
-            for (const auto &c : config.dependencies()) {
-                std::string package_dir;
-
-                if (opts.force_build != ForceLevel::All && repo_.exists(c)) {
-                    log::info("using cached version of ", color::m(config.name()), " dependency ", color::c(c.name()),
-                              " [", color::y(c.version()), "]");
-                    continue;
-                }
-
-                log::info("preparing ", color::m(config.name()), " dependency ", color::c(c.name()), " [",
-                          color::y(c.version()), "]");
-
-                // try to add via plugin
-                if (repo_.notify_plugins_add(c) == PREP_SUCCESS) {
-
-                    if (repo_.save_meta(c)) {
-                        log::warn("unable to save meta data for ", config.name());
-                    }
-                    continue;
-                }
-
-                // then try to resolve the source
-                auto result = repo_.notify_plugins_resolve(c);
-
-                if (result != PREP_SUCCESS || result.values.empty()) {
-                    log::error("[", config.name(), "] could not resolve dependency [", c.name(), "]");
-                    return PREP_FAILURE;
-                }
-
-                package_dir = result.values.front();
-
-                // build the dependency source
-                if (build(c, opts, package_dir) != PREP_SUCCESS) {
-                    log::error("unable to build dependency ", c.name());
-                    return PREP_FAILURE;
-                }
-
-                if (install(c, opts) != PREP_SUCCESS) {
-                    log::error("unable to install dependency ", c.name());
-                    return PREP_FAILURE;
-                }
-            }
 
             if (opts.force_build == ForceLevel::None && repo_.exists(config)) {
                 log::warn("used cached version of ", color::m(config.name()), " [", color::y(config.version()), "]");
                 return PREP_SUCCESS;
             }
 
-            return build_package(config, opts, path);
+            int rval = build_package(config, opts, path);
+
+            log::info("done building ", config.name());
+
+            return rval;
         }
 
         int Controller::get(const Package &config, const Options &opts, const std::string &path) {
@@ -455,6 +414,8 @@ namespace micrantha {
                 return PREP_FAILURE;
             }
 
+            // crap this is
+            // TODO: sanitize
             std::vector<char*> args;
 
             auto fname = config.executable();
