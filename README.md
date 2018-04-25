@@ -68,9 +68,10 @@ The default plugins and SDK is written in Go.  They are compiled, compressed, an
 - **archive**: a resolver plugin that downloads and extracts different archived formats
 - **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
 - **cmake**: a build plugin that uses cmake to generate makefiles
+- **make**: a build plugin that executes make on a makefile.  requires install param
 - **git**: a resolver plugin that clones a git repository
 - **homebrew**: a resolver plugin that installs packages using homebrew on OSX
-- **make**: a build plugin that executes make on a makefile.  requires install param
+- **apt**: a resolver plugin that installs packages using apt on deb/ubuntu
 
 
 ## Plugin Types:
@@ -321,7 +322,7 @@ TODO
 - [ ] website/api for plugins and and configurations for common dependencies
 - [-] parse archive versions from filename (2018-03-05 currently done in archive plugin)
 - [ ] store md5 hash of configs in meta to detect changes
-- [✓] store sub package.json in meta for dependencies
+- [x] store sub package.json in meta for dependencies
 - [ ] a way to rebuild a dependency or all dependencies
 - [ ] more secure plugins (enforce digital signature?, chroot?)
 - [ ] a way to install new plugins
@@ -329,7 +330,7 @@ TODO
 - [ ] dependencies will be better as a tree rather than a list (need a good graph lib)
 - [ ] consider sqlite storage
 - [ ] test suite
-- [✓] convert plugins to compiled language
+- [x] convert plugins to compiled language
 - [ ] plugins may need to be interactive, currently not supported
 - [-] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
 - [ ] clion/intellij plugin
