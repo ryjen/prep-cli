@@ -42,7 +42,7 @@ namespace micrantha
 
             /**
              * a return value for executing a plugin.  has a code and a list of return values.
-             * purposefully implicit constructors for flexible return values
+             * implicit constructors for flexible return values
              */
             typedef struct Result {
                 int code;

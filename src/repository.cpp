@@ -98,7 +98,7 @@ namespace micrantha
                 }
             }
 
-            if (temp == nullptr && opts.verbose) {
+            if (temp == nullptr && opts.verbose != Verbosity::None) {
                 log::warn(binPath, " is not added to your PATH");
             }
 
@@ -491,7 +491,7 @@ namespace micrantha
 
                 switch (plugin->load(pluginPath)) {
                     case PREP_SUCCESS:
-                        plugin->set_verbose(opts.verbose);
+                        plugin->set_verbose(opts.verbose == Verbosity::All);
                         plugins_.push_back(plugin);
                         if (plugin->type() != Plugin::Types::INTERNAL) {
                             log::trace("loaded plugin ", color::m(plugin->name()), " version [",
@@ -602,7 +602,7 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                log::info("Building ", color::m(config.name()), " with ", color::c(plugin->name()));
+                log::info("building ", color::m(config.name()), " with ", color::c(plugin->name()));
 
                 if (plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
@@ -622,7 +622,7 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                log::info("Testing ", color::m(config.name()), " with ", color::c(plugin->name()));
+                log::info("testing ", color::m(config.name()), " with ", color::c(plugin->name()));
 
                 if (plugin->on_test(config, sourcePath, buildPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
@@ -643,7 +643,7 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                log::info("Installing ", color::m(config.name()), " with ", color::c(plugin->name()));
+                log::info("installing ", color::m(config.name()), " with ", color::c(plugin->name()));
 
                 if (plugin->on_install(config, sourcePath, buildPath) == PREP_FAILURE) {
                     return PREP_FAILURE;

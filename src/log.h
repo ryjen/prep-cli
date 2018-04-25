@@ -37,12 +37,6 @@ namespace micrantha {
 
             namespace output {
 
-                std::ostream &get();
-
-                bool set(const char *name);
-
-                bool is_file();
-
                 /**
                  * utility method for variadic print
                  * @param os the output stream
@@ -91,7 +85,7 @@ namespace micrantha {
                 template <class... Args>
                 std::ostream &print(const Args &... args)
                 {
-                    return print(get(), args...);
+                    return print(std::cout, args...);
                 }
             }
 

@@ -90,8 +90,7 @@ namespace micrantha {
             return pid;
         }
 
-        int
-        fork_command(const std::string &command, char *const argv[], const char *directory, char *const envp[]) {
+        int fork_command(const std::string &command, char *const argv[], const char *directory, char *const envp[]) {
             int rval = EXIT_FAILURE;
 
             pid_t pid = fork();
@@ -417,43 +416,6 @@ namespace micrantha {
             void build_sys_path(std::ostream &buf) {}
 
         }
-
-//        const char *build_sys_path(const char *start, ...) {
-//            static char sbuf[3][PATH_MAX + 1];
-//            static int i = 0;
-//
-//            i++, i %= 3;
-//
-//            va_list args;
-//            char *buf = sbuf[i];
-//
-//            memset(buf, 0, PATH_MAX);
-//
-//            va_start(args, start);
-//
-//            if (start != nullptr) {
-//                strcat(buf, start);
-//            }
-//
-//            const char *next = va_arg(args, const char *);
-//
-//            while (next != nullptr) {
-//#ifdef _WIN32
-//                if (buf[strlen(buf) - 1] != '\\')
-//                    strcat(buf, "\\");
-//#else
-//                if (buf[strlen(buf) - 1] != '/')
-//                    strcat(buf, "/");
-//#endif
-//                strcat(buf, next);
-//
-//                next = va_arg(args, const char *);
-//            }
-//
-//            va_end(args);
-//
-//            return buf;
-//        }
     }
 }
 
