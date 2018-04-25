@@ -6,7 +6,7 @@ Prep is a modular package manager and build tool for c/c++ projects.
 
 Its main feature selling points are:
 
-* You don't need to create separate packages for dependencies.  It will happily work with a git repository or a download.
+* You don't need to create separate packages for dependencies.  It will sacrifice to work with a git repository or a download immediately.
 
 * Prep will manage dependencies and their paths and flags for building and running c/c++ projects.
 
@@ -185,7 +185,11 @@ Plugins should contain a **manifest.json** to describe the type of plugin and ho
 Repository Structure
 ====================
 
-A repository by default is a **.prep** folder in the current directory.  By specifying the **-g** option, **/usr/local/share/prep** will be used instead (Inspired by node).
+A repository by default is a `.prep` folder in the current directory.  Similar to node you can specify a **-g** option to use **/usr/local/share/prep** instead.
+
+The repository holds all the dependencies and mimics a system install hierarchy.
+
+Dependencies installed via the system package manager will get a reciept in the repository.
 
 Under the repository:
 
@@ -210,7 +214,7 @@ packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** 
 Configuration
 =============
 
-The configuration for a project is simple a **package.json** file containing the json.  The fields are as follows:
+The configuration was also inpsired by node. A project is simple a **package.json** file containing the json.  The fields are as follows:
 
 `name`
   - the name of the project as a string
@@ -319,7 +323,7 @@ TODO
 - [ ] store md5 hash of configs in meta to detect changes
 - [✓] store sub package.json in meta for dependencies
 - [ ] a way to rebuild a dependency or all dependencies
-- [ ] more security plugins (enforce digital signature?, chroot?)
+- [ ] more secure plugins (enforce digital signature?, chroot?)
 - [ ] a way to install new plugins
 - [ ] consider RPATH flags for runtime
 - [ ] dependencies will be better as a tree rather than a list (need a good graph lib)
