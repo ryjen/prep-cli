@@ -89,6 +89,15 @@ namespace micrantha
             return dependencies_;
         }
 
+        std::experimental::optional<PackageDependency> Package::find_dependency(const std::string &package_name) const {
+
+            auto it = std::find_if(dependencies_.begin(), dependencies_.end(), [&package_name](const Package &package) {
+                return package.name() == package_name;
+            });
+
+            return *it;
+        }
+
         int PackageConfig::resolve_package_file(const std::string &path, const std::string &filename,
                                                 std::ifstream &file)
         {
