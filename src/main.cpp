@@ -68,27 +68,6 @@ void print_help(char *exe, const Options &options) {
     printf("     cleans temp files and folders for a package or the entire repository\n");
 }
 
-int find_package_directory(Controller &prep, Options &options, int argc, int index, char *const argv[]) {
-    if (index < 0 || index >= argc) {
-        char cwd[PATH_MAX] = {0};
-        options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
-    } else {
-        options.location = argv[index++];
-    }
-
-    // if not a directory...
-    if (directory_exists(options.location) != PREP_SUCCESS) {
-
-        // try to resolve to a directory
-        auto result = prep.repository()->notify_plugins_resolve(options.location);
-
-        if (result == PREP_SUCCESS && !result.values.empty()) {
-            options.location = result.values.front();
-        }
-    }
-    return PREP_SUCCESS;
-}
-
 int main(int argc, char *const argv[]) {
     Controller prep;
     Options options{
@@ -101,7 +80,7 @@ int main(int argc, char *const argv[]) {
     const char *command = nullptr;
     int option;
     int option_index = 0;
-    static struct option args[] = {{"global",   no_argument,       nullptr, 'g'},
+    static struct option opts[] = {{"global",   no_argument,       nullptr, 'g'},
                                    {"package",  required_argument, nullptr, 'p'},
                                    {"force",    no_argument,       nullptr, 'f'},
                                    {"verbose",  optional_argument, nullptr, 'v'},
@@ -110,7 +89,7 @@ int main(int argc, char *const argv[]) {
                                    {"help",     no_argument,       nullptr, 'h'},
                                    {nullptr,    0,           nullptr, 0}};
 
-    while ((option = getopt_long(argc, argv, "vhgfp:l:", args, &option_index)) != EOF) {
+    while ((option = getopt_long(argc, argv, "vhgfp:l:", opts, &option_index)) != EOF) {
         switch (option) {
             case 'g':
                 options.global = true;
@@ -152,12 +131,17 @@ int main(int argc, char *const argv[]) {
         return PREP_FAILURE;
     }
 
-    if (optind >= argc) {
+    if (optind == argc) {
         command = "get";
     } else {
         command = argv[optind++];
-        options.force_build = ForceLevel::Project;
-        options.verbose = Verbosity::Project;
+
+        if (options.force_build == ForceLevel::None) {
+            options.force_build = ForceLevel::Project;
+        }
+        if (options.verbose == Verbosity::None) {
+            options.verbose = Verbosity::Project;
+        }
     }
 
     if (!strcmp(command, "env")) {
@@ -176,7 +160,7 @@ int main(int argc, char *const argv[]) {
             return PREP_FAILURE;
         }
         if (config.load(argv[optind], options) == PREP_FAILURE) {
-            log::error("unable to load config at ", argv[optind]);
+            log::error("unable to load config for ", argv[optind]);
             return PREP_FAILURE;
         }
 
@@ -190,7 +174,7 @@ int main(int argc, char *const argv[]) {
             return PREP_FAILURE;
         }
         if (config.load(argv[optind], options) == PREP_FAILURE) {
-            log::error("unable to load config at ", argv[optind]);
+            log::error("unable to load config for ", argv[optind]);
             return PREP_FAILURE;
         }
 
@@ -205,13 +189,8 @@ int main(int argc, char *const argv[]) {
     if (!strcmp(command, "run")) {
         PackageConfig config;
 
-        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
-            log::error("unable to find a directory containing a package");
-            return PREP_FAILURE;
-        }
-
         if (config.load(options.location, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", options.location);
+            log::error("unable to load config for ", options.location);
             return PREP_FAILURE;
         }
 
@@ -231,13 +210,8 @@ int main(int argc, char *const argv[]) {
     if (!strcmp(command, "cleanup") || !strcmp(command, "clean")) {
         PackageConfig config;
 
-        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
-            log::error("unable to find a directory containing a package");
-            return PREP_FAILURE;
-        }
-
         if (config.load(options.location, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", options.location);
+            log::error("unable to load config for ", options.location);
             return PREP_FAILURE;
         }
 
@@ -247,84 +221,80 @@ int main(int argc, char *const argv[]) {
     if (!strcmp(command, "build")) {
         PackageConfig config;
 
-        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
-            log::error("unable to find directory containing a package");
-            return PREP_FAILURE;
-        }
-
         // load a package.json config
         if (config.load(options.location, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", options.location);
+            log::error("unable to load config for ", options.location);
             return PREP_FAILURE;
         }
 
-        // build
-        return prep.build(config, options, options.location);
+        // current package only...
+        if (optind == argc) {
+            // build
+            return prep.build(config, options, options.location);
+        }
+
+        auto dep = config.find_dependency(argv[optind++]);
+
+        if (!dep) {
+            log::error("no such dependency");
+            return PREP_FAILURE;
+        }
+
+        return prep.build(*dep, options, options.location);
     }
 
     if (!strcmp(command, "get")) {
         PackageConfig config;
 
-        if (find_package_directory(prep, options, argc, optind, argv) == PREP_FAILURE) {
-            log::error("unable to find directory containg a package");
-            return PREP_FAILURE;
-        }
-
         if (config.load(options.location, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", options.location);
+            log::error("unable to load config for ", options.location);
             return PREP_FAILURE;
         }
 
-        return prep.get(config, options, options.location);
+        if (optind == argc) {
+            return prep.get(config, options, options.location);
+        }
+
+        auto dep = config.find_dependency(argv[optind++]);
+
+        if (!dep) {
+            log::error("no such dependency");
+            return PREP_FAILURE;
+        }
+        return prep.get(*dep, options, options.location);
     }
 
     if (!strcmp(command, "test")) {
         PackageConfig config;
 
-        if (optind < 0 || optind >= argc) {
-            char cwd[PATH_MAX] = {0};
-            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
-        } else {
-            options.location = argv[optind++];
-        }
-
-        // if not a directory...
-        if (directory_exists(options.location) != PREP_SUCCESS) {
-
-            options.location = prep.get_package_directory(options.location);
-        }
-
         if (config.load(options.location, options) == PREP_FAILURE) {
             log::error("unable to load config for ", argv[optind]);
             return PREP_FAILURE;
         }
 
-        // build
-        return prep.test(config, options);
+        if (optind == argc) {
+            // build
+            return prep.test(config, options);
+        }
+
+        auto dep = config.find_dependency(argv[optind++]);
+
+        if (!dep) {
+            log::error("no such dependency");
+            return PREP_FAILURE;
+        }
+
+        return prep.test(*dep, options);
     }
 
     if (!strcmp(command, "install")) {
         PackageConfig config;
 
-        if (optind < 0 || optind >= argc) {
-            char cwd[PATH_MAX] = {0};
-            options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
-        } else {
-            options.location = argv[optind++];
-        }
-
-        // if not a directory...
-        if (directory_exists(options.location) != PREP_SUCCESS) {
-
-            options.location = prep.get_package_directory(options.location);
-        }
-
         if (config.load(options.location, options) == PREP_FAILURE) {
             log::error("unable to load config for ", argv[optind]);
             return PREP_FAILURE;
         }
 
-        // build
         return prep.install(config, options);
     }
 
@@ -335,6 +305,7 @@ int main(int argc, char *const argv[]) {
             char cwd[PATH_MAX] = {0};
             options.location = getcwd(cwd, sizeof(cwd)) ? cwd : ".";
         } else {
+            // get from a url/directory
             options.location = argv[optind++];
         }
 
@@ -354,7 +325,7 @@ int main(int argc, char *const argv[]) {
 
         // load a package.json config
         if (config.load(options.location, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", options.location);
+            log::error("unable to load config for ", options.location);
             return PREP_FAILURE;
         }
 
@@ -379,10 +350,10 @@ int main(int argc, char *const argv[]) {
             return PREP_FAILURE;
         }
 
-        auto directory = prep.get_package_directory(argv[optind]);
+        auto directory = prep.get_package_directory(argv[optind++]);
 
         if (config.load(directory, options) == PREP_FAILURE) {
-            log::error("unable to load config at ", directory);
+            log::error("unable to load config for ", directory);
             return PREP_FAILURE;
         }
 
