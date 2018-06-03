@@ -75,7 +75,8 @@ namespace micrantha {
 
         int Controller::build_package(const Package &config, const Options &opts, const std::string &path) {
             std::string installPath, buildPath;
-
+            char sourcePath[PATH_MAX] = {0};
+                
             if (!config.is_loaded()) {
                 log::error("config not loaded");
                 return PREP_FAILURE;
@@ -104,9 +105,15 @@ namespace micrantha {
                     return PREP_FAILURE;
                 }
             }
-            log::trace("Setting build output to [", installPath, "]");
 
-            if (repo_.notify_plugins_build(config, path, buildPath, installPath) == PREP_FAILURE) {
+            if (!realpath(path.c_str(), sourcePath)) {
+                log::error("unable to find path for ", path);
+                return PREP_FAILURE;
+            }
+
+            log::trace("source[", sourcePath, "], build[", buildPath, "], install[", installPath, "]");
+
+            if (repo_.notify_plugins_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
                 log::error("unable to build [", config.name(), "]");
                 return PREP_FAILURE;
             }
