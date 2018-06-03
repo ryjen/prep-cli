@@ -113,7 +113,12 @@ namespace micrantha {
             } else {
                 int status = 0;
 
-                waitpid(pid, &status, 0);
+                rval = waitpid(pid, &status, 0);
+
+                if (rval == -1) {
+                    log::perror("child process did not return");
+                    return EXIT_FAILURE;
+                }
 
                 if (WIFEXITED(status)) {
                     rval = WEXITSTATUS(status);
