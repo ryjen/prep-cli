@@ -423,29 +423,29 @@ namespace micrantha {
 
             // crap this is
             // TODO: sanitize
-            std::vector<char*> args;
+            const char* args[argc+1];
 
             auto fname = config.executable();
 
-            args.push_back(&fname[0]);
+            args[0] = fname.c_str();
 
             for (int i = 1; i < argc; i++) {
-                args.push_back(argv[i]);
+                args[i] = argv[i];
             }
 
-            args.push_back(nullptr);
+            args[argc] = 0;
 
             auto runEnv = environment::run_env();
 
-            std::vector<char*> envp;
+            const char *envp[runEnv.size()+1];
 
-            for (auto e : runEnv) {
-                envp.push_back(&e[0]);
+            for (int i = 0; i < runEnv.size(); i++) {
+                envp[i] = runEnv[i].c_str();
             }
 
-            envp.push_back(nullptr);
+            envp[runEnv.size()] = 0;
 
-            int err = fork_command(executable, const_cast<char*const*>(&args[0]), nullptr, const_cast<char*const*>(&envp[0]));
+            int err = fork_command(executable, const_cast<char**>(args), nullptr, const_cast<char**>(envp));
 
             switch (err) {
                 case -1:

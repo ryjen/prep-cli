@@ -112,9 +112,7 @@ namespace micrantha
             return {
                     { "LD_LIBRARY_PATH", build::path("LD_LIBRARY_PATH", "lib")},
                     { "PATH", build::path("PATH", "bin") },
-#ifdef __APPLE__
-                    { "DYLD_FALLBACK_LIBRARY_PATH", build::path("DYLD_FALLBACK_LIBRARY_PATH", "lib") },
-#endif
+                    { "TERM", environment::get("TERM") }
             };
         }
 
