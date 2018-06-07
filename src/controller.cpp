@@ -45,7 +45,7 @@ namespace micrantha {
                 auto temp = Repository::get_local_repo();
 
                 if (directory_exists(temp) == PREP_SUCCESS) {
-                   vt100::print(temp, "\n");
+                    vt100::print(temp, "\n");
                     return PREP_SUCCESS;
                 }
 
@@ -76,7 +76,7 @@ namespace micrantha {
         int Controller::build_package(const Package &config, const Options &opts, const std::string &path) {
             std::string installPath, buildPath;
             char sourcePath[PATH_MAX] = {0};
-                
+
             if (!config.is_loaded()) {
                 log::error("config not loaded");
                 return PREP_FAILURE;
@@ -287,46 +287,58 @@ namespace micrantha {
             log::info("preparing package ", color::m(config.name()), " [", color::y(config.version()), "]");
 
             for (const auto &c : config.dependencies()) {
-                std::string package_dir;
 
                 if (opts.force_build != ForceLevel::All && repo_.exists(c)) {
                     log::info("using cached version of ", color::m(config.name()), " dependency ", color::c(c.name()),
-                              " [", color::y(c.version()), "]");
+                            " [", color::y(c.version()), "]");
                     continue;
                 }
 
-                log::info("preparing ", color::m(config.name()), " dependency ", color::c(c.name()), " [",
-                          color::y(c.version()), "]");
+            log::info("preparing ", color::m(config.name()), " dependency ", color::c(c.name()), " [",
+                    color::y(c.version()), "]");
 
-                // try to add via plugin
-                if (repo_.notify_plugins_add(c) == PREP_SUCCESS) {
-
-                    if (repo_.save_meta(c)) {
-                        log::warn("unable to save meta data for ", config.name());
-                    }
-                    continue;
-                }
-
-                // then try to resolve the source
-                auto result = repo_.notify_plugins_resolve(c);
-
-                if (result != PREP_SUCCESS || result.values.empty()) {
-                    log::error("[", config.name(), "] could not resolve dependency [", c.name(), "]");
+                if (get_package(c, opts, path) == PREP_FAILURE) {
                     return PREP_FAILURE;
                 }
+            }
 
-                package_dir = result.values.front();
+            if (dynamic_cast<const PackageDependency*>(&config)) {
+                return get_package(dynamic_cast<const PackageDependency&>(config), opts, path);
+            }
 
-                // build the dependency source
-                if (build(c, opts, package_dir) != PREP_SUCCESS) {
-                    log::error("unable to build dependency ", c.name());
-                    return PREP_FAILURE;
+            return PREP_SUCCESS;
+        }
+
+        int Controller::get_package(const PackageDependency &config, const Options &opts, const std::string &path) {
+
+            // try to add via plugin
+            if (repo_.notify_plugins_add(config) == PREP_SUCCESS) {
+
+                if (repo_.save_meta(config)) {
+                    log::warn("unable to save meta data for ", config.name());
                 }
+                return PREP_SUCCESS;
+            }
 
-                if (install(c, opts) != PREP_SUCCESS) {
-                    log::error("unable to install dependency ", c.name());
-                    return PREP_FAILURE;
-                }
+            // then try to resolve the source
+            auto result = repo_.notify_plugins_resolve(config);
+
+            if (result != PREP_SUCCESS || result.values.empty()) {
+                log::error("[", config.name(), "] could not resolve dependency [", config.name(), "]");
+                return PREP_FAILURE;
+            }
+
+            auto package_dir = result.values.front();
+
+            // build the dependency source
+            if (build_package(config, opts, package_dir) != PREP_SUCCESS) {
+                log::error("unable to build dependency ", config.name());
+                return PREP_FAILURE;
+            }
+
+            if (install(config, opts) != PREP_SUCCESS) {
+                log::error("unable to install dependency ", config.name());
+                return PREP_FAILURE;
             }
 
             return PREP_SUCCESS;
