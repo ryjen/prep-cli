@@ -95,6 +95,10 @@ namespace micrantha
                 return package.name() == package_name;
             });
 
+            if (it == dependencies_.end()) {
+                return {};
+            }
+
             return *it;
         }
 

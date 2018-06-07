@@ -22,7 +22,7 @@ function(prep_init)
     set(PREP_INIT_PACKAGE_FILE ${CMAKE_CURRENT_LIST_DIR}/package.json)
 
     if (NOT EXISTS ${PREP_INIT_PACKAGE_FILE})
-        message(FATAL_ERROR "${PREP_GET_DIRECTORY} should contain a package.json")
+        message(FATAL_ERROR "${CMAKE_CURRENT_LIST_DIR} should contain a package.json")
     endif()
 
     set(PREP_INIT_REPOSITORY ${CMAKE_CURRENT_LIST_DIR})
