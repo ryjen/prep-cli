@@ -120,8 +120,6 @@ int main(int argc, char *const argv[]) {
         }
     }
 
-    vt100::init();
-
     try {
         if (prep.initialize(options) != PREP_SUCCESS) {
             return PREP_FAILURE;
@@ -321,7 +319,7 @@ int main(int argc, char *const argv[]) {
         }
 
         // if not a directory...
-        if (directory_exists(options.location) != PREP_SUCCESS) {
+        if (filesystem::directory_exists(options.location) != PREP_SUCCESS) {
 
             // try to resolve to a directory
             auto result = prep.repository()->notify_plugins_resolve(options.location);

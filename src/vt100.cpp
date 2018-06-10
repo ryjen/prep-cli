@@ -16,29 +16,13 @@ namespace micrantha
 {
     namespace prep
     {
-        namespace internal
+        // other terminal codes
+        namespace vt100
         {
-            // indicates good terminal support
-            bool valid_term;
-
-            // tests a TERM value for validity
-            static bool init(const char *term)
+            bool is_valid_term()
             {
-                static const std::string Types[] = {"xterm", "ansi", "linux", "vt100"};
-
-                if (term == nullptr) {
-                    return false;
-                }
-
-                log::trace("found ", term, " terminal");
-
-                std::string test(term);
-                for (const auto &term : Types) {
-                    if (test.find(term) != std::string::npos) {
-                        return true;
-                    }
-                }
-                return false;
+                static bool value = isatty(STDOUT_FILENO) == 1;
+                return value;
             }
         }
 
@@ -49,7 +33,7 @@ namespace micrantha
             std::string colorize(const std::vector<Value> &colors, const std::string &value, bool reset)
             {
                 // don't colorize if unknown term
-                if (!internal::valid_term) {
+                if (!vt100::is_valid_term()) {
                     return value;
                 }
 
@@ -139,35 +123,5 @@ namespace micrantha
             }
         }
 
-        // other terminal codes
-        namespace vt100
-        {
-
-            // output related functions
-            namespace output
-            {
-                // utility for variadic print
-                std::ostream &print(std::ostream &os)
-                {
-                    return os;
-                }
-
-                // output functions have their own mutex
-                Mutex &get_mutex()
-                {
-                    static Mutex m;
-                    return m;
-                }
-            }
-
-            void init()
-            {
-                // get the type of terminal
-                auto term = std::getenv("TERM");
-
-                // test validity
-                internal::valid_term = term != nullptr && internal::init(term);
-            }
-        }
     }
 }

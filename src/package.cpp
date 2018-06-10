@@ -105,9 +105,9 @@ namespace micrantha
         int PackageConfig::resolve_package_file(const std::string &path, const std::string &filename,
                                                 std::ifstream &file)
         {
-            auto buf = build_sys_path(path, filename);
+            auto buf = filesystem::build_path(path, filename);
 
-            if (!file_exists(buf)) {
+            if (filesystem::file_exists(buf) != PREP_SUCCESS) {
                 return PREP_FAILURE;
             }
 
@@ -173,7 +173,7 @@ namespace micrantha
 
             init_build_system();
 
-            path_ = build_sys_path(path, opts.package_file);
+            path_ = filesystem::build_path(path, opts.package_file);
 
             return PREP_SUCCESS;
         }

@@ -30,14 +30,14 @@ namespace micrantha
             }
 
             std::string prefix = buf;
-            auto current_path = build_sys_path(prefix, LOCAL_REPO_NAME);
+            auto current_path = filesystem::build_path(prefix, LOCAL_REPO_NAME);
 
-            while (directory_exists(current_path) != PREP_SUCCESS) {
-                prefix = build_sys_path(prefix, "..");
-                if (directory_exists(prefix) == PREP_SUCCESS) {
+            while (filesystem::directory_exists(current_path) != PREP_SUCCESS) {
+                prefix = filesystem::build_path(prefix, "..");
+                if (filesystem::directory_exists(prefix) == PREP_SUCCESS) {
                     break;
                 }
-                current_path = build_sys_path(prefix, LOCAL_REPO_NAME);
+                current_path = filesystem::build_path(prefix, LOCAL_REPO_NAME);
             }
 
             return current_path;
@@ -60,7 +60,7 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            if (directory_exists(path_) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(path_) != PREP_SUCCESS) {
                 std::string buf;
 
                 if (!opts.defaults) {
@@ -74,13 +74,12 @@ namespace micrantha
                     }
                 }
 
-                auto lib = build_sys_path(path_, "lib");
-
-                mkpath(lib, 0700);
+                auto lib = filesystem::build_path(path_, "lib");
+                filesystem::create_path(lib, 0700);
             }
 
             char *temp = getenv("PATH");
-            std::string binPath = build_sys_path(path_, BIN_FOLDER);
+            std::string binPath = filesystem::build_path(path_, BIN_FOLDER);
 
             if (temp != nullptr) {
                 char buf[BUFSIZ] = {0};
@@ -109,8 +108,8 @@ namespace micrantha
         {
             const std::string pluginPath = get_plugin_path();
 
-            if (directory_exists(pluginPath) != PREP_SUCCESS) {
-                if (mkpath(pluginPath, 0777) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(pluginPath) != PREP_SUCCESS) {
+                if (filesystem::create_path(pluginPath, 0777) != PREP_SUCCESS) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
@@ -134,32 +133,32 @@ namespace micrantha
 
         std::string Repository::get_bin_path() const
         {
-            return build_sys_path(path_, BIN_FOLDER);
+            return filesystem::build_path(path_, BIN_FOLDER);
         }
 
         std::string Repository::get_plugin_path() const
         {
-            return build_sys_path(path_, PLUGIN_FOLDER);
+            return filesystem::build_path(path_, PLUGIN_FOLDER);
         }
 
         std::string Repository::get_build_path(const std::string &package_name) const
         {
-            return build_sys_path(path_, KITCHEN_FOLDER, BUILD_FOLDER, package_name);
+            return filesystem::build_path(path_, KITCHEN_FOLDER, BUILD_FOLDER, package_name);
         }
 
         std::string Repository::get_source_path(const std::string &package_name) const
         {
-            return build_sys_path(path_, KITCHEN_FOLDER, SOURCE_FOLDER, package_name);
+            return filesystem::build_path(path_, KITCHEN_FOLDER, SOURCE_FOLDER, package_name);
         }
 
         std::string Repository::get_install_path(const std::string &package_name) const
         {
-            return build_sys_path(path_, KITCHEN_FOLDER, INSTALL_FOLDER, package_name);
+            return filesystem::build_path(path_, KITCHEN_FOLDER, INSTALL_FOLDER, package_name);
         }
 
         std::string Repository::get_meta_path(const std::string &package_name) const
         {
-            return build_sys_path(path_, KITCHEN_FOLDER, META_FOLDER, package_name);
+            return filesystem::build_path(path_, KITCHEN_FOLDER, META_FOLDER, package_name);
         }
 
         int Repository::save_meta(const Package &config) const
@@ -175,16 +174,16 @@ namespace micrantha
             }
 
             std::string metaDir =
-                build_sys_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
+                    filesystem::build_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
 
-            if (directory_exists(metaDir) != PREP_SUCCESS) {
-                if (mkpath(metaDir, 0777)) {
+            if (filesystem::directory_exists(metaDir) != PREP_SUCCESS) {
+                if (filesystem::create_path(metaDir, 0777)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
             }
 
-            std::ofstream out(build_sys_path(metaDir, VERSION_FILE));
+            std::ofstream out(filesystem::build_path(metaDir, VERSION_FILE));
 
             if (!out.is_open()) {
                 log::error("unable to save version for ", config.name());
@@ -202,11 +201,11 @@ namespace micrantha
             if (config.has_path()) {
                 log::trace("copying ", config.path(), " to ", metaDir, "...");
 
-                if (copy_file(config.path(), build_sys_path(metaDir, PACKAGE_FILE))) {
+                if (filesystem::copy_file(config.path(), filesystem::build_path(metaDir, PACKAGE_FILE))) {
                     log::error("unable to copy package file ", config.path());
                 }
             } else {
-                if (config.save(build_sys_path(metaDir, PACKAGE_FILE))) {
+                if (config.save(filesystem::build_path(metaDir, PACKAGE_FILE))) {
                     log::error("unable to write package file ", config.name());
                 }
             }
@@ -217,13 +216,13 @@ namespace micrantha
         int Repository::has_meta(const Package &config) const
         {
             std::string metaDir =
-                build_sys_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
+                    filesystem::build_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
 
-            if (directory_exists(metaDir) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(metaDir) != PREP_SUCCESS) {
                 return PREP_FAILURE;
             }
 
-            std::ifstream in(build_sys_path(metaDir, VERSION_FILE));
+            std::ifstream in(filesystem::build_path(metaDir, VERSION_FILE));
 
             std::string info;
             in >> info;
@@ -243,15 +242,15 @@ namespace micrantha
         }
 
         bool Repository::exists(const Package &config) const {
-            std::string metaDir = build_sys_path(GLOBAL_REPO, KITCHEN_FOLDER, META_FOLDER, config.name());
+            std::string metaDir = filesystem::build_path(GLOBAL_REPO, KITCHEN_FOLDER, META_FOLDER, config.name());
 
-            if (directory_exists(metaDir) == PREP_SUCCESS) {
+            if (filesystem::directory_exists(metaDir) == PREP_SUCCESS) {
                 return true;
             }
 
-            metaDir = build_sys_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
+            metaDir = filesystem::build_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
 
-            return directory_exists(metaDir) == PREP_SUCCESS;
+            return filesystem::directory_exists(metaDir) == PREP_SUCCESS;
 
         }
 
@@ -269,9 +268,9 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
-            metaDir = build_sys_path(path_, KITCHEN_FOLDER, META_FOLDER);
+            metaDir = filesystem::build_path(path_, KITCHEN_FOLDER, META_FOLDER);
 
-            if (directory_exists(metaDir) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(metaDir) != PREP_SUCCESS) {
                 log::error(metaDir, " is not a directory");
                 return 0;
             }
@@ -323,7 +322,7 @@ namespace micrantha
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
 
-            if (directory_exists(path) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(path) != PREP_SUCCESS) {
                 log::error(path, " is not a directory");
                 return PREP_FAILURE;
             }
@@ -405,7 +404,7 @@ namespace micrantha
             char buf[PATH_MAX + 1] = {0};
             std::string installDir;
 
-            if (directory_exists(path) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(path) != PREP_SUCCESS) {
                 log::error(path, " does not exist.");
                 return PREP_FAILURE;
             }
@@ -466,7 +465,7 @@ namespace micrantha
         {
             std::string path = get_plugin_path();
 
-            if (directory_exists(path) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(path) != PREP_SUCCESS) {
                 return PREP_SUCCESS;
             }
 
@@ -485,7 +484,7 @@ namespace micrantha
                     continue;
                 }
 
-                auto pluginPath = build_sys_path(path, d->d_name);
+                auto pluginPath = filesystem::build_path(path, d->d_name);
 
                 auto plugin = std::make_shared<Plugin>(d->d_name);
 
@@ -542,7 +541,7 @@ namespace micrantha
         {
             log::trace("checking plugins for resolving [", location, "]...");
 
-            auto tempDir = make_temp_dir();
+            auto tempDir = filesystem::make_temp_dir();
 
             for (const auto &plugin : validPlugins_) {
                 auto result = plugin->on_resolve(location, tempDir);
