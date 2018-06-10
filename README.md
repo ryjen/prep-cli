@@ -354,8 +354,6 @@ TODO
 - [ ] consider sqlite storage
 - [ ] complete test suite
 - [x] convert plugins to compiled language
-- [ ] plugins may need to be interactive, currently not supported
-- [ ] to support plugin interaction, may need to move to fifo file based IO for non-user communication
 - [x] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
 - [ ] clion/intellij plugin
 - [x] CMake integration
@@ -364,7 +362,6 @@ TODO
 - [ ] plugin sdks for different languages
 - [ ] package.json in subdirectory support (recursive)
 - [ ] a strategy to lose dependency on 'prep run' (move library dependencies to system path, `prep install system`?)
-- [ ] consider not using pseudo terminals for non-unix systems or dumb termnimals like an IDE embedded terminal
 - [ ] make workflow video showing usage with vim
 
 Building

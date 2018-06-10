@@ -44,13 +44,13 @@ namespace micrantha {
             if (var && !strcasecmp(var, "prefix")) {
                 auto temp = Repository::get_local_repo();
 
-                if (directory_exists(temp) == PREP_SUCCESS) {
-                    vt100::print(temp, "\n");
+                if (filesystem::directory_exists(temp) == PREP_SUCCESS) {
+                    io::print(temp, "\n");
                     return PREP_SUCCESS;
                 }
 
-                if (directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
-                    vt100::print(Repository::GLOBAL_REPO);
+                if (filesystem::directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
+                    io::print(Repository::GLOBAL_REPO);
                     return PREP_SUCCESS;
                 }
                 return PREP_FAILURE;
@@ -63,10 +63,10 @@ namespace micrantha {
 
                 if (!var) {
                     // print all
-                    vt100::print(entry.first, "=", entry.second, "\n");
+                    io::print(entry.first, "=", entry.second, "\n");
                 } else if (!strcasecmp(var, entry.first.c_str())) {
                     // print a single value
-                    vt100::print(entry.second, "\n");
+                    io::print(entry.second, "\n");
                     return PREP_SUCCESS;
                 }
             }
@@ -88,9 +88,9 @@ namespace micrantha {
 
             buildPath = repo_.get_build_path(config.name());
 
-            if (directory_exists(buildPath) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(buildPath) != PREP_SUCCESS) {
                 log::trace("Creating [", buildPath, "]");
-                if (mkpath(buildPath, 0777)) {
+                if (filesystem::create_path(buildPath, 0777)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
@@ -98,9 +98,9 @@ namespace micrantha {
 
             installPath = repo_.get_install_path(config.name());
 
-            if (directory_exists(installPath) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(installPath) != PREP_SUCCESS) {
                 log::trace("Creating [", installPath, "]");
-                if (mkpath(installPath, 0777)) {
+                if (filesystem::create_path(installPath, 0777)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
@@ -142,7 +142,7 @@ namespace micrantha {
 
             buildPath = repo_.get_build_path(config.name());
 
-            if (directory_exists(buildPath) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(buildPath) != PREP_SUCCESS) {
                 log::perror("No build path to test for ", config.name());
                 return PREP_FAILURE;
             }
@@ -170,7 +170,7 @@ namespace micrantha {
 
             buildPath = repo_.get_build_path(config.name());
 
-            if (directory_exists(buildPath) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(buildPath) != PREP_SUCCESS) {
                 log::error("No build path to install ", config.name());
                 return PREP_FAILURE;
             }
@@ -207,8 +207,8 @@ namespace micrantha {
 
             auto buildDir = repo_.get_build_path(config.name());
 
-            if (directory_exists(buildDir) == PREP_SUCCESS) {
-                if (remove_directory(buildDir) == PREP_FAILURE) {
+            if (filesystem::directory_exists(buildDir) == PREP_SUCCESS) {
+                if (filesystem::remove_directory(buildDir) == PREP_FAILURE) {
                     log::error("unable to clean ", buildDir);
                     return PREP_FAILURE;
                 }
@@ -221,7 +221,7 @@ namespace micrantha {
         int Controller::remove(const std::string &package_name, const Options &opts) {
             std::string installDir = repo_.get_install_path(package_name);
 
-            if (directory_exists(installDir) != PREP_SUCCESS) {
+            if (filesystem::directory_exists(installDir) != PREP_SUCCESS) {
                 log::info(color::m(package_name), " is not installed");
                 return PREP_SUCCESS;
             }
@@ -240,14 +240,14 @@ namespace micrantha {
                 return PREP_FAILURE;
             }
 
-            if (remove_directory(installDir)) {
+            if (filesystem::remove_directory(installDir)) {
                 log::error("unable to remove package ", installDir);
                 return PREP_FAILURE;
             }
 
             installDir = repo_.get_meta_path(package_name);
 
-            if (remove_directory(installDir)) {
+            if (filesystem::remove_directory(installDir)) {
                 log::error("unable to remove meta package ", installDir);
                 return PREP_FAILURE;
             }
@@ -426,15 +426,14 @@ namespace micrantha {
                 return PREP_FAILURE;
             }
 
-            auto executable = build_sys_path(repo_.get_bin_path(), config.executable());
+            auto executable = filesystem::build_path(repo_.get_bin_path(), config.executable());
 
-            if (!file_executable(executable)) {
+            if (!filesystem::is_file_executable(executable)) {
                 log::error(executable, " is not executable");
                 return PREP_FAILURE;
             }
 
-            // crap this is
-            // TODO: sanitize
+            // build arg list crap
             const char* args[argc+1];
 
             auto fname = config.executable();
@@ -457,16 +456,11 @@ namespace micrantha {
 
             envp[runEnv.size()] = 0;
 
-            int err = fork_command(executable, const_cast<char**>(args), nullptr, const_cast<char**>(envp));
+            execve(executable.c_str(), const_cast<char**>(args), const_cast<char**>(envp));
 
-            switch (err) {
-                case -1:
-                    return PREP_ERROR;
-                case 127:
-                    return PREP_FAILURE;
-                default:
-                    return PREP_SUCCESS;
-            }
+            log::error("unable to run ", executable);
+
+            return PREP_FAILURE;
         }
     }
 }

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+while [ TRUE ]; do
+
+  read line
+
+  if [ "$line" = "END" ]; then
+    break
+  fi
+done
+
+echo "ECHO Please enter your name:"
+
+read name
+
+echo "ECHO Hello $name!"
+
