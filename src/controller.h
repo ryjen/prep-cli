@@ -119,6 +119,14 @@ namespace micrantha {
             int remove(const std::string &package_name, const Options &opts);
 
             /**
+             * internal method to get a package dependency
+             * @param config the dependency config
+             * @param opts the command line options
+             * @param path the path to build in
+             */
+            int get_package(const PackageDependency &config, const Options &opts, const std::string &path);
+
+            /**
              * internal method to build a package
              * @param p the package
              * @param path the path to build in

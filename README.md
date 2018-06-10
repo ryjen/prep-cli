@@ -16,7 +16,7 @@ Its main feature selling points are:
 
 Yes, in inception style, the core is written in C++, but the majority of the work is done by plugins.
 
-I don't really have time to maintain this project, so I'm releasing to open source in the hopes it will be beneficial.
+I don't really have time to maintain this project (SEE TODO), so I'm releasing to open source in the hopes it will be interesting.
 
 ![Prep Building Itself](prep.gif)
 
@@ -171,6 +171,29 @@ ECHO <message>\n
 
 Any other **output** by the plugin is forwarded to prep's output when in **verbose mode**.
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+## Current default plugins:
+
+- **archive**: a resolver plugin that downloads and extracts different archived formats
+- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
+- **cmake**: a build plugin that uses cmake to generate makefiles
+- **git**: a resolver plugin that clones a git repository
+- **homebrew**: a resolver plugin that installs packages using homebrew on OSX
+- **make**: a build plugin that executes make on a makefile.  requires install param
+
+=======
+## Current default plugins:
+
+- **archive**: a resolver plugin that downloads and extracts different archived formats
+- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
+- **cmake**: a build plugin that uses cmake to generate makefiles
+- **git**: a resolver plugin that clones a git repository
+- **homebrew**: a resolver plugin that installs packages using homebrew on OSX
+- **make**: a build plugin that executes make on a makefile.  requires install param
+- **apt**: a resolver plugin that installs packages using apt on debian/ubuntu
+
+>>>>>>> development
 ## Plugin manifest:
 
 Plugins should contain a **manifest.json** to describe the type of plugin and how to run.
@@ -319,32 +342,35 @@ This is what a configuration from another project looks like:
 
 TODO
 ====
-- [ ] website/api for plugins and and configurations for common dependencies
-- [-] parse archive versions from filename (2018-03-05 currently done in archive plugin)
+- [ ] website/api for plugins and docs
+- [x] parse archive versions from filename (2018-03-05 currently done in archive plugin)
 - [ ] store md5 hash of configs in meta to detect changes
 - [x] store sub package.json in meta for dependencies
 - [ ] a way to rebuild a dependency or all dependencies
-- [ ] more secure plugins (enforce digital signature?, chroot?)
-- [ ] a way to install new plugins
+- [ ] more security plugins (enforce digital signature?, chroot to prep repository only?)
+- [ ] a way to install new plugins and/or plugin management
 - [ ] consider RPATH flags for runtime
-- [ ] dependencies will be better as a tree rather than a list (need a good graph lib)
+- [ ] dependencies will be better as a tree rather than a list (to avoid version conflicts, need a good graph lib)
 - [ ] consider sqlite storage
-- [ ] test suite
+- [ ] complete test suite
 - [x] convert plugins to compiled language
 - [ ] plugins may need to be interactive, currently not supported
-- [-] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
+- [ ] to support plugin interaction, may need to move to fifo file based IO for non-user communication
+- [x] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
 - [ ] clion/intellij plugin
+- [x] CMake integration
 - [ ] ability for plugins to add commands to prep
 - [ ] installers instead of embedding plugins into binary
-- [ ] plugin sdks for languages
+- [ ] plugin sdks for different languages
 - [ ] package.json in subdirectory support (recursive)
-- [ ] a strategy to lose dependency on 'prep run' (move library dependencies to system path)
-- [ ] fix broken pseudo terms under dumb terminals (CLion)
+- [ ] a strategy to lose dependency on 'prep run' (move library dependencies to system path, `prep install system`?)
+- [ ] consider not using pseudo terminals for non-unix systems or dumb termnimals like an IDE embedded terminal
+- [ ] make workflow video showing usage with vim
 
 Building
 ========
 
-Just make sure you do a `git submodule update --init --recursive`.  The rest I leave up to you. 
+Just make sure you do a `git submodule update --init --recursive`.  The rest I leave up to you using CMake. 
 
 Contributing
 ============

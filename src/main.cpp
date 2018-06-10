@@ -295,7 +295,18 @@ int main(int argc, char *const argv[]) {
             return PREP_FAILURE;
         }
 
-        return prep.install(config, options);
+        if (optind == argc) {
+            return prep.install(config, options);
+        }
+
+        auto dep = config.find_dependency(argv[optind++]);
+
+        if (!dep) {
+            log::error("no such dependency");
+            return PREP_FAILURE;
+        }
+
+        return prep.install(*dep, options);
     }
 
     if (!strcmp(command, "add")) {
