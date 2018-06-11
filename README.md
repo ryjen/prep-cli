@@ -2,21 +2,22 @@
 Prep
 ====
 
-Prep is a modular package manager and build tool for c/c++ projects. 
+Prep is a modular package manager and build tool for c/c++ projects on posix systems.
 
-Its main feature selling points are:
+In inception style, the core is written in C++, but the majority of the work is done by plugins.
 
-* You don't need to create separate packages for dependencies.  It will sacrifice to work with a git repository or a download immediately.
+Its main benefits are:
 
-* Prep will manage dependencies and their paths and flags for building and running c/c++ projects.
+* Plugin architecture for extendability to resolving and building packages.  Plugins can be configured in projects and support user interaction.
 
-* Plugin architecture for extendability
+* You don't need a dedicated repository or configuration for packages. Configure your project's dependency to a git repo, archive url or anything that a resolver plugin supports.
 
-* CMake module for use in other build systems (CLion, etc)
+* It will work with any package's build system via plugins and configuration.  Build time and Runtime paths and flags are managed.  
 
-Yes, in inception style, the core is written in C++, but the majority of the work is done by plugins.
+* CMake integration for use in IDEs (TODO: document)
 
-I don't really have time to maintain this project (SEE TODO), so I'm releasing to open source in the hopes it will be interesting.
+
+I don't really have a lot time to maintain this project (SEE TODO), so I'm releasing to open source in the hopes it will be interesting to others.
 
 ![Prep Building Itself](prep.gif)
 
@@ -25,43 +26,34 @@ Commands
 ========
 
 `prep` or `prep get`
-  - install dependencies into the repository via a plugin.  this is usefull from other IDE's. (TODO: document CLion setup)
+  - install dependencies into the local repository.
 
 `prep build`
-  - build current project.  this adds building the current project to getting dependencies.
+  - build current project.
 
 `prep install`
-  - installs the current project in the repository
+  - installs the current project in the local repository for execution
   
 `prep build -fv`
   - rebuild everything including dependencies and be verbose
 
 `prep cleanup`
   - removes build files and other intermediates
-  
-`prep link`
-  - links a dependency for use
+ 
+ `prep plugins`
+  - shows the help message of the plugin manager
 
-`prep unlink`
-  - unlinks a dependency for use
-  
-`prep add <dependency>`
-  - adds a dependency to the repository via a plugin
-  
-`prep remove <dependency>`
-  - removes a dependency from the repository via a plugin
-
-`prep test`
-  - tests a project or dependency via a plugin
+ `prep test`
+  - tests a project
   
 Plugins
 =======
 
 Plugins can be written in **any language that supports stdin/stdout** using the following "crap point oh" version of a specification for communication. 
 
-The plugins are forked to run in a seperate pseudo terminal. (See TODO for security)
+The plugins are forked to run in a seperate pseudo terminal, allowing for user interaction should a plugin require it.
 
-The default plugins and SDK is written in Go.  They are compiled, compressed, and included in the prep binary. When you initialize a repository for the first time they will be extracted. (TODO: use installers and shared files)
+The default plugins and SDK is written in Go.  They are compiled, compressed, and included in a shared library.  When you initialize a repository for the first time, the shared library will be loaded and the default plugins extracted.
 
 ### Current default plugins:
 
@@ -72,7 +64,6 @@ The default plugins and SDK is written in Go.  They are compiled, compressed, an
 - **git**: a resolver plugin that clones a git repository
 - **homebrew**: a resolver plugin that installs packages using homebrew on OSX
 - **apt**: a resolver plugin that installs packages using apt on deb/ubuntu
-
 
 ## Plugin Types:
 
@@ -146,9 +137,9 @@ A plugin will always recieve a header on stdin:
 END\n
 ```
 
-## Plugin output commands:
+## Plugin commands:
 
-A plugin may send a command over stdout.
+A plugin may send a command over stdout:
 
 
 `RETURN`
@@ -171,18 +162,6 @@ ECHO <message>\n
 
 Any other **output** by the plugin is forwarded to prep's output when in **verbose mode**.
 
-<<<<<<< HEAD
-||||||| merged common ancestors
-## Current default plugins:
-
-- **archive**: a resolver plugin that downloads and extracts different archived formats
-- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
-- **cmake**: a build plugin that uses cmake to generate makefiles
-- **git**: a resolver plugin that clones a git repository
-- **homebrew**: a resolver plugin that installs packages using homebrew on OSX
-- **make**: a build plugin that executes make on a makefile.  requires install param
-
-=======
 ## Current default plugins:
 
 - **archive**: a resolver plugin that downloads and extracts different archived formats
@@ -193,7 +172,6 @@ Any other **output** by the plugin is forwarded to prep's output when in **verbo
 - **make**: a build plugin that executes make on a makefile.  requires install param
 - **apt**: a resolver plugin that installs packages using apt on debian/ubuntu
 
->>>>>>> development
 ## Plugin manifest:
 
 Plugins should contain a **manifest.json** to describe the type of plugin and how to run.
@@ -346,7 +324,7 @@ TODO
 - [x] parse archive versions from filename (2018-03-05 currently done in archive plugin)
 - [ ] store md5 hash of configs in meta to detect changes
 - [x] store sub package.json in meta for dependencies
-- [ ] a way to rebuild a dependency or all dependencies
+- [x] a way to rebuild a dependency or all dependencies
 - [ ] more security plugins (enforce digital signature?, chroot to prep repository only?)
 - [ ] a way to install new plugins and/or plugin management
 - [ ] consider RPATH flags for runtime
@@ -359,7 +337,7 @@ TODO
 - [ ] clion/intellij plugin
 - [x] CMake integration
 - [ ] ability for plugins to add commands to prep
-- [ ] installers instead of embedding plugins into binary
+- [x] installers instead of embedding plugins into binary (2018-06-10 dynamically loaded shared lib instead)
 - [ ] plugin sdks for different languages
 - [ ] package.json in subdirectory support (recursive)
 - [ ] a strategy to lose dependency on 'prep run' (move library dependencies to system path, `prep install system`?)
