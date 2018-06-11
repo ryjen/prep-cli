@@ -3,6 +3,7 @@
 #include "common.h"
 #include "log.h"
 #include "util.h"
+#include "plugin_manager.h"
 
 namespace micrantha {
     namespace prep {
@@ -461,6 +462,13 @@ namespace micrantha {
             log::error("unable to run ", executable);
 
             return PREP_FAILURE;
+        }
+
+        int Controller::plugins(const Options &opts, int argc, char *const *argv) const {
+
+            PluginManager manager(repo_);
+
+            return manager.execute(opts, argc, argv);
         }
     }
 }

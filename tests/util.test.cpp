@@ -16,17 +16,17 @@ go_bandit([]() {
 
             Assert::That(path.empty(), IsFalse());
 
-            Assert::That(directory_exists(path), IsTrue());
+            Assert::That(directory_exists(path), Equals(PREP_SUCCESS));
         });
 
         it("can remove", []() {
             auto path = make_temp_dir();
 
-            Assert::That(directory_exists(path), IsTrue());
+            Assert::That(directory_exists(path), Equals(PREP_SUCCESS));
 
-            remove_directory(path);
+            Assert::That(remove_directory(path), Equals(PREP_SUCCESS));
 
-            Assert::That(directory_exists(path), IsFalse());
+            Assert::That(directory_exists(path), !Equals(PREP_SUCCESS));
         });
 
         it("can build a system path", []() {
@@ -39,15 +39,15 @@ go_bandit([]() {
 
             auto path = make_temp_dir();
 
-            auto fname = build_path(path, "test.file");
+            auto fName = build_path(path, "test.file");
 
-            std::ofstream f(fname);
+            std::ofstream f(fName);
 
             f << "testing\n";
 
             f.close();
 
-            Assert::That(file_exists(fname), Equals(PREP_SUCCESS));
+            Assert::That(file_exists(fName), Equals(PREP_SUCCESS));
 
             Assert::That(remove_directory(path), Equals(PREP_SUCCESS));
 

@@ -354,6 +354,7 @@ TODO
 - [ ] consider sqlite storage
 - [ ] complete test suite
 - [x] convert plugins to compiled language
+- [x] move default plugins to dynamically loaded shared library to save memory
 - [x] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
 - [ ] clion/intellij plugin
 - [x] CMake integration

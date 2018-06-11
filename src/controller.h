@@ -94,6 +94,14 @@ namespace micrantha {
             int execute(const Package &config, int argc, char *const *argv) const;
 
             /**
+             * executes the plugin manager
+             * @param argc the number of arguments
+             * @param argv the arguments to pass
+             * @return PREP_SUCCESS, PREP_FAILURE or PREP_ERROR on success, failure or when an error occured respectively
+             */
+            int plugins(const Options &opts, int argc, char *const *argv) const;
+
+            /**
              * prints sourceable environment variables
              * @param var print a specific variable value
              * @return PREP_SUCCESS if something was printed, otherwise PREP_FAILURE

@@ -1,14 +1,22 @@
 
 #include <cstdlib>
 
-namespace micrantha
-{
-    namespace prep
-    {
-         unsigned char default_plugins_archive[] = {
-             @PLUGINS_ARCHIVE@
-         };
+namespace  {
+    unsigned char __default_plugins_archive[] = {
+        @PLUGINS_ARCHIVE@
+    };
 
-         size_t default_plugins_archive_size = sizeof(default_plugins_archive) / sizeof(default_plugins_archive[0]);
+    size_t __default_plugins_archive_size = sizeof(__default_plugins_archive) / sizeof(__default_plugins_archive[0]);
+}
+
+extern "C" {
+
+    unsigned char *default_plugins_archive() {
+        return __default_plugins_archive;
     }
+
+    size_t default_plugins_archive_size() {
+        return __default_plugins_archive_size;
+    }
+
 }

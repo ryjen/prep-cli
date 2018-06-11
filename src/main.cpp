@@ -12,21 +12,22 @@
 
 using namespace micrantha::prep;
 
-void print_help(char *exe, const Options &options) {
+void print_help(const Options &options) {
 
     //TODO replace with man page
-    printf("Syntax: %s build [package]\n", exe);
-    printf("        %s test [package]\n", exe);
-    printf("        %s install [package]\n", exe);
-    printf("        %s get [package]\n", exe);
-    printf("        %s add <package or plugin>\n", exe);
-    printf("        %s remove <package or plugin>\n", exe);
-    printf("        %s link <package> [version]\n", exe);
-    printf("        %s unlink <package>\n", exe);
-    printf("        %s cleanup [package]\n", exe);
-    printf("        %s run\n", exe);
-    printf("        %s env\n", exe);
-    printf("        %s check\n", exe);
+    printf("Syntax: %s build [package]\n", options.exe);
+    printf("        %s test [package]\n", options.exe);
+    printf("        %s install [package]\n", options.exe);
+    printf("        %s get [package]\n", options.exe);
+    printf("        %s add <package>\n", options.exe);
+    printf("        %s remove <package>\n", options.exe);
+    printf("        %s link <package> [version]\n", options.exe);
+    printf("        %s unlink <package>\n", options.exe);
+    printf("        %s cleanup [package]\n", options.exe);
+    printf("        %s plugins [options...]\n", options.exe);
+    printf("        %s run\n", options.exe);
+    printf("        %s env\n", options.exe);
+    printf("        %s check\n", options.exe);
 
     if (options.verbose != Verbosity::All) {
         return;
@@ -71,6 +72,7 @@ void print_help(char *exe, const Options &options) {
 int main(int argc, char *const argv[]) {
     Controller prep;
     Options options{
+            .exe = argv[0],
             .package_file = Repository::PACKAGE_FILE,
             .global = false,
             .location = ".",
@@ -110,7 +112,7 @@ int main(int argc, char *const argv[]) {
                 }
                 break;
             case 'h':
-                print_help(argv[0], options);
+                print_help(options);
                 return PREP_FAILURE;
             case 1:
                 options.defaults = true;
@@ -355,7 +357,7 @@ int main(int argc, char *const argv[]) {
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
-            log::error("Remove which package?");
+            log::error("Remove which package or plugin?");
             return PREP_FAILURE;
         }
 
@@ -369,8 +371,13 @@ int main(int argc, char *const argv[]) {
         return prep.remove(config, options);
     }
 
+    if (!strcmp(command, "plugins")) {
+
+        return prep.plugins(options, argc - optind, &argv[optind]);
+    }
+
     printf("Unknown command '%s'\n", command ? command : "null");
 
-    print_help(argv[0], options);
+    print_help(options);
     return PREP_FAILURE;
 }
