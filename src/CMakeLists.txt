@@ -1,31 +1,46 @@
 
-# define source files for the library
-set(LIBRARY_FILES
-    environment.cpp
-    log.cpp
-    util.cpp
-    decompressor.cpp
-    vt100.cpp)
-
 # define source files for the binary
 set(SOURCE_FILES
     controller.cpp
     package.cpp
     plugin.cpp
-    plugins_archive.cpp
-    repository.cpp)
+    repository.cpp
+    environment.cpp
+    log.cpp
+    util.cpp
+    decompressor.cpp
+    vt100.cpp
+    plugin_manager.cpp
+)
 
-include_directories(${LibArchive_INCLUDE_DIRS})
+#defines the library header files for installation
+set(HEADER_FILES
+    common.h
+    environment.h
+    plugins_archive.h
+    log.h
+    util.h
+    decompressor.h
+    vt100.h
+    plugin_manager.h
+)
 
-#define the library
-add_library(${PROJECT_LIBRARY} ${LIBRARY_FILES})
+#---------------------------------------------------------------------------------------------------------
+# prep binary
 
 #define the executable
-add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 #link libraries to the executable
-target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS})
+target_link_libraries(${PROJECT_NAME} ${LibArchive_LDFLAGS})
 
+#add include directories
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LibArchive_INCLUDE_DIRS})
+
+#---------------------------------------------------------------------------------------------------------
+# default plugins shared library
+
+# Generate source for default plugins
 set(PLUGINS_ARCHIVE_SOURCE ${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp)
 
 # generate the plugins archive source file
@@ -37,23 +52,22 @@ add_custom_target(generate_source ALL DEPENDS ${PLUGINS_ARCHIVE_SOURCE})
 
 set_source_files_properties(${PLUGINS_ARCHIVE_SOURCE} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp.in)
 
-add_dependencies(${PROJECT_NAME} generate_source)
+# the shared library name
+set(DEFAULT_PLUGINS ${PROJECT_NAME}-default-plugins)
 
-#defines the library header files for installation
-set(HEADER_FILES
-    common.h
-    environment.h
-    log.h
-    util.h
-    decompressor.h
-    vt100.h)
+# define the default plugins shared library
+add_library(${DEFAULT_PLUGINS} SHARED ${PLUGINS_ARCHIVE_SOURCE})
 
-#sets installation target for library header files
-install(FILES ${HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_LIBRARY})
+add_dependencies(${DEFAULT_PLUGINS} generate_source)
+
+#---------------------------------------------------------------------------------------------------------
+# installation
 
 #sets installation for library and executable binaries
-install(TARGETS ${PROJECT_LIBRARY} ${PROJECT_NAME}
-    ARCHIVE DESTINATION lib
+install(TARGETS ${PROJECT_NAME} ${PLUGINS_LIBRARY} ${PROJECT_PLUGINS}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
 )
+
 

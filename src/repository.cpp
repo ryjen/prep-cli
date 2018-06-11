@@ -9,12 +9,14 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <dlfcn.h>
 
 #include "common.h"
 #include "decompressor.h"
 #include "log.h"
 #include "repository.h"
 #include "util.h"
+#include "plugins_archive.h"
 
 namespace micrantha
 {
@@ -114,7 +116,7 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                if (init_plugins(opts, pluginPath) == PREP_FAILURE) {
+                if (init_plugins(opts, pluginPath) != PREP_SUCCESS) {
                     return PREP_FAILURE;
                 }
             }
@@ -126,9 +128,40 @@ namespace micrantha
         {
             log::info("initializing plugins");
 
-            Decompressor unzip(default_plugins_archive, default_plugins_archive_size, path);
+            // load shared library with default plugins
+            void *default_plugins = dlopen(DEFAULT_PLUGINS_LIB, RTLD_NOW);
 
-            return unzip.decompress();
+            if (default_plugins == nullptr) {
+                log::error("Unable to load default plugins: ", dlerror());
+                return PREP_ERROR;
+            }
+
+            // get the archive function
+            default_plugins_archive archive = (default_plugins_archive) dlsym(default_plugins, DEFAULT_PLUGINS_ARCHIVE);
+
+            if (archive == nullptr) {
+                log::error("Unable to find plugins archive: ", dlerror());
+                return PREP_ERROR;
+            }
+
+            // get the archive size function
+            default_plugins_archive_size size = (default_plugins_archive_size) dlsym(default_plugins, DEFAULT_PLUGINS_ARCHIVE_SIZE);
+
+            if (size == nullptr) {
+                log::error("Unable to find plugins archive size: ", dlerror());
+                return PREP_ERROR;
+            }
+
+            // build a decompressor
+            Decompressor unzip(archive(), size(), path);
+
+            // extract
+            auto res = unzip.decompress();
+
+            // close shared library
+            dlclose(default_plugins);
+
+            return res;
         }
 
         std::string Repository::get_bin_path() const

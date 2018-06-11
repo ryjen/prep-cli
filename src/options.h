@@ -37,6 +37,8 @@ namespace micrantha {
             Verbosity verbose;
             // accept default options
             bool defaults;
+            // the binary name
+            char *exe;
         } Options;
 
     }

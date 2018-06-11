@@ -13,15 +13,6 @@ namespace micrantha
         class PackageDependency;
 
         /**
-         * compile a zipped copy of the plugins into binary.  This can
-         * be extracted by prep on demand.
-         * i would prefer an install script of some sort to do this,
-         * but for now, it ensures the plugins are always available.
-         */
-        extern unsigned char default_plugins_archive[];
-        extern size_t default_plugins_archive_size;
-
-        /**
          * represents a plugin
          */
         class Plugin {
