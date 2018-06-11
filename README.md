@@ -216,7 +216,7 @@ packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** 
 Configuration
 =============
 
-The configuration was also inpsired by node. A project is simple a **package.json** file containing the json.  The fields are as follows:
+The configuration was also inspired by node. A project is simple a **package.json** file containing the json.  The fields are as follows:
 
 `name`
   - the name of the project as a string
@@ -320,27 +320,26 @@ This is what a configuration from another project looks like:
 
 TODO
 ====
+- [ ] ability to distinguish build types for a project (debug/release)
+- [ ] store md5 hash of configs in meta to detect project changes
 - [ ] website/api for plugins and docs
-- [x] parse archive versions from filename (2018-03-05 currently done in archive plugin)
-- [ ] store md5 hash of configs in meta to detect changes
-- [x] store sub package.json in meta for dependencies
-- [x] a way to rebuild a dependency or all dependencies
-- [ ] more security plugins (enforce digital signature?, chroot to prep repository only?)
+- [x] move default plugins to dynamically loaded shared library to save memory
+- [ ] more security on plugins (enforce digital signature?, chroot to prep repository?)
 - [ ] a way to install new plugins and/or plugin management
-- [ ] consider RPATH flags for runtime
-- [ ] dependencies will be better as a tree rather than a list (to avoid version conflicts, need a good graph lib)
+- [x] parse archive versions from filename
+- [x] store config subset of package.json in meta for dependencies for single use commands
+- [x] a way to rebuild a dependency or all dependencies
+- [ ] dependencies will be better as a tree rather than a list
 - [ ] consider sqlite storage
 - [ ] complete test suite
 - [x] convert plugins to compiled language
-- [x] move default plugins to dynamically loaded shared library to save memory
-- [x] repository cleanup (builds, old versions, etc) (2018-03-05 partially done)
+- [x] repository cleanup (builds, old versions, etc)
 - [ ] clion/intellij plugin
 - [x] CMake integration
 - [ ] ability for plugins to add commands to prep
-- [x] installers instead of embedding plugins into binary (2018-06-10 dynamically loaded shared lib instead)
 - [ ] plugin sdks for different languages
 - [ ] package.json in subdirectory support (recursive)
-- [ ] a strategy to lose dependency on 'prep run' (move library dependencies to system path, `prep install system`?)
+- [ ] a strategy to lose dependency on 'prep run' (`prep install system`?)
 - [ ] make workflow video showing usage with vim
 
 Building
