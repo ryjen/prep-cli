@@ -82,6 +82,8 @@ namespace micrantha
 
             Plugin &set_verbose(bool value);
 
+            Plugin &set_enabled(bool value);
+
             // callbacks for the different hooks
             Result on_load() const;
 
@@ -109,7 +111,10 @@ namespace micrantha
              */
             int load(const std::string &path);
 
+            int save();
         private:
+            friend class PluginManager;
+
             /**
              * executes this plugin.  this is where the magic happens
              * @param method the type of hook being executed
@@ -120,11 +125,15 @@ namespace micrantha
             Result execute(const Hooks &method,
                            const std::vector<std::string> &input = std::vector<std::string>()) const;
 
+            int read_config();
+
             // properties
+            Package::json_type config_;
             std::string name_;
+            std::string basePath_;
             std::string executablePath_;
             std::string version_;
-            std::string basePath_;
+            bool enabled_;
             Types type_;
             bool verbose_;
         };

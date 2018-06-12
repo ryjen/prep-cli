@@ -22,9 +22,7 @@ namespace micrantha {
         }
 
         int Controller::load(const Options &opts) {
-            if (repo_.validate_plugins(opts) == PREP_FAILURE) {
-                return PREP_FAILURE;
-            }
+
 
             if (repo_.load_plugins(opts) == PREP_FAILURE) {
                 log::error("unable to load plugins");
@@ -464,7 +462,7 @@ namespace micrantha {
             return PREP_FAILURE;
         }
 
-        int Controller::plugins(const Options &opts, int argc, char *const *argv) const {
+        int Controller::plugins(const Options &opts, int argc, char *const *argv) {
 
             PluginManager manager(repo_);
 

@@ -46,6 +46,7 @@ add_subdirectory(plugins)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(util)
+add_subdirectory(man)
 
 # Setup testing
 enable_testing()

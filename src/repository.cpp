@@ -45,13 +45,63 @@ namespace micrantha
             return current_path;
         }
 
-        int Repository::initialize(const Options &opts)
-        {
+        int Repository::initialize(const Options &opts) {
             if (opts.global) {
                 path_ = GLOBAL_REPO;
             } else {
                 path_ = get_local_repo();
             }
+
+            return initialize_plugins(opts);
+        }
+
+        int Repository::initialize_plugins(const Options &opts) {
+            std::string path = get_plugin_path();
+
+            if (validate_plugins(opts) != PREP_SUCCESS) {
+                return PREP_SUCCESS;
+            }
+
+            struct dirent *d = nullptr;
+            DIR *dir = opendir(path.c_str());
+
+            if (dir == nullptr) {
+                log::perror(errno);
+                return PREP_FAILURE;
+            }
+
+
+            while ((d = readdir(dir)) != nullptr) {
+                if (d->d_name[0] == '.') {
+                    continue;
+                }
+
+                auto pluginPath = filesystem::build_path(path, d->d_name);
+
+                auto plugin = std::make_shared<Plugin>(d->d_name);
+
+                switch (plugin->load(pluginPath)) {
+                    case PREP_SUCCESS:
+                        plugin->set_verbose(opts.verbose == Verbosity::All);
+                        plugins_.push_back(plugin);
+                        if (plugin->type() != Plugin::Types::INTERNAL) {
+                            log::trace("found plugin ", color::m(plugin->name()), " version [",
+                                       color::y(plugin->version()), "]");
+                            validPlugins_.push_back(plugin);
+                        }
+                        break;
+                    case PREP_FAILURE:
+                        log::warn("unable to load plugin [", d->d_name, "]");
+                        break;
+                    case PREP_ERROR:
+                        log::trace("skipping non-plugin [", d->d_name, "]");
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            closedir(dir);
 
             return PREP_SUCCESS;
         }
@@ -110,13 +160,18 @@ namespace micrantha
         {
             const std::string pluginPath = get_plugin_path();
 
-            if (filesystem::directory_exists(pluginPath) != PREP_SUCCESS) {
-                if (filesystem::create_path(pluginPath, 0777) != PREP_SUCCESS) {
-                    log::perror(errno);
-                    return PREP_FAILURE;
+            bool exists = filesystem::directory_exists(pluginPath) == PREP_SUCCESS;
+
+            if (!exists || filesystem::directory_empty(pluginPath) == PREP_SUCCESS) {
+
+                if (!exists) {
+                    if (filesystem::create_path(pluginPath, 0777) != PREP_SUCCESS) {
+                        log::perror(errno);
+                        return PREP_FAILURE;
+                    }
                 }
 
-                if (init_plugins(opts, pluginPath) != PREP_SUCCESS) {
+                if (install_default_plugins(opts, pluginPath) != PREP_SUCCESS) {
                     return PREP_FAILURE;
                 }
             }
@@ -124,9 +179,9 @@ namespace micrantha
             return PREP_SUCCESS;
         }
 
-        int Repository::init_plugins(const Options &opts, const std::string &path) const
+        int Repository::install_default_plugins(const Options &opts, const std::string &path) const
         {
-            log::info("initializing plugins");
+            log::info("installing default plugins");
 
             // load shared library with default plugins
             void *default_plugins = dlopen(DEFAULT_PLUGINS_LIB, RTLD_NOW);
@@ -496,60 +551,12 @@ namespace micrantha
 
         int Repository::load_plugins(const Options &opts)
         {
-            std::string path = get_plugin_path();
-
-            if (filesystem::directory_exists(path) != PREP_SUCCESS) {
-                return PREP_SUCCESS;
-            }
-
-            struct dirent *d = nullptr;
-            DIR *dir = opendir(path.c_str());
-
-            if (dir == nullptr) {
-                log::perror(errno);
-                return PREP_FAILURE;
-            }
-
             log::info("loading plugins");
 
-            while ((d = readdir(dir)) != nullptr) {
-                if (d->d_name[0] == '.') {
-                    continue;
-                }
-
-                auto pluginPath = filesystem::build_path(path, d->d_name);
-
-                auto plugin = std::make_shared<Plugin>(d->d_name);
-
-                switch (plugin->load(pluginPath)) {
-                    case PREP_SUCCESS:
-                        plugin->set_verbose(opts.verbose == Verbosity::All);
-                        plugins_.push_back(plugin);
-                        if (plugin->type() != Plugin::Types::INTERNAL) {
-                            log::trace("loaded plugin ", color::m(plugin->name()), " version [",
-                                       color::y(plugin->version()), "]");
-                            validPlugins_.push_back(plugin);
-                        }
-                        break;
-                    case PREP_FAILURE:
-                        log::warn("unable to load plugin [", d->d_name, "]");
-                        break;
-                    case PREP_ERROR:
-                        log::trace("skipping non-plugin [", d->d_name, "]");
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            closedir(dir);
-
             for (const auto &plugin : plugins_) {
-
-                log::debug("initializing ", color::m(plugin->name()), " [", color::y(plugin->version()), "]");
-
-                if (plugin->on_load() == PREP_ERROR) {
-                    return PREP_FAILURE;
+                if (plugin->on_load() == process::NotFound) {
+                    log::error("Plugin '", plugin->name(), "' not available, disabling");
+                    plugin->set_enabled(false).save();
                 }
             }
 
@@ -561,6 +568,7 @@ namespace micrantha
             log::trace("checking plugins for resolving [", config.name(), "]...");
 
             for (const auto &plugin : validPlugins_) {
+
                 auto result = plugin->on_resolve(config, get_source_path(config.name()));
                 if (result == PREP_SUCCESS) {
                     log::info("resolved ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
@@ -577,6 +585,7 @@ namespace micrantha
             auto tempDir = filesystem::make_temp_dir();
 
             for (const auto &plugin : validPlugins_) {
+
                 auto result = plugin->on_resolve(location, tempDir);
 
                 if (result == PREP_SUCCESS) {
@@ -592,6 +601,7 @@ namespace micrantha
             log::trace("checking plugins for install of [", config.name(), "]...");
 
             for (const auto &plugin : validPlugins_) {
+
                 if (plugin->on_add(config, path_) == PREP_SUCCESS) {
                     log::info("installed ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     return PREP_SUCCESS;
@@ -605,6 +615,7 @@ namespace micrantha
             log::trace("checking plugins for removal of [", config.name(), "]...");
 
             for (const auto &plugin : validPlugins_) {
+
                 if (plugin->on_remove(config, path_) == PREP_SUCCESS) {
                     log::info("removed ", color::m(config.name()), " from plugin ", color::c(plugin->name()));
                     return PREP_SUCCESS;
@@ -634,8 +645,6 @@ namespace micrantha
                     return PREP_FAILURE;
                 }
 
-                log::info("building ", color::m(config.name()), " with ", color::c(plugin->name()));
-
                 if (plugin->on_build(config, sourcePath, buildPath, installPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
                 }
@@ -653,8 +662,6 @@ namespace micrantha
                     log::error("No plugin [", name, "] found");
                     return PREP_FAILURE;
                 }
-
-                log::info("testing ", color::m(config.name()), " with ", color::c(plugin->name()));
 
                 if (plugin->on_test(config, sourcePath, buildPath) == PREP_FAILURE) {
                     return PREP_FAILURE;
@@ -674,8 +681,6 @@ namespace micrantha
                     log::error("No plugin [", name, "] found");
                     return PREP_FAILURE;
                 }
-
-                log::info("installing ", color::m(config.name()), " with ", color::c(plugin->name()));
 
                 if (plugin->on_install(config, sourcePath, buildPath) == PREP_FAILURE) {
                     return PREP_FAILURE;

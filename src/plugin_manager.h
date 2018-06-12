@@ -8,7 +8,7 @@ namespace micrantha {
 
         class PluginManager {
         public:
-            PluginManager(const Repository &repo) : repo_(repo) {}
+            PluginManager(Repository &repo) : repo_(repo) {}
 
             int execute(const Options &opts, int argc, char *const argv[]) const;
         private:
@@ -23,8 +23,10 @@ namespace micrantha {
 
             int disable(const std::string &name) const;
 
+            int list(const Options &opts) const;
+
             // fields
-            const Repository &repo_;
+            Repository &repo_;
         };
 
     }

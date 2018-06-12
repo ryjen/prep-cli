@@ -9,6 +9,10 @@
 namespace micrantha {
     namespace prep {
 
+        namespace string {
+            bool equals(const std::string &left, const std::string &right);
+        }
+
         namespace filesystem {
 #ifdef _WIN32
             constexpr const char *const DIR_SYM = "\\";
@@ -28,6 +32,8 @@ namespace micrantha {
              * @return PREP_SUCCESS if exists, PREP_FAILURE if it doesn't or PREP_ERROR upon error
              */
             int directory_exists(const path &path);
+
+            int directory_empty(const path &path);
 
             /**
              * copies an entire directory to another directory
@@ -109,6 +115,7 @@ namespace micrantha {
              * @return the output stream
              */
             std::ostream &print(std::ostream &os);
+            std::ostream &println(std::ostream &os);
 
             /**
              * variadic print
@@ -127,6 +134,14 @@ namespace micrantha {
                 // print the remaining arguments
                 return print(os, args...);
             }
+            template <class A0, class... Args>
+            std::ostream &println(std::ostream &os, const A0 &a0, const Args &... args)
+            {
+                // print the argument
+                os << a0;
+                // print the remaining arguments
+                return println(os, args...);
+            }
 
             /**
              * variadic print
@@ -141,7 +156,12 @@ namespace micrantha {
                 // pass the first argument to the printer
                 return print(os, args...);
             }
-
+            template <class... Args>
+            std::ostream &println(std::ostream &os, const Args &... args)
+            {
+                // pass the first argument to the printer
+                return println(os, args...);
+            }
             /**
              * variadic print
              * @tparam Args the type of arguments
@@ -153,10 +173,17 @@ namespace micrantha {
             {
                 return print(std::cout, args...);
             }
-
+            template <class... Args>
+            std::ostream &println(const Args &... args)
+            {
+                return println(std::cout, args...);
+            }
         }
 
         namespace process {
+
+            constexpr static const int NotFound = 127;
+
             /**
              * runs a command in a forked process
              * @return PREP_SUCCESS or PREP_FAILURE upon error

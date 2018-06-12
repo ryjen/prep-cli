@@ -6,26 +6,24 @@
 #include "util.h"
 #include "common.h"
 
-using namespace std;
-
 namespace micrantha
 {
     namespace prep
     {
         namespace build {
-            using namespace filesystem;
+            namespace fs = filesystem;
 
-            string flags(const string &varName, const string &flag, const string &folder)
+            std::string flags(const std::string &varName, const std::string &flag, const std::string &folder)
             {
-                ostringstream buf;
+                std::ostringstream buf;
                 auto temp = Repository::get_local_repo();
 
-                if (directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
-                    buf << " " << flag << build_path(Repository::GLOBAL_REPO, folder);
+                if (fs::directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
+                    buf << " " << flag << fs::build_path(Repository::GLOBAL_REPO, folder);
                 }
 
-                if (directory_exists(temp) == PREP_SUCCESS) {
-                    buf << " " << flag << build_path(temp, folder);
+                if (fs::directory_exists(temp) == PREP_SUCCESS) {
+                    buf << " " << flag << fs::build_path(temp, folder);
                 }
 
                 temp = environment::get(varName);
@@ -37,18 +35,18 @@ namespace micrantha
                 return buf.str();
             }
 
-            string path(const std::string &varName, const std::string &folder)
+            std::string path(const std::string &varName, const std::string &folder)
             {
                 std::vector<std::string> paths;
 
                 auto temp = Repository::get_local_repo();
 
-                if (directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
-                    paths.push_back(build_path(Repository::GLOBAL_REPO, folder));
+                if (fs::directory_exists(Repository::GLOBAL_REPO) == PREP_SUCCESS) {
+                    paths.push_back(fs::build_path(Repository::GLOBAL_REPO, folder));
                 }
 
-                if (directory_exists(temp) == PREP_SUCCESS) {
-                    paths.push_back(build_path(temp, folder));
+                if (fs::directory_exists(temp) == PREP_SUCCESS) {
+                    paths.push_back(fs::build_path(temp, folder));
                 }
 
                 temp = environment::get(varName);
@@ -58,7 +56,7 @@ namespace micrantha
                 }
 
 
-                ostringstream buf;
+                std::ostringstream buf;
 
                 for (auto it = paths.begin(); it != paths.end(); ++it) {
                     buf << *it;
