@@ -16,6 +16,12 @@
 namespace micrantha {
     namespace prep {
 
+        namespace string {
+
+            bool equals(const std::string &left, const std::string &right) {
+                return !strcasecmp(left.c_str(), right.c_str());
+            }
+        }
         namespace io {
 
             // writes a line to a file descriptor
@@ -77,13 +83,15 @@ namespace micrantha {
             std::ostream &print(std::ostream &os) {
                 return os;
             }
-
+            std::ostream &println(std::ostream &os) {
+                os << std::endl;
+                return os;
+            }
         }
 
 
         namespace process {
-            int
-            fork_command(const std::string &command, char *const argv[], const char *directory, char *const envp[]) {
+            int fork_command(const std::string &command, char *const argv[], const char *directory, char *const envp[]) {
                 int rval = EXIT_FAILURE;
 
                 pid_t pid = fork();
@@ -220,6 +228,65 @@ namespace micrantha {
                         return PREP_FAILURE;
                     }
                 }
+            }
+
+            int directory_empty(const path &path) {
+                FTS *ftsp = nullptr;
+                FTSENT *curr = nullptr;
+
+                // Cast needed (in C) because fts_open() takes a "char * const *", instead
+                // of a "const char * const *", which is only allowed in C++. fts_open()
+                // does not modify the argument.
+                char *files[] = {const_cast<char *>(path.c_str()), nullptr};
+
+                // FTS_NOCHDIR  - Avoid changing cwd, which could cause unexpected behavior
+                //                in multithreaded programs
+                // FTS_PHYSICAL - Don't follow symlinks. Prevents deletion of files outside
+                //                of the specified directory
+                // FTS_XDEV     - Don't cross filesystem boundaries
+                ftsp = fts_open(files, FTS_NOCHDIR | FTS_COMFOLLOW, nullptr);
+
+                if (!ftsp) {
+                    log::perror("failed to open ", path);
+                    return PREP_ERROR;
+                }
+
+                while ((curr = fts_read(ftsp))) {
+                    switch (curr->fts_info) {
+                        case FTS_NS:
+                        case FTS_DNR:
+                        case FTS_ERR:
+                            log::error(curr->fts_accpath, ": ", strerror(curr->fts_errno));
+                            fts_close(ftsp);
+                            return PREP_ERROR;
+
+                        case FTS_DC:
+                        case FTS_DOT:
+                        case FTS_NSOK:
+                            // Not reached unless FTS_LOGICAL, FTS_SEEDOT, or FTS_NOSTAT were
+                            // passed to fts_open()
+                            break;
+
+                        case FTS_D:
+                            // Do nothing. Need depth-first search, so directories are deleted
+                            // in FTS_DP
+                            break;
+
+                        case FTS_DP:
+                        case FTS_F:
+                        case FTS_SL:
+                        case FTS_SLNONE:
+                        case FTS_DEFAULT:
+                           fts_close(ftsp);
+                           return PREP_FAILURE;
+                        default:
+                            break;
+                    }
+                }
+
+                fts_close(ftsp);
+
+                return PREP_SUCCESS;
             }
 
             int file_exists(const path &path) {

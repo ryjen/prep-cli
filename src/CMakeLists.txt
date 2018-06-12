@@ -64,10 +64,9 @@ add_dependencies(${DEFAULT_PLUGINS} generate_source)
 # installation
 
 #sets installation for library and executable binaries
-install(TARGETS ${PROJECT_NAME} ${PLUGINS_LIBRARY} ${PROJECT_PLUGINS}
+install(TARGETS ${PROJECT_NAME} ${DEFAULT_PLUGINS}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
 )
 
 

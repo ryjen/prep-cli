@@ -160,7 +160,7 @@ namespace micrantha {
             return out;
         }
 
-        Plugin::Plugin(const std::string &name) : name_(name), type_(Types::INTERNAL) {
+        Plugin::Plugin(const std::string &name) : name_(name), type_(Types::INTERNAL), enabled_(true) {
         }
 
         Plugin::~Plugin() {
@@ -172,10 +172,14 @@ namespace micrantha {
             return *this;
         }
 
-        int Plugin::load(const std::string &path) {
-            basePath_ = path;
+        Plugin &Plugin::set_enabled(bool value) {
+            config_["enabled"] = enabled_ = value;
+            return *this;
+        }
 
-            std::string manifest = filesystem::build_path(path, MANIFEST_FILE);
+        int Plugin::read_config() {
+
+            std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
 
             std::ifstream file(manifest);
 
@@ -187,62 +191,77 @@ namespace micrantha {
 
             file >> buf.rdbuf();
 
-            auto config = Package::json_type::parse(buf.str().c_str());
+            config_ = Package::json_type::parse(buf.str().c_str());
 
-            if (config.empty()) {
+            if (config_.empty()) {
                 log::error("invalid configuration for plugin [", name_, "]");
                 return PREP_FAILURE;
             }
 
-            auto entry = config["type"];
+            auto entry = config_["type"];
 
             if (entry.is_string()) {
                 type_ = internal::to_type(entry.get<std::string>());
             }
 
-            entry = config["version"];
+            entry = config_["version"];
 
             if (entry.is_string()) {
                 version_ = entry.get<std::string>();
             }
 
-            entry = config["executable"];
+            entry = config_["enabled"];
+
+            if (entry.is_boolean()) {
+                enabled_ = entry.get<bool>();
+            }
+
+            entry = config_["executable"];
 
             if (entry.is_string()) {
                 executablePath_ = filesystem::build_path(basePath_, entry.get<std::string>());
-                log::trace("plugin [", name_, "] executable [", executablePath_, "]");
-            } else {
-                if (type_ != Types::INTERNAL) {
-                    log::error("plugin [", name_, "] has no executable");
-                    return PREP_FAILURE;
-                }
+            }
+
+            return PREP_SUCCESS;
+        }
+
+        int Plugin::save() {
+
+            std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
+
+            std::ofstream file(manifest);
+
+            if (!file.is_open()) {
+                return PREP_ERROR;
+            }
+
+            file << config_;
+
+            file.close();
+
+            return PREP_SUCCESS;
+        }
+
+        int Plugin::load(const std::string &path) {
+            basePath_ = path;
+
+            read_config();
+
+            if (executablePath_.empty() && type_ != Types::INTERNAL) {
+                log::error("plugin [", name_, "] has no executable");
+                return PREP_FAILURE;
+
             }
 
             return PREP_SUCCESS;
         }
 
         bool Plugin::is_enabled() const {
-            return !executablePath_.empty();
-        }
-
-        Plugin::Result Plugin::on_load() const {
-            if (!is_valid()) {
-                return PREP_FAILURE;
-            }
-
-            return execute(Hooks::LOAD);
-        }
-
-        Plugin::Result Plugin::on_unload() const {
-            if (!is_valid()) {
-                return PREP_FAILURE;
-            }
-
-            return execute(Hooks::UNLOAD);
+           return enabled_;
         }
 
         bool Plugin::is_valid() const {
-            return is_enabled() && filesystem::is_file_executable(executablePath_);
+            return filesystem::is_file_executable(executablePath_);
         }
 
         std::string Plugin::name() const {
@@ -254,11 +273,29 @@ namespace micrantha {
         }
 
         std::string Plugin::version() const {
-            return version_;
+           return version_;
+        }
+
+        Plugin::Result Plugin::on_load() const {
+            if (!is_valid() || !is_enabled()) {
+                return PREP_FAILURE;
+            }
+
+            log::debug("loading ", color::m(name()), " [", color::y(version()), "]");
+
+            return execute(Hooks::LOAD);
+        }
+
+        Plugin::Result Plugin::on_unload() const {
+            if (!is_valid() || !is_enabled()) {
+                return PREP_FAILURE;
+            }
+
+            return execute(Hooks::UNLOAD);
         }
 
         Plugin::Result Plugin::on_add(const Package &config, const std::string &path) const {
-            if (!is_valid()) {
+            if (!is_valid() || !is_enabled()) {
                 return PREP_ERROR;
             }
 
@@ -277,7 +314,7 @@ namespace micrantha {
         }
 
         Plugin::Result Plugin::on_resolve(const std::string &location, const std::string &sourcePath) const {
-            if (!is_valid()) {
+            if (!is_valid() || !is_enabled()) {
                 return PREP_ERROR;
             }
 
@@ -291,7 +328,7 @@ namespace micrantha {
         }
 
         Plugin::Result Plugin::on_remove(const Package &config, const std::string &path) const {
-            if (!is_valid()) {
+            if (!is_valid() || !is_enabled()) {
                 return PREP_ERROR;
             }
 
@@ -305,10 +342,9 @@ namespace micrantha {
             return execute(Hooks::REMOVE, info);
         }
 
-        Plugin::Result
-        Plugin::on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
+        Plugin::Result Plugin::on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
                          const std::string &installPath) const {
-            if (!is_valid()) {
+            if (!is_valid() || !is_enabled()) {
                 return PREP_ERROR;
             }
 
@@ -316,7 +352,7 @@ namespace micrantha {
                 return PREP_ERROR;
             }
 
-            log::debug("Running [", name(), "] for ", config.name());
+            log::info("building ", color::m(config.name()), " with ", color::c(name()));
 
             std::vector<std::string> info(
                     {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath,
@@ -329,9 +365,8 @@ namespace micrantha {
             return execute(Hooks::BUILD, info);
         }
 
-        Plugin::Result
-        Plugin::on_test(const Package &config, const std::string &sourcePath, const std::string &buildPath) const {
-            if (!is_valid()) {
+        Plugin::Result Plugin::on_test(const Package &config, const std::string &sourcePath, const std::string &buildPath) const {
+            if (!is_valid() || !is_enabled()) {
                 return PREP_ERROR;
             }
 
@@ -339,7 +374,7 @@ namespace micrantha {
                 return PREP_ERROR;
             }
 
-            log::debug("Running [", name(), "] for ", config.name());
+            log::info("testing ", color::m(config.name()), " with ", color::c(name()));
 
             std::vector<std::string> info(
                     {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath});
@@ -351,9 +386,8 @@ namespace micrantha {
             return execute(Hooks::TEST, info);
         }
 
-        Plugin::Result
-        Plugin::on_install(const Package &config, const std::string &sourcePath, const std::string &buildPath) const {
-            if (!is_valid()) {
+        Plugin::Result Plugin::on_install(const Package &config, const std::string &sourcePath, const std::string &buildPath) const {
+            if (!is_valid() || !is_enabled()) {
                 return PREP_ERROR;
             }
 
@@ -361,7 +395,7 @@ namespace micrantha {
                 return PREP_ERROR;
             }
 
-            log::debug("Running [", name(), "] for ", config.name());
+            log::info("installing ", color::m(config.name()), " with ", color::c(name()));
 
             std::vector<std::string> info(
                     {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath});
@@ -484,14 +518,19 @@ namespace micrantha {
                 }
 
                 // wait for the child to exit
-                waitpid(pid, &status, WNOHANG|WUNTRACED);
+                pid = waitpid(pid, &status, WAIT_MYPGRP|WUNTRACED);
+
+                if (pid == -1) {
+                    log::perror("error waiting for plugin");
+                    return PREP_FAILURE;
+                }
 
                 // check exit status of child
                 if (WIFEXITED(status)) {
                     // convert the exit status to a return value
                     int rval = WEXITSTATUS(status);
-                    // typically rval will be the return status of the command the plugin executes
-                    rval = rval == 0 ? PREP_SUCCESS : rval == 2 ? PREP_ERROR : PREP_FAILURE;
+                    // typically rval will be the return status of the command the plugin executes, 255 = -1
+                    rval = rval == 255 ? PREP_ERROR : rval;
                     return {rval, interpreter.returns};
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);

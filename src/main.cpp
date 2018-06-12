@@ -14,59 +14,25 @@ using namespace micrantha::prep;
 
 void print_help(const Options &options) {
 
-    //TODO replace with man page
-    printf("Syntax: %s build [package]\n", options.exe);
-    printf("        %s test [package]\n", options.exe);
-    printf("        %s install [package]\n", options.exe);
-    printf("        %s get [package]\n", options.exe);
-    printf("        %s add <package>\n", options.exe);
-    printf("        %s remove <package>\n", options.exe);
-    printf("        %s link <package> [version]\n", options.exe);
-    printf("        %s unlink <package>\n", options.exe);
-    printf("        %s cleanup [package]\n", options.exe);
-    printf("        %s plugins [options...]\n", options.exe);
-    printf("        %s run\n", options.exe);
-    printf("        %s env\n", options.exe);
-    printf("        %s check\n", options.exe);
 
     if (options.verbose != Verbosity::All) {
+        io::println(color::g("Syntax"), ": ", options.exe, " build [package]");
+        io::println(std::setw(12), options.exe, " test [package]");
+        io::println(std::setw(12), options.exe, " install [package]");
+        io::println(std::setw(12), options.exe, " get [package]");
+        io::println(std::setw(12), options.exe, " add [package]");
+        io::println(std::setw(12), options.exe, " remove [package]");
+        io::println(std::setw(12), options.exe, " link <package> [version]");
+        io::println(std::setw(12), options.exe, " unlink <package>");
+        io::println(std::setw(12), options.exe, " cleanup [package]");
+        io::println(std::setw(12), options.exe, " plugins [options...]");
+        io::println(std::setw(12), options.exe, " run");
+        io::println(std::setw(12), options.exe, " env");
+        io::println(std::setw(12), options.exe, " check");
         return;
     }
 
-    printf("\n");
-    printf("Options:\n");
-    printf(" -h, --help     : displays this help");
-    printf(" -f, --force    : forces an action");
-    printf(" -g, --global   : uses the global repository for an action");
-    printf(" -v, --verbose  : uses verbose output");
-    printf("\n");
-    printf("Concepts:\n");
-    printf(" <package> can be a package url, git url, plugin, archive file or directory\n\n");
-    printf("Commands:\n");
-    printf("\n  build [package]\n");
-    printf("     resolves and builds a package or plugin to the repository.\n");
-    printf("\n  test [package]\n");
-    printf("     test a package or plugin that has already been built.\n");
-    printf("\n  install [package]\n");
-    printf("     installs a package or plugin to the repository.\n");
-    printf("\n  get [package]\n");
-    printf("     gets a package or packages for dependencies only.\n");
-    printf("\n  add <package or plugin>\n");
-    printf("     adds a package or plugin to the repository\n");
-    printf("\n  remove <package or plugin>\n");
-    printf("     removes a package or plugin from the repository\n");
-    printf("\n  link <package> [version]\n");
-    printf("     links a built package to the path\n");
-    printf("\n  unlink <package>\n");
-    printf("     unlinks an installed package from the path\n");
-    printf("\n  run\n");
-    printf("     runs a built package in the path\n");
-    printf("\n  env\n");
-    printf("     prints out the repository environment\n");
-    printf("\n  check\n");
-    printf("     checks the repository structure for errors\n");
-    printf("\n  cleanup [package]\n");
-    printf("     cleans temp files and folders for a package or the entire repository\n");
+    execlp("man", "prep", "prep", nullptr);
 }
 
 int main(int argc, char *const argv[]) {
@@ -83,7 +49,7 @@ int main(int argc, char *const argv[]) {
     int option;
     int option_index = 0;
     static struct option opts[] = {{"global",   no_argument,       nullptr, 'g'},
-                                   {"package",  required_argument, nullptr, 'p'},
+                                   {"config",  required_argument, nullptr, 'c'},
                                    {"force",    no_argument,       nullptr, 'f'},
                                    {"verbose",  optional_argument, nullptr, 'v'},
                                    {"log",      required_argument, nullptr, 'l'},
@@ -91,12 +57,12 @@ int main(int argc, char *const argv[]) {
                                    {"help",     no_argument,       nullptr, 'h'},
                                    {nullptr,    0,           nullptr, 0}};
 
-    while ((option = getopt_long(argc, argv, "vhgfp:l:", opts, &option_index)) != EOF) {
+    while ((option = getopt_long(argc, argv, "vhgfc:l:", opts, &option_index)) != EOF) {
         switch (option) {
             case 'g':
                 options.global = true;
                 break;
-            case 'p':
+            case 'c':
                 options.package_file = optarg;
                 break;
             case 'f':
@@ -144,7 +110,7 @@ int main(int argc, char *const argv[]) {
         }
     }
 
-    if (!strcmp(command, "env")) {
+    if (string::equals(command, "env")) {
         if (optind < argc) {
             return prep.print_env(argv[optind]);
         } else {
@@ -152,7 +118,7 @@ int main(int argc, char *const argv[]) {
         }
     }
 
-    if (!strcmp(command, "unlink")) {
+    if (string::equals(command, "unlink")) {
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
@@ -166,7 +132,7 @@ int main(int argc, char *const argv[]) {
 
         return prep.unlink(config);
     }
-    if (!strcmp(command, "link")) {
+    if (string::equals(command, "link")) {
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
@@ -181,12 +147,12 @@ int main(int argc, char *const argv[]) {
         return prep.link(config);
     }
 
-    if (!strcmp(command, "check")) {
+    if (string::equals(command, "check")) {
         log::error("Not Implemented.");
         return PREP_FAILURE;
     }
 
-    if (!strcmp(command, "run")) {
+    if (string::equals(command, "run")) {
         PackageConfig config;
 
         if (config.load(options.location, options) == PREP_FAILURE) {
@@ -195,6 +161,11 @@ int main(int argc, char *const argv[]) {
         }
 
         return prep.execute(config, argc - optind, &argv[optind]);
+    }
+
+    if (string::equals(command, "plugins")) {
+
+        return prep.plugins(options, argc - optind, &argv[optind]);
     }
 
     try {
@@ -207,7 +178,7 @@ int main(int argc, char *const argv[]) {
         return PREP_FAILURE;
     }
 
-    if (!strcmp(command, "cleanup") || !strcmp(command, "clean")) {
+    if (string::equals(command, "cleanup") || string::equals(command, "clean")) {
         PackageConfig config;
 
         if (config.load(options.location, options) == PREP_FAILURE) {
@@ -218,7 +189,7 @@ int main(int argc, char *const argv[]) {
         return prep.cleanup(config, options);
     }
 
-    if (!strcmp(command, "build")) {
+    if (string::equals(command, "build")) {
         PackageConfig config;
 
         // load a package.json config
@@ -243,7 +214,7 @@ int main(int argc, char *const argv[]) {
         return prep.build(*dep, options, options.location);
     }
 
-    if (!strcmp(command, "get")) {
+    if (string::equals(command, "get")) {
         PackageConfig config;
 
         if (config.load(options.location, options) == PREP_FAILURE) {
@@ -264,7 +235,7 @@ int main(int argc, char *const argv[]) {
         return prep.get(*dep, options, options.location);
     }
 
-    if (!strcmp(command, "test")) {
+    if (string::equals(command, "test")) {
         PackageConfig config;
 
         if (config.load(options.location, options) == PREP_FAILURE) {
@@ -287,7 +258,7 @@ int main(int argc, char *const argv[]) {
         return prep.test(*dep, options);
     }
 
-    if (!strcmp(command, "install")) {
+    if (string::equals(command, "install")) {
         PackageConfig config;
 
         if (config.load(options.location, options) == PREP_FAILURE) {
@@ -309,7 +280,7 @@ int main(int argc, char *const argv[]) {
         return prep.install(*dep, options);
     }
 
-    if (!strcmp(command, "add")) {
+    if (string::equals(command, "add")) {
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
@@ -353,7 +324,7 @@ int main(int argc, char *const argv[]) {
         return prep.install(config, options);
     }
 
-    if (!strcmp(command, "remove")) {
+    if (string::equals(command, "remove")) {
         PackageConfig config;
 
         if (optind < 0 || optind >= argc) {
@@ -371,10 +342,6 @@ int main(int argc, char *const argv[]) {
         return prep.remove(config, options);
     }
 
-    if (!strcmp(command, "plugins")) {
-
-        return prep.plugins(options, argc - optind, &argv[optind]);
-    }
 
     printf("Unknown command '%s'\n", command ? command : "null");
 

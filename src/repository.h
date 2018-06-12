@@ -153,12 +153,6 @@ namespace micrantha {
             int validate(const Options &opts) const;
 
             /**
-             * validates the plugins
-             * @return PREP_SUCCESS or PREP_FAILURE if any plugin invalid
-             */
-            int validate_plugins(const Options &opts) const;
-
-            /**
              * runs the install callback on plugins for a config
              */
             int notify_plugins_add(const Package &config);
@@ -192,8 +186,7 @@ namespace micrantha {
             /**
              * runs the build callback on plugins for a config
              */
-            int
-            notify_plugins_install(const Package &config, const std::string &sourcePath, const std::string &buildPath);
+            int notify_plugins_install(const Package &config, const std::string &sourcePath, const std::string &buildPath);
 
             /**
              * gets a plugin by name
@@ -207,13 +200,23 @@ namespace micrantha {
             int load_plugins(const Options &opts);
 
         private:
+            friend class PluginManager;
+
             /**
              * initializes / loads the plugins
              * @param opts the command line options
              * @param path the repository path
              * @return PREP_SUCCESS if successful, otherwise PREP_FAILURE
              */
-            int init_plugins(const Options &opts, const std::string &path) const;
+            int install_default_plugins(const Options &opts, const std::string &path) const;
+
+            int initialize_plugins(const Options &opts);
+
+            /**
+             * validates the plugins
+             * @return PREP_SUCCESS or PREP_FAILURE if any plugin invalid
+             */
+            int validate_plugins(const Options &opts) const;
 
             std::list<std::shared_ptr<Plugin>> validPlugins_;
 

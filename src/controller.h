@@ -99,7 +99,7 @@ namespace micrantha {
              * @param argv the arguments to pass
              * @return PREP_SUCCESS, PREP_FAILURE or PREP_ERROR on success, failure or when an error occured respectively
              */
-            int plugins(const Options &opts, int argc, char *const *argv) const;
+            int plugins(const Options &opts, int argc, char *const *argv);
 
             /**
              * prints sourceable environment variables

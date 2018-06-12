@@ -50,51 +50,75 @@ namespace micrantha
                 buf << "m" << value;
 
                 if (reset) {
-                    buf << color::CLEAR;
+                    buf << color::clear;
                 }
                 return buf.str();
             }
 
-            std::string B(const std::string &value)
+            std::string d(const std::string &value)
             {
-                return colorize({fg::BLACK}, value, true);
+                return colorize({attr::NORMAL, fg::BLACK}, value, true);
             }
-
+            std::string D(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::BLACK}, value, true);
+            }
             std::string r(const std::string &value)
             {
-                return colorize({fg::RED}, value, true);
+                return colorize({attr::NORMAL, fg::RED}, value, true);
             }
-
+            std::string R(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::RED}, value, true);
+            }
             std::string g(const std::string &value)
             {
-                return colorize({fg::GREEN}, value, true);
+                return colorize({attr::NORMAL,fg::GREEN}, value, true);
             }
-
+            std::string G(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::GREEN}, value, true);
+            }
             std::string y(const std::string &value)
             {
-                return colorize({fg::YELLOW}, value, true);
+                return colorize({attr::NORMAL, fg::YELLOW}, value, true);
             }
-
+            std::string Y(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::YELLOW}, value, true);
+            }
             std::string b(const std::string &value)
             {
-                return colorize({fg::BLUE}, value, true);
+                return colorize({attr::NORMAL, fg::BLUE}, value, true);
             }
-
+            std::string B(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::BLUE}, value, true);
+            }
             std::string m(const std::string &value)
             {
-                return colorize({fg::MAGENTA}, value, true);
+                return colorize({attr::NORMAL, fg::MAGENTA}, value, true);
             }
-
+            std::string M(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::MAGENTA}, value, true);
+            }
             std::string c(const std::string &value)
             {
-                return colorize({fg::CYAN}, value, true);
+                return colorize({attr::NORMAL, fg::CYAN}, value, true);
             }
-
+            std::string C(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::CYAN}, value, true);
+            }
             std::string w(const std::string &value)
             {
-                return colorize({fg::WHITE}, value, true);
+                return colorize({attr::NORMAL, fg::WHITE}, value, true);
             }
-
+            std::string W(const std::string &value)
+            {
+                return colorize({attr::BOLD, fg::WHITE}, value, true);
+            }
             std::string apply(const std::string &color, const std::string &value, bool reset) {
                 std::map<std::string, std::vector<Value>> mapping = {
                         {"r", {attr::NORMAL, fg::RED}},

@@ -8,16 +8,12 @@ namespace micrantha {
     namespace prep {
 
         namespace log {
-            namespace output {
-                std::ostream &print(std::ostream &os) {
-                    return os;
-                }
-            }
+
             namespace level {
 
                 const char *NAMES[] = {"UNKN", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", nullptr};
 
-                const char *COLORS[] = {"", "r", "y", "g", "c", "w", nullptr};
+                const char *COLORS[] = {"", color::red, color::yellow, color::green, color::cyan, color::white, nullptr};
 
                 Type __current_log_level = Info;
 
@@ -45,7 +41,9 @@ namespace micrantha {
                 std::string format(Type level) {
                     std::string buf("  ");
 
-                    buf += color::apply(COLORS[level], NAMES[level]);
+                    buf += COLORS[level];
+                    buf += NAMES[level];
+                    buf += color::clear;
 
                     buf += ": ";
 
