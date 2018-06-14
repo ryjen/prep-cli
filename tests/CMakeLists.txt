@@ -8,7 +8,7 @@ externalproject_add(bandit
         BUILD_COMMAND ""
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/bandit)
 
-add_executable(${PROJECT_NAME}-test main.test.cpp util.test.cpp)
+add_executable(${PROJECT_NAME}-test main.test.cpp util.test.cpp ../src/util.cpp)
 
 ExternalProject_Get_property(bandit SOURCE_DIR)
 
