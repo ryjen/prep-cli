@@ -2,7 +2,7 @@
 Prep
 ====
 
-Prep is a modular package manager and build tool for c/c++ projects on posix systems.
+Prep is a modular package manager and build tool for c/c++ projects.
 
 In inception style, the core is written in C++, but the majority of the work is done by plugins.
 
