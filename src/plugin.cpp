@@ -3,8 +3,9 @@
 #include <csignal>
 #include <sstream>
 #include <thread>
+#include <pty.h>
+#include <sys/wait.h>
 #include <unistd.h>
-#include <util.h>
 #include <vector>
 
 #include "common.h"

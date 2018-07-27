@@ -1,8 +1,9 @@
-
+#include <limits.h>
 #include <getopt.h>
 #include <clocale>
 #include <iostream>
 #include <vector>
+#include <unistd.h>
 
 #include "common.h"
 #include "log.h"
@@ -38,13 +39,13 @@ void print_help(const Options &options) {
 int main(int argc, char *const argv[]) {
     Controller prep;
     Options options{
-            .exe = argv[0],
-            .package_file = Repository::PACKAGE_FILE,
             .global = false,
+            .package_file = Repository::PACKAGE_FILE,
             .location = ".",
             .force_build = ForceLevel::None,
             .verbose = Verbosity::None,
-            .defaults = false};
+            .defaults = false,
+            .exe = argv[0]};
     const char *command = nullptr;
     int option;
     int option_index = 0;

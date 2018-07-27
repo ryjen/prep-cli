@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <deque>
+#include <limits.h>
+#include <sys/wait.h>
 
 #include "common.h"
 #include "log.h"

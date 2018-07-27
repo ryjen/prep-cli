@@ -2,6 +2,7 @@
 #define MICRANTHA_PREP_ENVIRONMENT_H
 
 #include <string>
+#include <vector>
 #include <map>
 
 namespace micrantha

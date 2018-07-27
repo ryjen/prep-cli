@@ -32,7 +32,7 @@ set(HEADER_FILES
 add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 #link libraries to the executable
-target_link_libraries(${PROJECT_NAME} ${LibArchive_LDFLAGS})
+target_link_libraries(${PROJECT_NAME} ${LibArchive_LDFLAGS} ${CMAKE_DL_LIBS} ${LIB_UTIL})
 
 #add include directories
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LibArchive_INCLUDE_DIRS})

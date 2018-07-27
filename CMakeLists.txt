@@ -34,6 +34,8 @@ find_package(PkgConfig REQUIRED)
 # find a libarchive.
 pkg_search_module(LibArchive REQUIRED libarchive)
 
+find_library(LIB_UTIL util)
+
 # add target for code coverage
 if(CODE_COVERAGE)
 	include(CodeCoverage)
