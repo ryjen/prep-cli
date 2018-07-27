@@ -18,7 +18,6 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(CreatePackage)
 create_package(DESCRIPTION "a c/c++ package and project manager")
 
-# define the library name
 set(PROJECT_LIBRARY "utensil")
 
 if (APPLE)
@@ -71,5 +70,4 @@ if(DOXYGEN_FOUND)
 	)
 endif(DOXYGEN_FOUND)
 
-
-install(FILES FindPrep.cmake DESTINATION ${CMAKE_ROOT}/Modules)
+install(FILES FindPrep.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake-${CMAKE_VERSION}/Modules)

@@ -11,3 +11,6 @@ cmake-build-*
 *.inc
 plugins_archive.cpp
 release
+package/bin
+package/lib
+package/share

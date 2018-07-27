@@ -5,25 +5,37 @@ set(SOURCE_FILES
     package.cpp
     plugin.cpp
     repository.cpp
-    environment.cpp
+    plugin_manager.cpp
+)
+
+set(LIBRARY_FILES
     log.cpp
+    environment.cpp
     util.cpp
     decompressor.cpp
     vt100.cpp
-    plugin_manager.cpp
 )
 
 #defines the library header files for installation
 set(HEADER_FILES
     common.h
-    environment.h
     plugins_archive.h
+    plugin_manager.h
+)
+
+set(LIBRARY_HEADERS
+    environment.h
     log.h
     util.h
     decompressor.h
     vt100.h
-    plugin_manager.h
 )
+
+#---------------------------------------------------------------------------------------------------------
+# static library
+
+#define the library
+add_library(${PROJECT_LIBRARY} ${LIBRARY_FILES} ${LIBRARY_HEADERS})
 
 #---------------------------------------------------------------------------------------------------------
 # prep binary
@@ -32,10 +44,12 @@ set(HEADER_FILES
 add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 #link libraries to the executable
-target_link_libraries(${PROJECT_NAME} ${LibArchive_LDFLAGS} ${CMAKE_DL_LIBS} ${LIB_UTIL})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS} ${CMAKE_DL_LIBS} ${LIB_UTIL})
 
 #add include directories
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LibArchive_INCLUDE_DIRS})
+
+add_dependencies(${PROJECT_NAME} ${PROJECT_LIBRARY})
 
 #---------------------------------------------------------------------------------------------------------
 # default plugins shared library

@@ -16,3 +16,4 @@ target_include_directories(${PROJECT_NAME}-test SYSTEM PUBLIC ${SOURCE_DIR} PUBL
 
 target_link_libraries (${PROJECT_NAME}-test ${PROJECT_LIBRARY})
 
+add_dependencies(${PROJECT_NAME}-test bandit)

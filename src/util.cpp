@@ -54,7 +54,7 @@ namespace micrantha {
                 buf.clear();
 
                 for (;;) {
-                    numRead = read(fd, &ch, 1);
+                    numRead = read(fd, &ch, sizeof(ch));
 
                     if (numRead == -1) {
                         if (errno == EINTR) /* Interrupted --> restart read() */

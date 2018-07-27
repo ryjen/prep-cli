@@ -1,9 +1,9 @@
 
-
 find_program(PANDOC_BINARY pandoc)
 
 if (NOT PANDOC_BINARY)
     message(WARNING "pandoc command not found, man pages will not be generated!")
+    return()
 endif()
 
 set(PANDOC_FLAGS --standalone --to man --from markdown)
@@ -31,4 +31,5 @@ add_custom_command(OUTPUT ${PREP_PLUGIN_MAN} COMMAND ${PANDOC_BINARY} ${PANDOC_F
 
 install(FILES ${PREP_PLUGIN_MAN} DESTINATION ${MAN_INSTALL_PREFIX}/man7)
 
-add_custom_target(man DEPENDS ${PREP_MAN} ${PREP_CONFIG_MAN} ${PREP_PLUGIN_MAN})
+add_custom_target(man ALL DEPENDS ${PREP_MAN} ${PREP_CONFIG_MAN} ${PREP_PLUGIN_MAN})
+
