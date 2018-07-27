@@ -35,6 +35,8 @@ pkg_search_module(LibArchive REQUIRED libarchive)
 
 find_library(LIB_UTIL util)
 
+find_program(PACKAGER_PROGRAM dpkg-deb)
+
 # add target for code coverage
 if(CODE_COVERAGE)
 	include(CodeCoverage)
@@ -69,5 +71,11 @@ if(DOXYGEN_FOUND)
 		COMMENT "Generating API documentation with Doxygen" VERBATIM
 	)
 endif(DOXYGEN_FOUND)
+
+if (PACKAGER_PROGRAM)
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prep)
+
+endif()
 
 install(FILES FindPrep.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake-${CMAKE_VERSION}/Modules)

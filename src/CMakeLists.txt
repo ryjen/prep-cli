@@ -54,6 +54,8 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_LIBRARY})
 #---------------------------------------------------------------------------------------------------------
 # default plugins shared library
 
+if (NOT PACKAGER_PROGRAM)
+
 # Generate source for default plugins
 set(PLUGINS_ARCHIVE_SOURCE ${CMAKE_CURRENT_LIST_DIR}/plugins_archive.cpp)
 
@@ -83,4 +85,11 @@ install(TARGETS ${PROJECT_NAME} ${DEFAULT_PLUGINS}
     LIBRARY DESTINATION lib
 )
 
+else()
+
+install(TARGETS ${PROJECT_NAME}
+	RUNTIME DESTINATION bin
+)
+
+endif()
 

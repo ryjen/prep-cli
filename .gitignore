@@ -14,3 +14,5 @@ release
 package/bin
 package/lib
 package/share
+build
+*.deb
