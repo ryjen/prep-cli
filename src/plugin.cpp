@@ -416,7 +416,7 @@ namespace micrantha {
 
       if (pid < 0) {
         // respond to error
-        log::perror(errno);
+        log::perror("forkpty");
         return PREP_ERROR;
       }
 
@@ -483,7 +483,7 @@ namespace micrantha {
             ssize_t n = io::read_line(master, line);
 
             if (n <= 0) {
-              if (n < 0) {
+              if (n < 0 && errno != EIO) {
                 log::perror("read_line");
               }
               break;
