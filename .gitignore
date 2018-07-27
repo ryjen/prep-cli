@@ -16,3 +16,4 @@ package/lib
 package/share
 build
 *.deb
+package/usr

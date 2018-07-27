@@ -183,6 +183,8 @@ namespace micrantha
         {
             log::info("installing default plugins");
 
+#ifdef HAVE_DEFAULT_PLUGINS_LIB
+
             // load shared library with default plugins
             void *default_plugins = dlopen(DEFAULT_PLUGINS_LIB, RTLD_NOW);
 
@@ -215,7 +217,15 @@ namespace micrantha
 
             // close shared library
             dlclose(default_plugins);
+#else
+	    if (opts.global) {
+		    return PREP_SUCCESS;
+	    }
 
+	    auto res = filesystem::copy_directory(
+			    filesystem::build_path(GLOBAL_REPO, PLUGIN_FOLDER),
+			    get_plugin_path());
+#endif
             return res;
         }
 
