@@ -6,7 +6,7 @@ class Prep < Formula
   homepage "https://github.com/ryjen/prep"
   url "https://github.com/ryjen/prep/releases/download/v0.1.0/prep-0.1.0.tar.gz"
   version "0.1.0"
-  sha256 "3028b0fd536960694a747b43ef85be11f210e796d2b9090445a3cde1750b2cf4"
+  sha256 "bf34a9d89d3d2b346b36e026c69a8cec7a22986b4f08f1dfac7b6b7a290ffc06"
   depends_on "cmake" => :build
 
   def install
