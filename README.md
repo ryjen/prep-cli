@@ -21,6 +21,19 @@ I don't really have a lot time to maintain this project (SEE TODO), so I'm relea
 
 ![Prep Building Itself](prep.gif)
 
+Installing
+==========
+
+#### Debian/Ubuntu
+
+Download a package from the release section and for example run `dpkg -i prep-0.1.0.deb`
+
+#### Homebrew 
+
+`brew tap ryjen/tap`
+
+`brew install prep`
+
 
 Commands
 ========
@@ -346,9 +359,14 @@ TODO
 Building
 ========
 
-Do a `git submodule update --init --recursive`.  The rest is using CMake. Typically in a build folder and defining `-DCMAKE_BUILD_TYPE`.
+Should be pretty self explanitory!
 
-##### Debian/Ubuntu packaging
+1. `git submodule update --init --recursive` 
+2. `mkdir build; cd build`
+3. `cmake ..`
+4. `make`
+
+#### Debian/Ubuntu packaging
 
 To build a debian package:
 
@@ -356,21 +374,6 @@ To build a debian package:
 2. run `make install`
 3. run `dpkg-deb -b <srcdir>/package prep-<version>.deb
 
-To install the package:
-
-1. run `dpkg -i prep-<version>.deb
-
-To remove the package
-
-1. run `dpkg -r prep`
-
-##### Homebrew 
-
-Using homebrew:
-
-`brew tap ryjen/tap`
-
-`brew install prep`
 
 Contributing
 ============
