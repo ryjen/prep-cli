@@ -28,7 +28,7 @@ Installing
 
 [Download a package from the release section](https://github.com/ryjen/prep/releases/download/v0.1.0/prep-0.1.0.deb) and run `dpkg -i prep-<version>.deb`
 
-#### Homebrew 
+#### [Homebrew](https://brew.sh)/[Linuxbrew](https://linuxbrew.sh) 
 
 `brew tap ryjen/tap`
 
