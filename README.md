@@ -26,7 +26,7 @@ Installing
 
 #### Debian/Ubuntu
 
-Download a package from the release section and for example run `dpkg -i prep-0.1.0.deb`
+[Download a package from the release section](https://github.com/ryjen/prep/releases/download/v0.1.0/prep-0.1.0.deb) and run `dpkg -i prep-<version>.deb`
 
 #### Homebrew 
 
@@ -372,7 +372,7 @@ To build a debian package:
 
 1. define `CMAKE_INSTALL_PREFIX=<srcdir>/package/usr/local` using cmake
 2. run `make install`
-3. run `dpkg-deb -b <srcdir>/package prep-<version>.deb
+3. run `dpkg-deb -b <srcdir>/package prep-<version>.deb`
 
 
 Contributing
