@@ -368,8 +368,9 @@ To remove the package
 
 Using homebrew:
 
-`brew tap ryjen/prep`
+`brew tap ryjen/tap`
 
+`brew install prep`
 
 Contributing
 ============
