@@ -40,10 +40,10 @@ Commands
 `prep cleanup`
   - removes build files and other intermediates
  
- `prep plugins`
+`prep plugins`
   - shows the help message of the plugin manager
 
- `prep test`
+`prep test`
   - tests a project
   
 Plugins
@@ -346,7 +346,30 @@ TODO
 Building
 ========
 
-Just make sure you do a `git submodule update --init --recursive`.  The rest I leave up to you using CMake. 
+Do a `git submodule update --init --recursive`.  The rest is using CMake. Typically in a build folder and defining `-DCMAKE_BUILD_TYPE`.
+
+##### Debian/Ubuntu packaging
+
+To build a debian package:
+
+1. define `CMAKE_INSTALL_PREFIX=<srcdir>/package/usr/local` using cmake
+2. run `make install`
+3. run `dpkg-deb -b <srcdir>/package prep-<version>.deb
+
+To install the package:
+
+1. run `dpkg -i prep-<version>.deb
+
+To remove the package
+
+1. run `dpkg -r prep`
+
+##### Homebrew 
+
+Using homebrew:
+
+`brew tap ryjen/prep`
+
 
 Contributing
 ============

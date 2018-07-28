@@ -17,3 +17,5 @@ package/share
 build
 *.deb
 package/usr
+*.tar.gz
+*.zip
