@@ -92,7 +92,7 @@ namespace micrantha {
 
             if (filesystem::directory_exists(buildPath) != PREP_SUCCESS) {
                 log::trace("Creating [", buildPath, "]");
-                if (filesystem::create_path(buildPath, 0777)) {
+                if (filesystem::create_path(buildPath)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
@@ -102,7 +102,7 @@ namespace micrantha {
 
             if (filesystem::directory_exists(installPath) != PREP_SUCCESS) {
                 log::trace("Creating [", installPath, "]");
-                if (filesystem::create_path(installPath, 0777)) {
+                if (filesystem::create_path(installPath)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }

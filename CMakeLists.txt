@@ -74,8 +74,37 @@ endif(DOXYGEN_FOUND)
 
 if (PACKAGER_PROGRAM)
 
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prep PATTERN "main" PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ)
+  install(DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prep PATTERN "main" PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 endif()
 
 install(FILES FindPrep.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake-${CMAKE_VERSION}/Modules)
+
+
+############################################################
+# Create DEB
+############################################################
+
+# Tell CPack to generate a .deb package
+set(CPACK_GENERATOR "DEB")
+
+# Set a Package Maintainer.
+# This is required
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ryan Jennings <ryan@coda.life>")
+
+set(CPACK_PACKAGE_VENDOR "Micrantha Software Solutions")
+
+# Set a Package Version
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A flexible and modular c/c++ dependency manager and build tool")
+
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+
+# Include CPack
+include(CPack)
+

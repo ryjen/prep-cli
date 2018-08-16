@@ -355,6 +355,7 @@ TODO
 - [ ] a strategy to lose dependency on 'prep run' (`prep install system`?)
 - [ ] make workflow video showing usage with vim
 - [ ] posix complient version? (no pty?)
+- [ ] use linux namespaces?
 
 Building
 ========

@@ -212,6 +212,8 @@ namespace micrantha {
 
             int initialize_plugins(const Options &opts);
 
+            int initialize_kitchen() const;
+
             /**
              * validates the plugins
              * @return PREP_SUCCESS or PREP_FAILURE if any plugin invalid

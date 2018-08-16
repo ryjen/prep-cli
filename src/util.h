@@ -19,6 +19,8 @@ namespace micrantha {
             constexpr const char *const DIR_SYM = "/";
 #endif
 
+            constexpr const static int DIR_PERMS = 755;
+
             using path = std::string;
 
             /**
@@ -62,7 +64,7 @@ namespace micrantha {
              * create a directory path
              * @return PREP_SUCCESS or PREP_ERROR upon error
              */
-            int create_path(const path &dir, mode_t mode);
+            int create_path(const path &dir, mode_t mode = S_IRWXU | S_IRWXG | S_IRWXO);
 
             /**
              * copies one file to another given their names

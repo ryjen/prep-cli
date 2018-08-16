@@ -78,11 +78,15 @@ namespace micrantha
 
             std::string version() const;
 
+            int priority() const;
+
             Types type() const;
 
             Plugin &set_verbose(bool value);
 
             Plugin &set_enabled(bool value);
+
+            Plugin &set_priority(int value);
 
             // callbacks for the different hooks
             Result on_load() const;
@@ -133,6 +137,7 @@ namespace micrantha
             std::string basePath_;
             std::string executablePath_;
             std::string version_;
+            int priority_;
             bool enabled_;
             Types type_;
             bool verbose_;

@@ -178,6 +178,11 @@ namespace micrantha {
       return *this;
     }
 
+    Plugin &Plugin::set_priority(int value) {
+      config_["priority"] = priority_ = value;
+      return *this;
+    }
+
     int Plugin::read_config() {
 
       std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
@@ -209,6 +214,12 @@ namespace micrantha {
 
       if (entry.is_string()) {
         version_ = entry.get<std::string>();
+      }
+
+      entry = config_["priority"];
+
+      if (entry.is_number()) {
+        priority_ = entry.get<int>();
       }
 
       entry = config_["enabled"];
@@ -275,6 +286,10 @@ namespace micrantha {
 
     std::string Plugin::version() const {
       return version_;
+    }
+
+    int Plugin::priority() const {
+      return priority_;
     }
 
     Plugin::Result Plugin::on_load() const {

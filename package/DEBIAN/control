@@ -1,6 +1,0 @@
-Package: prep
-Version: 0.1.0
-Maintainer: Ryan Jennings <ryan@coda.life>
-Architecture: all
-Description: a c/c++ dependency manager and build tool
-Homepage: https://github.com/ryjen/prep

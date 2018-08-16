@@ -15,6 +15,9 @@
 			"archive": {
 				"location": "http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz"
 			},
+      "apt": {
+        "name": "libarchive-dev"
+      },
 			"build_system": [
 				"autotools",
 				"make"

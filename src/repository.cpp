@@ -22,6 +22,7 @@ namespace micrantha
 {
     namespace prep
     {
+
         std::string const Repository::get_local_repo()
         {
             char buf[BUFSIZ] = {0};
@@ -31,18 +32,9 @@ namespace micrantha
                 return nullptr;
             }
 
-            std::string prefix = buf;
-            auto current_path = filesystem::build_path(prefix, LOCAL_REPO_NAME);
+            // TODO:  check for parent repo
 
-            while (filesystem::directory_exists(current_path) != PREP_SUCCESS) {
-                prefix = filesystem::build_path(prefix, "..");
-                if (filesystem::directory_exists(prefix) == PREP_SUCCESS) {
-                    break;
-                }
-                current_path = filesystem::build_path(prefix, LOCAL_REPO_NAME);
-            }
-
-            return current_path;
+            return filesystem::build_path(buf, LOCAL_REPO_NAME);
         }
 
         int Repository::initialize(const Options &opts) {
@@ -52,9 +44,13 @@ namespace micrantha
                 path_ = get_local_repo();
             }
 
+            if (initialize_kitchen() != PREP_SUCCESS) {
+              return PREP_FAILURE;
+            }
+
             return initialize_plugins(opts);
         }
-
+        
         int Repository::initialize_plugins(const Options &opts) {
             std::string path = get_plugin_path();
 
@@ -103,7 +99,35 @@ namespace micrantha
 
             closedir(dir);
 
+            validPlugins_.sort([](const std::shared_ptr<Plugin> &a, const std::shared_ptr<Plugin> &b) {
+                auto diff = a->priority() - b->priority();
+
+                if (diff == 0) {
+                  return strcasecmp(a->name().c_str(), b->name().c_str()) < 0;
+                }
+                return diff < 0;
+            });
+
             return PREP_SUCCESS;
+        }
+
+        int Repository::initialize_kitchen() const {
+          auto dirs = {
+            filesystem::build_path(path_, KITCHEN_FOLDER, SOURCE_FOLDER),
+            filesystem::build_path(path_, KITCHEN_FOLDER, INSTALL_FOLDER),
+            filesystem::build_path(path_, KITCHEN_FOLDER, BUILD_FOLDER),
+            filesystem::build_path(path_, KITCHEN_FOLDER, BIN_FOLDER)
+          };
+
+          for (auto dir : dirs) {
+            if (filesystem::directory_exists(dir) != PREP_SUCCESS) {
+              if (filesystem::create_path(dir) != PREP_SUCCESS) {
+                log::perror("create ", dir);
+                return PREP_FAILURE;
+              }
+            }
+          }
+          return PREP_SUCCESS;
         }
 
         int Repository::validate(const Options &opts) const
@@ -127,7 +151,7 @@ namespace micrantha
                 }
 
                 auto lib = filesystem::build_path(path_, "lib");
-                filesystem::create_path(lib, 0700);
+                filesystem::create_path(lib);
             }
 
             char *temp = getenv("PATH");
@@ -165,7 +189,7 @@ namespace micrantha
             if (!exists || filesystem::directory_empty(pluginPath) == PREP_SUCCESS) {
 
                 if (!exists) {
-                    if (filesystem::create_path(pluginPath, 0777) != PREP_SUCCESS) {
+                    if (filesystem::create_path(pluginPath) != PREP_SUCCESS) {
                         log::perror(errno);
                         return PREP_FAILURE;
                     }
@@ -275,7 +299,7 @@ namespace micrantha
                     filesystem::build_path(path_, KITCHEN_FOLDER, META_FOLDER, config.name());
 
             if (filesystem::directory_exists(metaDir) != PREP_SUCCESS) {
-                if (filesystem::create_path(metaDir, 0777)) {
+                if (filesystem::create_path(metaDir)) {
                     log::perror(errno);
                     return PREP_FAILURE;
                 }
@@ -419,6 +443,7 @@ namespace micrantha
             FTSENT *parent = nullptr;
             int rval = PREP_SUCCESS;
             char buf[PATH_MAX + 1] = {0};
+            struct stat st, mode;
 
             if (filesystem::directory_exists(path) != PREP_SUCCESS) {
                 log::error(path, " is not a directory");
@@ -434,8 +459,12 @@ namespace micrantha
                 return PREP_FAILURE;
             }
 
+            if (stat(path.c_str(), &mode)) {
+                log::perror("stat");
+                return PREP_FAILURE;
+            }
+
             while ((parent = fts_read(file_system)) != nullptr) {
-                struct stat st = {};
 
                 // get the repo path
                 snprintf(buf, PATH_MAX, "%s%s", path_.c_str(), parent->fts_path + path.length());
@@ -453,7 +482,7 @@ namespace micrantha
                     }
 
                     // doesn't exist, create the repo path directory
-                    if (mkdir(buf, 0777)) {
+                    if (filesystem::create_path(buf, mode.st_mode)) {
                         log::error("Could not create ", buf, " [", strerror(errno), "]");
                         rval = PREP_FAILURE;
                         break;

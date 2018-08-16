@@ -359,8 +359,7 @@ namespace micrantha {
             }
 
             int copy_file(const path &from, const path &to) {
-                struct stat fst{
-                }, tst{};
+                struct stat fst = {}, tst = {};
 
                 if (stat(from.c_str(), &fst)) {
                     log::perror(errno);
@@ -389,11 +388,6 @@ namespace micrantha {
                     return PREP_FAILURE;
                 }
 
-                if (chown(to.c_str(), fst.st_uid, fst.st_gid)) {
-                    log::perror(errno);
-                    return PREP_FAILURE;
-                }
-
                 if (chmod(to.c_str(), fst.st_mode)) {
                     log::perror(errno);
                     return PREP_FAILURE;
@@ -406,16 +400,20 @@ namespace micrantha {
                 FTSENT *parent = nullptr;
                 int rval = PREP_SUCCESS;
                 char buf[PATH_MAX + 1] = {0};
-                struct stat st{
-                };
+                struct stat st = {0}, mode = {0};
 
                 if (directory_exists(from) != PREP_SUCCESS) {
                     log::perror(from, " is not a directory");
                     return PREP_FAILURE;
                 }
 
+                if (stat(from.c_str(), &mode)) {
+                  log::perror("unable to stat ", from);
+                  return PREP_FAILURE;
+                }
+
                 if (directory_exists(to) != PREP_SUCCESS) {
-                    if (create_path(to, 0777)) {
+                    if (create_path(to, mode.st_mode)) {
                         log::perror(errno);
                         return PREP_FAILURE;
                     }
@@ -436,6 +434,7 @@ namespace micrantha {
 
                     // check the install file is a directory
                     if (parent->fts_info == FTS_D) {
+
                         if (stat(buf, &st) == 0) {
                             if (S_ISDIR(st.st_mode)) {
                                 log::trace("directory ", buf, " already exists");
@@ -447,7 +446,7 @@ namespace micrantha {
                         }
 
                         // doesn't exist, create the repo path directory
-                        if (mkdir(buf, 0777)) {
+                        if (create_path(buf, mode.st_mode)) {
                             log::perror("Could not create ", buf);
                             rval = PREP_FAILURE;
                             break;
