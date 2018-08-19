@@ -28,7 +28,7 @@ namespace micrantha {
 
 
             if (repo_.load_plugins(opts) == PREP_FAILURE) {
-                log::error("unable to load plugins");
+                log::debug("unable to load plugins");
                 return PREP_FAILURE;
             }
 

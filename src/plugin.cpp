@@ -91,22 +91,64 @@ namespace micrantha {
         public:
           std::vector<std::string> returns;
 
-          Interpreter(bool verbose = false) : verbose_(verbose) {}
+          Interpreter(bool verbose = false) : verbose_(verbose), failure_(false) {
+            tcgetattr(STDIN_FILENO, &term_);
+          }
+
+          ~Interpreter() {
+            tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_);
+          }
+
+          void reset_term() {
+            tcsetattr(STDIN_FILENO, TCSANOW, &term_);
+          }
 
           /**
            * @return true if line should be output
            */
           int interpret(const std::string &line) {
-            if (is_return_command(line)) {
-              returns.push_back(line.substr(7));
-              return PREP_SUCCESS;
+
+            auto res = on_command(line, "RETURN", [this](const std::string &args) {
+              returns.push_back(args);
+            });
+
+            if (res) {
+              return failure() ? PREP_FAILURE : PREP_SUCCESS;
             }
 
-            if (is_echo_command(line)) {
-              if (io::write_line(STDOUT_FILENO, line.substr(5)) < 0) {
-                return PREP_ERROR;
+            res = on_command(line, "ECHO", [this](const std::string &args) {
+              if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
+                failure_ = true;
               }
-              return PREP_SUCCESS;
+            });
+
+            if (res) {
+              return failure() ? PREP_FAILURE: PREP_SUCCESS;
+            }
+
+            res = on_command(line, "ERROR", [this](const std::string &args) {
+                log::error(args);
+                failure_ = true;
+            });
+
+            if (res) {
+              return PREP_FAILURE;
+            }
+
+            res = on_command(line, "EMIT", [this](const std::string &args) {
+                if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
+                 failure_ = true;
+                }
+
+                struct termios t = term_;
+                t.c_lflag &= ~ECHO;
+                if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
+                 failure_ = true;
+                }
+            });
+
+            if (res) {
+              return failure() ? PREP_FAILURE : PREP_SUCCESS;
             }
 
             if (verbose_) {
@@ -119,17 +161,39 @@ namespace micrantha {
             return PREP_SUCCESS;
           }
 
-        private:
-          bool verbose_;
-
-          // test input for a return command
-          static bool is_return_command(const std::string &line) {
-            return line.length() > 7 && !strcasecmp(line.substr(0, 7).c_str(), "RETURN ");
+          bool failure() const {
+            return failure_;
           }
 
-          // test input for a echo command
-          static bool is_echo_command(const std::string &line) {
-            return line.length() > 5 && !strcasecmp(line.substr(0, 5).c_str(), "ECHO ");
+        private:
+          bool verbose_;
+          bool failure_;
+          struct termios term_;
+
+          struct cmd {
+            std::string name;
+            int args_pos;
+            std::string args;
+            bool valid;
+          };
+
+          static struct cmd parse_command(const std::string &line, const std::string &command) {
+            int pos = command.length();
+            bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
+            auto args = pos < line.length() ? line.substr(pos + 1) : "";
+            return { command, pos, args, valid };
+          }
+
+          bool on_command(const std::string &line, const std::string &command, const std::function<void(const std::string &)> &callback) {
+            auto cmd = parse_command(line, command);
+
+
+            if (!cmd.valid) {
+              return false;
+            }
+
+            callback(cmd.args);
+            return true;
           }
       };
 
@@ -465,6 +529,11 @@ namespace micrantha {
 
         log::trace("executing [", method, "] on plugin [", name_, "]");
 
+        for (auto it = info.begin(); it != info.end(); ++it) {
+          log::trace("param: ", *it);
+        }
+
+
         if (internal::write_header(master, method, info) == PREP_FAILURE) {
           log::perror("write_header");
           if (kill(pid, SIGKILL) < 0) {
@@ -474,7 +543,7 @@ namespace micrantha {
         }
 
         // start the io loop with child
-        for (;;) {
+        while (!interpreter.failure()) {
           fd_set read_fd = {};
           std::string line;
 
@@ -504,7 +573,7 @@ namespace micrantha {
               break;
             }
 
-            if (interpreter.interpret(line) != PREP_SUCCESS) {
+            if (interpreter.interpret(line) == PREP_ERROR) {
               log::perror("interpret");
               break;
             }
@@ -513,6 +582,8 @@ namespace micrantha {
           // if we have something to read on stdin...
           if (FD_ISSET(STDIN_FILENO, &read_fd)) {
             ssize_t n = io::read_line(STDIN_FILENO, line);
+
+            interpreter.reset_term();
 
             if (n <= 0) {
               if (n < 0) {
@@ -541,6 +612,9 @@ namespace micrantha {
         if (WIFEXITED(status)) {
           // convert the exit status to a return value
           int rval = WEXITSTATUS(status);
+          if (rval == 0 && interpreter.failure()) {
+            rval = process::NotAvailable;
+          }
           // typically rval will be the return status of the command the plugin executes, 255 = -1
           rval = rval == 255 ? PREP_ERROR : rval;
           return {rval, interpreter.returns};

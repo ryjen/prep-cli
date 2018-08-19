@@ -50,7 +50,7 @@ namespace micrantha
 
             return initialize_plugins(opts);
         }
-        
+
         int Repository::initialize_plugins(const Options &opts) {
             std::string path = get_plugin_path();
 
@@ -593,9 +593,17 @@ namespace micrantha
             log::info("loading plugins");
 
             for (const auto &plugin : plugins_) {
-                if (plugin->on_load() == process::NotFound) {
+                auto result = plugin->on_load();
+
+                if (result == process::NotFound) {
                     log::error("Plugin '", plugin->name(), "' not available, disabling");
                     plugin->set_enabled(false).save();
+                    continue;
+                }
+
+                if (result == process::NotAvailable) {
+                  log::error("Plugin '", plugin->name(), "' not available, stopping");
+                  return PREP_FAILURE;
                 }
             }
 

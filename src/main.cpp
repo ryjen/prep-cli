@@ -165,7 +165,6 @@ int main(int argc, char *const argv[]) {
     }
 
     if (string::equals(command, "plugins")) {
-
         return prep.plugins(options, argc - optind, &argv[optind]);
     }
 

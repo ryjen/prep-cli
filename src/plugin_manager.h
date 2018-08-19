@@ -25,6 +25,8 @@ namespace micrantha {
 
             int list(const Options &opts) const;
 
+            int update(const std::string &name) const;
+
             // fields
             Repository &repo_;
         };

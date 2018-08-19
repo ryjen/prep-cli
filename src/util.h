@@ -184,6 +184,7 @@ namespace micrantha {
         namespace process {
 
             constexpr static const int NotFound = 127;
+            constexpr static const int NotAvailable = 128;
 
             /**
              * runs a command in a forked process

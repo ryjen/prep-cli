@@ -58,6 +58,10 @@ namespace micrantha {
                 return disable(argv[index]);
             }
 
+            if (string::equals(command, "update")) {
+              return update(index >= argc ? nullptr : argv[index]);
+            }
+
             if (!string::equals(command, "help")) {
                 log::error("Unknown command '", command, "'");
             }
@@ -73,6 +77,7 @@ namespace micrantha {
             io::println(std::setw(12), opts.exe, " plugins remove <name>");
             io::println(std::setw(12), opts.exe, " plugins enable <name>");
             io::println(std::setw(12), opts.exe, " plugins disable <name>");
+            io::println(std::setw(12), opts.exe, " plugins update [name]");
         }
 
         int PluginManager::install(const std::string &path) const {
@@ -140,6 +145,11 @@ namespace micrantha {
                 log::info("Disabled plugin '", name, "'");
             }
             return res;
+        }
+
+        int PluginManager::update(const std::string &name) const {
+          log::error("not implemented");
+          return PREP_FAILURE;
         }
 
         int PluginManager::list(const Options &opts) const {
