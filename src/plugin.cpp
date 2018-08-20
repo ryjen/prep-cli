@@ -96,7 +96,7 @@ namespace micrantha {
         public:
           std::vector<std::string> returns;
 
-          Interpreter(bool verbose = false) : verbose_(verbose), failure_(false) {
+          Interpreter(bool verbose = false) : verbose_(verbose), failure_(false), emitting_(false) {
             tcgetattr(STDIN_FILENO, &term_);
           }
 
@@ -104,8 +104,12 @@ namespace micrantha {
             tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_);
           }
 
-          void reset_term() {
-            tcsetattr(STDIN_FILENO, TCSANOW, &term_);
+          void reset() {
+            if (emitting_) {
+              emitting_ = false;
+              tcsetattr(STDIN_FILENO, TCSANOW, &term_);
+              ::write(STDOUT_FILENO, "\n", 1);
+            }
           }
 
           /**
@@ -132,7 +136,7 @@ namespace micrantha {
             }
 
             res = on_command(line, "ERROR", [this](const std::string &args) {
-                log::error(args);
+              log::error(args);
                 failure_ = true;
             });
 
@@ -141,22 +145,27 @@ namespace micrantha {
             }
 
             res = on_command(line, "EMIT", [this](const std::string &args) {
-                if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
-                 failure_ = true;
-                }
+              emitting_ = true;
 
-                struct termios t = term_;
-                t.c_lflag &= ~ECHO;
-                if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
-                 failure_ = true;
+              if (args.length() > 0) {
+                if (io::write(STDOUT_FILENO, args) < 0) {
+                  failure_ = true;
                 }
+              }
+
+              struct termios t = term_;
+              t.c_lflag &= ~ECHO;
+              if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
+                failure_ = true;
+              }
             });
 
             if (res) {
               return failure() ? PREP_FAILURE : PREP_SUCCESS;
             }
 
-            if (verbose_) {
+            if (verbose_ || emitting_) {
+
               if (io::write_line(STDOUT_FILENO, line) < 0) {
                 return PREP_ERROR;
               }
@@ -170,9 +179,14 @@ namespace micrantha {
             return failure_;
           }
 
+          bool emitting() const {
+            return emitting_;
+          }
+
         private:
           bool verbose_;
           bool failure_;
+          bool emitting_;
           struct termios term_;
 
           struct cmd {
@@ -185,7 +199,7 @@ namespace micrantha {
           static struct cmd parse_command(const std::string &line, const std::string &command) {
             int pos = command.length();
             bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
-            auto args = pos < line.length() ? line.substr(pos + 1) : "";
+            auto args = ++pos < line.length() ? line.substr(pos) : "";
             return { command, pos, args, valid };
           }
 
@@ -534,11 +548,6 @@ namespace micrantha {
 
         log::trace("executing [", method, "] on plugin [", name_, "]");
 
-        for (auto it = info.begin(); it != info.end(); ++it) {
-          log::trace("param: ", *it);
-        }
-
-
         if (internal::write_header(master, method, info) == PREP_FAILURE) {
           log::perror("write_header");
           if (kill(pid, SIGKILL) < 0) {
@@ -588,7 +597,7 @@ namespace micrantha {
           if (FD_ISSET(STDIN_FILENO, &read_fd)) {
             ssize_t n = io::read_line(STDIN_FILENO, line);
 
-            interpreter.reset_term();
+            interpreter.reset();
 
             if (n <= 0) {
               if (n < 0) {

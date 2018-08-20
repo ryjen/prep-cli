@@ -1,26 +1,29 @@
 {
-	"name": "hello_curses",
-	"version": "1.0",
-	"author": {
-		"name": "Ryan Jennings",
-		"email": "ryan@micrantha.com"
-	},
-	"build_system": [
-		"cmake",
-		"make"
-	],
-	"executable": "hello",
-	"dependencies": [
-		{
-            "name": "ncurses",
-			"version": "6.1",
-			"archive": {
-				"location": "ftp://ftp.invisible-island.net/ncurses/ncurses.tar.gz"
-			},
-			"build_system": [
-				"autotools",
-				"make"
-			]	
-        }
-	]
+  "name": "hello_curses",
+  "version": "1.0",
+  "author": {
+    "name": "Ryan Jennings",
+    "email": "ryan@micrantha.com"
+  },
+  "build_system": [
+    "cmake",
+    "make"
+  ],
+  "executable": "hello",
+  "dependencies": [
+    {
+      "name": "ncurses",
+      "version": "6.1",
+      "archive": {
+        "location": "ftp://ftp.invisible-island.net/ncurses/ncurses.tar.gz"
+      },
+      "apt": {
+        "name": "libncurses-dev"
+      },
+      "build_system": [
+        "autotools",
+        "make"
+      ]
+    }
+  ]
 }

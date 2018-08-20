@@ -1,6 +1,4 @@
-
-Prep
-====
+# Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.
 
@@ -8,60 +6,63 @@ In inception style, the core is written in c++, but the majority of the work is 
 
 Its main benefits are:
 
-* Plugin architecture for extendability resolving and building packages.  Plugins can be configured in projects and support user interaction.
+- Plugin architecture for extendability resolving and building packages. Plugins can be configured in projects and support user interaction.
 
-* You don't need a dedicated repository or configuration for packages. Configure your project's dependency to a git repo, archive url or anything that a resolver plugin supports.
+- You don't need a dedicated repository or configuration for packages. Configure your project's dependency to a git repo, archive url or anything that a resolver plugin supports.
 
-* It will work with any package's build system via plugins and or configuration.  Build time and Runtime paths and flags are managed.  
+- It will work with any package's build system via plugins and or configuration. Build time and Runtime paths and flags are managed.
 
-* CMake module integration for use in IDEs (TODO: document)
+- CMake module integration for use in IDEs (TODO: document)
 
 ![Prep Building Itself](prep.gif)
 
-Installing
-==========
+# Installing
 
 #### Debian/Ubuntu
 
 [Download a package from the release section](https://github.com/ryjen/prep/releases/download/v0.1.0/prep-0.1.0.deb) and run `dpkg -i prep-<version>.deb`
 
-#### [Homebrew](https://brew.sh)/[Linuxbrew](https://linuxbrew.sh) 
+#### [Homebrew](https://brew.sh)/[Linuxbrew](https://linuxbrew.sh)
 
 `brew tap ryjen/tap`
 
 `brew install prep`
 
-
-Commands
-========
+# Commands
 
 `prep` or `prep get`
-  - install dependencies into the local repository.
+
+- install dependencies into the local repository.
 
 `prep build`
-  - build current project.
+
+- build current project.
 
 `prep install`
-  - installs the current project in the local repository for execution
-  
+
+- installs the current project in the local repository for execution
+
 `prep build -fv`
-  - rebuild everything including dependencies and be verbose
+
+- rebuild everything including dependencies and be verbose
 
 `prep cleanup`
-  - removes build files and other intermediates
- 
+
+- removes build files and other intermediates
+
 `prep plugins`
-  - shows the help message of the plugin manager
+
+- shows the help message of the plugin manager
 
 `prep test`
-  - tests a project
-  
-NOTE: still in design
-  
-Plugins
-=======
 
-Plugins can be written in **any language that supports stdin/stdout** using the following "crap point oh" version of a specification for communication. 
+- tests a project
+
+NOTE: still in design
+
+# Plugins
+
+Plugins can be written in **any language that supports stdin/stdout** using the following "crap point oh" version of a specification for communication.
 
 The plugins are forked to run in a seperate pseudo terminal, allowing for user interaction should a plugin require it.
 
@@ -72,7 +73,7 @@ When you initialize a repository for the first time, the shared library will be 
 - **archive**: a resolver plugin that downloads and extracts different archived formats
 - **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
 - **cmake**: a build plugin that uses cmake to generate makefiles
-- **make**: a build plugin that executes make on a makefile.  requires install param
+- **make**: a build plugin that executes make on a makefile. requires install param
 - **git**: a resolver plugin that clones a git repository
 - **homebrew**: a resolver plugin that installs packages using homebrew on OSX
 - **apt**: a resolver plugin that installs packages using apt on deb/ubuntu
@@ -81,62 +82,60 @@ When you initialize a repository for the first time, the shared library will be 
 
 `dependency`
 
-  - resolves system packages
+- resolves system packages
 
 `resolver`
 
-  - resolves package files for building
+- resolves package files for building
 
 `configuration`
 
-  - build system plugin for configuring a build
+- build system plugin for configuring a build
 
 `build`
 
-  - build system plugin for compiling
+- build system plugin for compiling
 
 `internal`
 
-  - internal plugins are executed before any other plugin and cannot be specified in configuration.
-
+- internal plugins are executed before any other plugin and cannot be specified in configuration.
 
 ## Plugin Hooks:
 
-When writing a plugin, you have several **hooks** that will be sent over stdin.  Depending on what you need to do you can react to one or more of them.
+When writing a plugin, you have several **hooks** that will be sent over stdin. Depending on what you need to do you can react to one or more of them.
 
 `LOAD`
 
-  - Occurs when a plugin is loaded for custom initialization
+- Occurs when a plugin is loaded for custom initialization
 
 `UNLOAD`
 
-  - Occurs when a plugin is unloaded for custom cleanup
+- Occurs when a plugin is unloaded for custom cleanup
 
 `ADD`
 
-  - Occurs when a dependency wants to be installed.  Only affects plugins of type "resolver".
-  - Parameters: [`package`, `version`]
+- Occurs when a dependency wants to be installed. Only affects plugins of type "resolver".
+- Parameters: [`package`, `version`]
 
 `REMOVE`
 
-  - Occurs when a dependency wants to be removed.  Only affects plugins of type "resolver".
-  - Parameters: [`package`, `version`]
+- Occurs when a dependency wants to be removed. Only affects plugins of type "resolver".
+- Parameters: [`package`, `version`]
 
 `BUILD`
 
-  - Occurs when a package wants to be built. Only affects plugins of type "build" and "configuration".
-  - Parameters: [`package`, `version`, `sourcePath`, `buildPath`, `installPath`, `buildOpts`, `envVar=value...`]
+- Occurs when a package wants to be built. Only affects plugins of type "build" and "configuration".
+- Parameters: [`package`, `version`, `sourcePath`, `buildPath`, `installPath`, `buildOpts`, `envVar=value...`]
 
 `TEST`
 
-  - Occurs when a package wants to be tested. Only affects plugins of type "build".
-  - Parameters: [`package`, `version`, `sourcePath`, `buildPath`, `envVar=value...`]
+- Occurs when a package wants to be tested. Only affects plugins of type "build".
+- Parameters: [`package`, `version`, `sourcePath`, `buildPath`, `envVar=value...`]
 
 `INSTALL`
 
-  - Occurs when a package wants to be installed. Only affects plugins of type "build".
-  - Parameters: [`package`, `version`, `sourcePath`, `buildPath`, `envVar=value...`]
-
+- Occurs when a package wants to be installed. Only affects plugins of type "build".
+- Parameters: [`package`, `version`, `sourcePath`, `buildPath`, `envVar=value...`]
 
 ## Plugin input header:
 
@@ -153,7 +152,6 @@ END\n
 
 A plugin may send information back to prep over stdout:
 
-
 `RETURN`
 
 Specifies one or more return values.
@@ -162,7 +160,6 @@ Specifies one or more return values.
 RETURN <value>\n
 ```
 
-
 `ECHO`
 
 Relays a message to prep, regardless of verbosity level.
@@ -170,7 +167,6 @@ Relays a message to prep, regardless of verbosity level.
 ```
 ECHO <message>\n
 ```
-
 
 Any other **output** by the plugin is forwarded to prep's output when in **verbose mode**.
 
@@ -196,20 +192,19 @@ Plugins that need or want a compiler. The benefits are using libraries (libgit) 
 
 ### Script Plugins
 
-Plugins that are interpreted by the pseudo shell when used.  These are easier to develop with as you can make changes without recompiling.
+Plugins that are interpreted by the pseudo shell when used. These are easier to develop with as you can make changes without recompiling.
 
 ### Distribution
 
 There are also two methods of distributing plugins depending on the systems needs.
 
-1. Compress plugins and embed into the prep binary.  They can be extracted on-demand and as needed.
+1. Compress plugins and embed into the prep binary. They can be extracted on-demand and as needed.
 
 2. Delegate to the distribution method for prep, ie, in debian `dpkg` will install the plugins to the global repository.
 
-Repository Structure
-====================
+# Repository Structure
 
-A repository by default is a `.prep` folder in the current directory.  Similar to npm you can specify a **-g** option to use **/usr/local/share/prep** instead.
+A repository by default is a `.prep` folder in the current directory. Similar to npm you can specify a **-g** option to use **/usr/local/share/prep** instead.
 
 The repository holds all the dependencies and mimics a system install hierarchy.
 
@@ -218,49 +213,58 @@ Dependencies installed via the system package manager will get a reciept in the 
 Under the repository:
 
 `/plugins`
-  - holds all plugins
+
+- holds all plugins
 
 `/kitchen`
-  - holds all file related to builds
+
+- holds all file related to builds
 
 `/kitchen/meta`
-  - holds the version and package information
+
+- holds the version and package information
 
 `/kitchen/install`
-  - holds a directory for each package installation files
+
+- holds a directory for each package installation files
 
 `/kitchen/build`
-  - a separate directory for compiling
 
-Packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep env```  (TODO: Examples and test this more)
+- a separate directory for compiling
 
+Packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep. You can add the repository to your path with `prep env` (TODO: Examples and test this more)
 
-Configuration
-=============
+# Configuration
 
-The configuration was also inspired by npm. A project is simple a **package.json** file containing the json.  The fields are as follows:
+The configuration was also inspired by npm. A project is simple a **package.json** file containing the json. The fields are as follows:
 
 `name`
-  - the name of the project as a string
+
+- the name of the project as a string
 
 `version`
-  - the version of the project as a string
+
+- the version of the project as a string
 
 `build_system`
-  - an array of strings identifying build plugins that define how to make a build.  So if your project uses cmake, you would define **cmake**, then **make**.  the plugins are executed in the order of specified.
+
+- an array of strings identifying build plugins that define how to make a build. So if your project uses cmake, you would define **cmake**, then **make**. the plugins are executed in the order of specified.
 
 `build_options`
-  - an array of strings to pass directly to the build system.  You have the option of using environment variables or compiler switches.
+
+- an array of strings to pass directly to the build system. You have the option of using environment variables or compiler switches.
 
 `executable`
-  - the name of the executable or library to build as a string
+
+- the name of the executable or library to build as a string
 
 `dependencies`
-  - an array of this configuration type defining each dependency.  Dependencies will be resolved using **resolver** plugins in the order specified. Dependencies can also have dependencies. 
+
+- an array of this configuration type defining each dependency. Dependencies will be resolved using **resolver** plugins in the order specified. Dependencies can also have dependencies.
 
 `<plugin>`
-  - A plugin can define its own options to override.  For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
 
+- A plugin can define its own options to override. For example if the **homebrew** plugin has a different name for the dependency you can specify it like:
 
 ```JSON
 "dependencies": [
@@ -274,6 +278,7 @@ The configuration was also inspired by npm. A project is simple a **package.json
 ```
 
 ### Example configuration:
+
 This is what a configuration from another project looks like:
 
 ```JSON
@@ -339,9 +344,8 @@ This is what a configuration from another project looks like:
 }
 ```
 
+# TODO
 
-TODO
-====
 - [ ] ability to distinguish build types for a project (debug/release)
 - [ ] store hash of configs in meta to detect project changes
 - [ ] website/api for plugins and docs
@@ -365,13 +369,14 @@ TODO
 - [ ] make workflow video showing usage with vim
 - [ ] posix complient version? (no pty?)
 - [ ] investigate expanding scope to other languages
+- [ ] use linux namespaces?
+- [ ] use ram disk for plugins? (requires mount namespace)
 
-Building
-========
+# Building
 
 Should be pretty self explanitory!
 
-1. `git submodule update --init --recursive` 
+1. `git submodule update --init --recursive`
 2. `mkdir build; cd build`
 3. `cmake ..`
 4. `make`
@@ -384,10 +389,7 @@ To build a debian package:
 2. run `make install`
 3. run `dpkg-deb -b <srcdir>/package prep-<version>.deb`
 
+# Contributing
 
-Contributing
-============
-
-Create an issue/feature, fork, build, send pull request.  Upon approval add your name to AUTHORS.
+Create an issue/feature, fork, build, send pull request. Upon approval add your name to AUTHORS.
 Also looking for help, send a message.
-
