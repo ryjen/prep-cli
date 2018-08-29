@@ -69,17 +69,13 @@ pkg_search_module(LibArchive REQUIRED libarchive)
 #---------------------------------------------------------------------------------------------------------
 
 if(CODE_COVERAGE)
-  include(CodeCoverage MODULE_CODE_COVERAGE)
+  include(CodeCoverage)
 
-  if (EXISTS MODULE_CODE_COVERAGE)
-    # update CXX flags for coverage
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_COVERAGE}")
+  # update CXX flags for coverage
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_COVERAGE}")
 
-    # create target to run
-	  setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_SOURCE_DIR}/coverage)
-  else()
-    message(WARNING "unable to find code coverage module, did you update git submodules?")
-  endif()
+  # create target to run
+  setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_SOURCE_DIR}/coverage)
 
 endif()
 
