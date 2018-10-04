@@ -337,7 +337,7 @@ TODO
 - [ ] store md5 hash of configs in meta to detect project changes
 - [ ] website/api for plugins and docs
 - [x] move default plugins to dynamically loaded shared library to save memory
-- [ ] more security on plugins (enforce digital signature?, chroot to prep repository?)
+- [ ] more security on plugins (enforce digital signature?, chroot to prep repository? blockchain?)
 - [ ] a way to install new plugins and/or plugin management
 - [x] parse archive versions from filename
 - [x] store config subset of package.json in meta for dependencies for single use commands
@@ -356,6 +356,7 @@ TODO
 - [ ] make workflow video showing usage with vim
 - [ ] posix complient version? (no pty?)
 - [ ] use linux namespaces?
+- [ ] use parallel program/support for faster builds (per depedency?)
 
 Building
 ========
