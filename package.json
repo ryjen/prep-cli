@@ -1,29 +1,29 @@
 {
-	"name": "prep",
-	"version": "1.0",
-	"author": {
-		"name": "Ryan Jennings",
-		"email": "ryan@micrantha.com"
-	},
-	"build_system": [
-		"cmake",
-		"make"
-	],
-	"executable": "prep",
-	"dependencies": [
-		{
-			"archive": {
-				"location": "http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz"
-			},
+  "name": "prep",
+  "version": "1.0",
+  "author": {
+    "name": "Ryan Jennings",
+    "email": "ryan@micrantha.com"
+  },
+  "build_system": [
+    "cmake",
+    "make"
+  ],
+  "executable": "prep",
+  "dependencies": [
+    {
+      "archive": {
+        "location": "http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz"
+      },
       "apt": {
         "name": "libarchive-dev"
       },
-			"build_system": [
-				"autotools",
-				"make"
-			],
-			"name": "libarchive",
-			"version": "3.3.2"
-		}
-	]
+      "build_system": [
+        "autotools",
+        "make"
+      ],
+      "name": "libarchive",
+      "version": "3.3.2"
+    }
+  ]
 }
