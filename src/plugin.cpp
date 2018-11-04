@@ -39,6 +39,8 @@ namespace micrantha {
             return "test";
           case Plugin::Hooks::INSTALL:
             return "install";
+          default:
+            return "unknown";
         }
       }
 
@@ -601,7 +603,7 @@ namespace micrantha {
         }
 
         // wait for the child to exit
-        pid = waitpid(pid, &status, WAIT_MYPGRP|WUNTRACED);
+        pid = waitpid(pid, &status, WUNTRACED);
 
         if (pid == -1) {
           log::perror("error waiting for plugin");

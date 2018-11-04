@@ -4,7 +4,7 @@
 
 #include "vt100.h"
 
-#include <sys/termios.h>
+#include <termios.h>
 #include <unistd.h>
 #include <set>
 #include <sstream>

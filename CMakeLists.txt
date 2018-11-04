@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 # add options for testing
 option(CODE_COVERAGE "Enable code coverage testing." OFF)
 option(MEMORY_CHECK "Enable testing for memory leaks." OFF)
-option(SELF_INSTALL "Don't rely on packaging for plugins." OFF)
 
 # define project name
 project (prep VERSION 0.1.0)
@@ -16,8 +15,8 @@ project (prep VERSION 0.1.0)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # create the package config
-include(CreatePackage)
-create_package(DESCRIPTION "a c/c++ package and project manager")
+include(CreatePackages)
+create_packages(DESCRIPTION "a modular c/c++ dependency manager and build tool")
 
 set(PROJECT_LIBRARY "utensil")
 
@@ -35,17 +34,14 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(LibArchive REQUIRED libarchive)
 
 find_library(LIB_UTIL util)
+find_library(LIB_FTS fts)
 
-if (NOT SELF_INSTALL)
-  find_program(PACKAGER_PROGRAM dpkg-deb)
+if (NOT LIB_FTS) 
+  set(LIB_FTS "")
 endif()
 
-# add target for code coverage
-if(CODE_COVERAGE)
-  include(CodeCoverage)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_COVERAGE}")
-  setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_SOURCE_DIR}/coverage)
-endif()
+# Setup testing
+enable_testing()
 
 # add directories
 add_subdirectory(plugins)
@@ -53,16 +49,6 @@ add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(util)
 add_subdirectory(man)
-
-# Setup testing
-enable_testing()
-
-if (MEMORY_CHECK)
-  include(ValgrindTest)
-  add_valgrind_test(${PROJECT_NAME}-test ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test)
-else ()
-  add_test(${PROJECT_NAME}-test ${PROJECT_BINARY_DIR}/tests/${PROJECT_NAME}-test)
-endif()
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
@@ -78,36 +64,3 @@ endif(DOXYGEN_FOUND)
 install(FILES FindPrep.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake-${CMAKE_VERSION}/Modules)
 
 
-if (PACKAGER_PROGRAM)
-
-  install(DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prep PATTERN "main" PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-
-  ############################################################
-  # Create DEB
-  ############################################################
-
-  # Tell CPack to generate a .deb package
-  set(CPACK_GENERATOR "DEB")
-
-  # Set a Package Maintainer.
-  # This is required
-  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ryan Jennings <ryan@coda.life>")
-
-  set(CPACK_PACKAGE_VENDOR "Micrantha Software Solutions")
-
-  # Set a Package Version
-  set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-
-  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A flexible and modular c/c++ dependency manager and build tool")
-
-  set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
-
-  set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
-
-  set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
-
-  # Include CPack
-  include(CPack)
-
-endif()
