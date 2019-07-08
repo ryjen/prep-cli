@@ -3,7 +3,7 @@
 
 #include <fstream>
 #include <string>
-#include <experimental/optional>
+#include <optional>
 #include <vector>
 #include "json.hpp"
 #include "options.h"
@@ -64,7 +64,7 @@ namespace micrantha
              */
             int dependency_count(const std::string &package_name) const;
 
-            std::experimental::optional<PackageDependency> find_dependency(const std::string &package_name) const;
+            std::optional<PackageDependency> find_dependency(const std::string &package_name) const;
 
            protected:
             /* constructors */

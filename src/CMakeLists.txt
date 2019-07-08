@@ -37,6 +37,8 @@ set(LIBRARY_HEADERS
 #define the library
 add_library(${PROJECT_LIBRARY} ${LIBRARY_FILES} ${LIBRARY_HEADERS})
 
+target_include_directories(${PROJECT_LIBRARY} SYSTEM PUBLIC ${LibArchive_INCLUDE_DIRS})
+
 #---------------------------------------------------------------------------------------------------------
 # prep binary
 

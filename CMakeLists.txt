@@ -15,8 +15,8 @@ project (prep VERSION 0.1.0)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # create the package config
-include(CreatePackage)
-create_package(DESCRIPTION "a c/c++ package and project manager")
+include(CreatePackages)
+create_packages(DESCRIPTION "a c/c++ package and project manager")
 
 set(PROJECT_LIBRARY "utensil")
 

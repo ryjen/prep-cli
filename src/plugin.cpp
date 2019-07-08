@@ -3,7 +3,12 @@
 #include <csignal>
 #include <sstream>
 #include <thread>
+#ifndef __APPLE__
 #include <pty.h>
+#else
+#include <termios.h>
+#include <util.h>
+#endif
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
