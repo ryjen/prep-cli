@@ -196,7 +196,7 @@ Plugins that need or want a compiler. The benefits are using libraries instead o
 
 ### Script Plugins
 
-Plugins that are interpreted when used.  These are easier to develop with as you can make changes without recompiling.
+Plugins that are interpreted by the pseudo shell when used.  These are easier to develop with as you can make changes without recompiling.
 
 ### Distribution
 
