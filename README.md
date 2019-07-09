@@ -204,7 +204,7 @@ There are also two methods of distributing plugins depending on the systems need
 
 1. Compress plugins and embed into the prep binary.  They can be extracted on-demand and as needed.
 
-2. Delegate to the distrobution method for prep, ie, in debian `dpkg` will install the plugins to the global repository.
+2. Delegate to the distribution method for prep, ie, in debian `dpkg` will install the plugins to the global repository.
 
 Repository Structure
 ====================
