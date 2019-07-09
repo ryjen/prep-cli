@@ -4,7 +4,7 @@ Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.
 
-In inception style, the core is written in C++, but the majority of the work is done by plugins in any language (see [prep-plugins](https://github.com/ryjen/prep-plugins), there are go and bash branches).
+In inception style, the core is written in C++, but the majority of the work is done by plugins in any language (see [prep-plugins](https://github.com/ryjen/prep-plugins)).
 
 Its main benefits are:
 
@@ -185,6 +185,26 @@ Plugins should contain a **manifest.json** to describe the type of plugin and ho
     "type": "resolver"
 }
 ```
+
+## Plugin Development
+
+There are currently two types of plugins being developed at [prep-plugins](https://github.com/ryjen/prep-plugins).
+
+### Compiled Plugins
+
+Plugins that need or want a compiler. The benefits are using libraries instead of shell commands (libgit) and perhaps security.
+
+### Script Plugins
+
+Plugins that are interpreted when used.  These are easier to develop with as you can make changes without recompiling.
+
+### Distribution
+
+There are also two methods of distributing plugins depending on the systems needs.
+
+1. Compress plugins and embed into the prep binary.  They can be extracted on-demand and as needed.
+
+2. Delegate to the distrobution method for prep, ie, in debian `dpkg` will install the plugins to the global repository.
 
 Repository Structure
 ====================
