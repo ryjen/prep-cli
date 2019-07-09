@@ -192,7 +192,7 @@ There are currently two types of plugins being developed at [prep-plugins](https
 
 ### Compiled Plugins
 
-Plugins that need or want a compiler. The benefits are using libraries instead of shell commands (libgit) and perhaps security.
+Plugins that need or want a compiler. The benefits are using libraries (libgit) instead of shell commands and perhaps security.
 
 ### Script Plugins
 
