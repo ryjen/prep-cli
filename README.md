@@ -4,20 +4,17 @@ Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.
 
-In inception style, the core is written in C++, but the majority of the work is done by plugins.
+In inception style, the core is written in C++, but the majority of the work is done by plugins in any language (see [prep-plugins](https://github.com/ryjen/prep-plugins), there are go and bash branches).
 
 Its main benefits are:
 
-* Plugin architecture for extendability to resolving and building packages.  Plugins can be configured in projects and support user interaction.
+* Plugin architecture for extendability resolving and building packages.  Plugins can be configured in projects and support user interaction.
 
 * You don't need a dedicated repository or configuration for packages. Configure your project's dependency to a git repo, archive url or anything that a resolver plugin supports.
 
-* It will work with any package's build system via plugins and configuration.  Build time and Runtime paths and flags are managed.  
+* It will work with any package's build system via plugins and or configuration.  Build time and Runtime paths and flags are managed.  
 
-* CMake integration for use in IDEs (TODO: document)
-
-
-I don't really have a lot time to maintain this project (SEE TODO), so I'm releasing to open source in the hopes it will be interesting to others.
+* CMake module integration for use in IDEs (TODO: document)
 
 ![Prep Building Itself](prep.gif)
 
@@ -59,6 +56,8 @@ Commands
 `prep test`
   - tests a project
   
+NOTE: still in design
+  
 Plugins
 =======
 
@@ -66,7 +65,7 @@ Plugins can be written in **any language that supports stdin/stdout** using the 
 
 The plugins are forked to run in a seperate pseudo terminal, allowing for user interaction should a plugin require it.
 
-The default plugins and SDK is written in Go.  They are compiled, compressed, and included in a shared library.  When you initialize a repository for the first time, the shared library will be loaded and the default plugins extracted.
+When you initialize a repository for the first time, the shared library will be loaded and the default plugins extracted.
 
 ### Current default plugins:
 
@@ -152,7 +151,7 @@ END\n
 
 ## Plugin commands:
 
-A plugin may send a command over stdout:
+A plugin may send information back to prep over stdout:
 
 
 `RETURN`
@@ -175,16 +174,6 @@ ECHO <message>\n
 
 Any other **output** by the plugin is forwarded to prep's output when in **verbose mode**.
 
-## Current default plugins:
-
-- **archive**: a resolver plugin that downloads and extracts different archived formats
-- **autotools**: a build plugin that uses a configure script to generate makefiles. requires a configure script
-- **cmake**: a build plugin that uses cmake to generate makefiles
-- **git**: a resolver plugin that clones a git repository
-- **homebrew**: a resolver plugin that installs packages using homebrew on OSX
-- **make**: a build plugin that executes make on a makefile.  requires install param
-- **apt**: a resolver plugin that installs packages using apt on debian/ubuntu
-
 ## Plugin manifest:
 
 Plugins should contain a **manifest.json** to describe the type of plugin and how to run.
@@ -200,7 +189,7 @@ Plugins should contain a **manifest.json** to describe the type of plugin and ho
 Repository Structure
 ====================
 
-A repository by default is a `.prep` folder in the current directory.  Similar to node you can specify a **-g** option to use **/usr/local/share/prep** instead.
+A repository by default is a `.prep` folder in the current directory.  Similar to npm you can specify a **-g** option to use **/usr/local/share/prep** instead.
 
 The repository holds all the dependencies and mimics a system install hierarchy.
 
@@ -223,13 +212,13 @@ Under the repository:
 `/kitchen/build`
   - a separate directory for compiling
 
-packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep env```  (TODO: Clarify, improve and test this more)
+Packages in **/kitchen/install** are symlinked to **bin**, **lib**, **include** (etc) inside the repository and reused by prep.  You can add the repository to your path with ```prep env```  (TODO: Examples and test this more)
 
 
 Configuration
 =============
 
-The configuration was also inspired by node. A project is simple a **package.json** file containing the json.  The fields are as follows:
+The configuration was also inspired by npm. A project is simple a **package.json** file containing the json.  The fields are as follows:
 
 `name`
   - the name of the project as a string
@@ -334,28 +323,27 @@ This is what a configuration from another project looks like:
 TODO
 ====
 - [ ] ability to distinguish build types for a project (debug/release)
-- [ ] store md5 hash of configs in meta to detect project changes
+- [ ] store hash of configs in meta to detect project changes
 - [ ] website/api for plugins and docs
 - [x] move default plugins to dynamically loaded shared library to save memory
-- [ ] more security on plugins (enforce digital signature?, chroot to prep repository?)
-- [ ] a way to install new plugins and/or plugin management
+- [ ] more security on plugins (enforce digital signature?, chroot to prep repository? linux namespaces?)
+- [ ] a way to install new plugins and plugin management
 - [x] parse archive versions from filename
-- [x] store config subset of package.json in meta for dependencies for single use commands
+- [x] store subset of package.json for dependencies in meta for single use commands
 - [x] a way to rebuild a dependency or all dependencies
-- [ ] dependencies will be better as a tree rather than a list
+- [ ] improve dependencies using just a list after config parsing
 - [ ] consider sqlite storage
 - [ ] complete test suite
-- [x] convert plugins to compiled language
-- [x] repository cleanup (builds, old versions, etc)
+- [ ] convert plugins to use libraries instead of shell commands
+- [x] prep repository cleanup (builds, old versions, etc)
 - [ ] clion/intellij plugin
 - [x] CMake integration
 - [ ] ability for plugins to add commands to prep
-- [ ] plugin sdks for different languages
-- [ ] package.json in subdirectory support (recursive)
+- [ ] i18n
+- [ ] package.json in subdirectory support
 - [ ] a strategy to lose dependency on 'prep run' (`prep install system`?)
 - [ ] make workflow video showing usage with vim
 - [ ] posix complient version? (no pty?)
-- [ ] use linux namespaces?
 
 Building
 ========
@@ -380,5 +368,5 @@ Contributing
 ============
 
 Create an issue/feature, fork, build, send pull request.  Upon approval add your name to AUTHORS.
-Also looking for maintainers, start a conversation.
+Also looking for help, send a message.
 
