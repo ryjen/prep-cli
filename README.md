@@ -4,7 +4,7 @@ Prep
 
 Prep is a modular package manager and build tool for c/c++ projects.
 
-In inception style, the core is written in C++, but the majority of the work is done by plugins in any language (see [prep-plugins](https://github.com/ryjen/prep-plugins)).
+In inception style, the core is written in c++, but the majority of the work is done by plugins in any language (see [prep-plugins](https://github.com/ryjen/prep-plugins)).
 
 Its main benefits are:
 
@@ -364,6 +364,7 @@ TODO
 - [ ] a strategy to lose dependency on 'prep run' (`prep install system`?)
 - [ ] make workflow video showing usage with vim
 - [ ] posix complient version? (no pty?)
+- [ ] investigate expanding scope to other languages
 
 Building
 ========
