@@ -1,17 +1,17 @@
 
-#include <fstream>
-#include <csignal>
-#include <sstream>
-#include <thread>
 #include <pty.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <csignal>
+#include <fstream>
+#include <sstream>
+#include <thread>
 #include <vector>
 
 #include "common.h"
-#include "package.h"
 #include "environment.h"
 #include "log.h"
+#include "package.h"
 #include "plugin.h"
 
 namespace micrantha {
@@ -44,10 +44,7 @@ namespace micrantha {
         }
       }
 
-      std::string to_string(Plugin::Types type) {
-        return TYPE_NAMES[static_cast<int>(type)];
-      }
-
+      std::string to_string(Plugin::Types type) { return TYPE_NAMES[static_cast<int>(type)]; }
 
       Plugin::Types to_type(const std::string &type) {
         for (int i = 0; i < sizeof(TYPE_NAMES) / sizeof(TYPE_NAMES[0]); i++) {
@@ -58,9 +55,7 @@ namespace micrantha {
         return Plugin::Types::INTERNAL;
       }
 
-      bool is_valid_type(Plugin::Types type) {
-        return type != Plugin::Types::INTERNAL;
-      }
+      bool is_valid_type(Plugin::Types type) { return type != Plugin::Types::INTERNAL; }
 
       // writes a header to the parent process, resulting as input to child process
       int write_header(int fd, const std::string &method, const std::vector<std::string> &info) {
@@ -85,118 +80,106 @@ namespace micrantha {
         return PREP_SUCCESS;
       }
 
-
       /**
        * A very naive interpreter.  TODO: enlighten
        */
       class Interpreter {
-        public:
-          std::vector<std::string> returns;
+       public:
+        std::vector<std::string> returns;
 
-          Interpreter(bool verbose = false) : verbose_(verbose), failure_(false) {
-            tcgetattr(STDIN_FILENO, &term_);
+        Interpreter(bool verbose = false) : verbose_(verbose), failure_(false) { tcgetattr(STDIN_FILENO, &term_); }
+
+        ~Interpreter() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_); }
+
+        void reset_term() { tcsetattr(STDIN_FILENO, TCSANOW, &term_); }
+
+        /**
+         * @return true if line should be output
+         */
+        int interpret(const std::string &line) {
+          auto res = on_command(line, "RETURN", [this](const std::string &args) { returns.push_back(args); });
+
+          if (res) {
+            return failure() ? PREP_FAILURE : PREP_SUCCESS;
           }
 
-          ~Interpreter() {
-            tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_);
+          res = on_command(line, "ECHO", [this](const std::string &args) {
+            if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
+              failure_ = true;
+            }
+          });
+
+          if (res) {
+            return failure() ? PREP_FAILURE : PREP_SUCCESS;
           }
 
-          void reset_term() {
-            tcsetattr(STDIN_FILENO, TCSANOW, &term_);
+          res = on_command(line, "ERROR", [this](const std::string &args) {
+            log::error(args);
+            failure_ = true;
+          });
+
+          if (res) {
+            return PREP_FAILURE;
           }
 
-          /**
-           * @return true if line should be output
-           */
-          int interpret(const std::string &line) {
-
-            auto res = on_command(line, "RETURN", [this](const std::string &args) {
-              returns.push_back(args);
-            });
-
-            if (res) {
-              return failure() ? PREP_FAILURE : PREP_SUCCESS;
+          res = on_command(line, "EMIT", [this](const std::string &args) {
+            if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
+              failure_ = true;
             }
 
-            res = on_command(line, "ECHO", [this](const std::string &args) {
-              if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
-                failure_ = true;
-              }
-            });
-
-            if (res) {
-              return failure() ? PREP_FAILURE: PREP_SUCCESS;
+            struct termios t = term_;
+            t.c_lflag &= ~ECHO;
+            if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
+              failure_ = true;
             }
+          });
 
-            res = on_command(line, "ERROR", [this](const std::string &args) {
-                log::error(args);
-                failure_ = true;
-            });
+          if (res) {
+            return failure() ? PREP_FAILURE : PREP_SUCCESS;
+          }
 
-            if (res) {
-              return PREP_FAILURE;
+          if (verbose_) {
+            if (io::write_line(STDOUT_FILENO, line) < 0) {
+              return PREP_ERROR;
             }
-
-            res = on_command(line, "EMIT", [this](const std::string &args) {
-                if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
-                 failure_ = true;
-                }
-
-                struct termios t = term_;
-                t.c_lflag &= ~ECHO;
-                if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
-                 failure_ = true;
-                }
-            });
-
-            if (res) {
-              return failure() ? PREP_FAILURE : PREP_SUCCESS;
-            }
-
-            if (verbose_) {
-              if (io::write_line(STDOUT_FILENO, line) < 0) {
-                return PREP_ERROR;
-              }
-              return PREP_SUCCESS;
-            }
-
             return PREP_SUCCESS;
           }
 
-          bool failure() const {
-            return failure_;
+          return PREP_SUCCESS;
+        }
+
+        bool failure() const { return failure_; }
+
+       private:
+        bool verbose_;
+        bool failure_;
+        struct termios term_;
+
+        struct cmd {
+          std::string name;
+          int args_pos;
+          std::string args;
+          bool valid;
+        };
+
+        static struct cmd parse_command(const std::string &line, const std::string &command) {
+          int pos = command.length();
+          bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
+          auto args = pos < line.length() ? line.substr(pos + 1) : "";
+          return {command, pos, args, valid};
+        }
+
+        bool on_command(const std::string &line, const std::string &command,
+                        const std::function<void(const std::string &)> &callback) {
+          auto cmd = parse_command(line, command);
+
+          if (!cmd.valid) {
+            return false;
           }
 
-        private:
-          bool verbose_;
-          bool failure_;
-          struct termios term_;
-
-          struct cmd {
-            std::string name;
-            int args_pos;
-            std::string args;
-            bool valid;
-          };
-
-          static struct cmd parse_command(const std::string &line, const std::string &command) {
-            int pos = command.length();
-            bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
-            auto args = pos < line.length() ? line.substr(pos + 1) : "";
-            return { command, pos, args, valid };
-          }
-
-          bool on_command(const std::string &line, const std::string &command, const std::function<void(const std::string &)> &callback) {
-            auto cmd = parse_command(line, command);
-
-
-            if (!cmd.valid) {
-              return false;
-            }
-
-            callback(cmd.args);
-            return true;
-          }
+          callback(cmd.args);
+          return true;
+        }
       };
 
       std::string get_plugin_string(const std::string &plugin, const std::string &key, const Package &config) {
@@ -216,7 +199,7 @@ namespace micrantha {
 
         return "";
       }
-    }
+    }  // namespace internal
 
     std::ostream &operator<<(std::ostream &out, const Plugin::Result &result) {
       out << result.code;
@@ -227,12 +210,9 @@ namespace micrantha {
       return out;
     }
 
-    Plugin::Plugin(const std::string &name) : name_(name), type_(Types::INTERNAL), enabled_(true) {
-    }
+    Plugin::Plugin(const std::string &name) : name_(name), type_(Types::INTERNAL), enabled_(true) {}
 
-    Plugin::~Plugin() {
-      on_unload();
-    }
+    Plugin::~Plugin() { on_unload(); }
 
     Plugin &Plugin::set_verbose(bool value) {
       verbose_ = value;
@@ -250,7 +230,6 @@ namespace micrantha {
     }
 
     int Plugin::read_config() {
-
       std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
 
       std::ifstream file(manifest);
@@ -304,7 +283,6 @@ namespace micrantha {
     }
 
     int Plugin::save() {
-
       std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
 
       std::ofstream file(manifest);
@@ -328,35 +306,22 @@ namespace micrantha {
       if (executablePath_.empty() && type_ != Types::INTERNAL) {
         log::error("plugin [", name_, "] has no executable");
         return PREP_FAILURE;
-
       }
 
       return PREP_SUCCESS;
     }
 
-    bool Plugin::is_enabled() const {
-      return enabled_;
-    }
+    bool Plugin::is_enabled() const { return enabled_; }
 
-    bool Plugin::is_valid() const {
-      return filesystem::is_file_executable(executablePath_);
-    }
+    bool Plugin::is_valid() const { return filesystem::is_file_executable(executablePath_); }
 
-    std::string Plugin::name() const {
-      return name_;
-    }
+    std::string Plugin::name() const { return name_; }
 
-    Plugin::Types Plugin::type() const {
-      return type_;
-    }
+    Plugin::Types Plugin::type() const { return type_; }
 
-    std::string Plugin::version() const {
-      return version_;
-    }
+    std::string Plugin::version() const { return version_; }
 
-    int Plugin::priority() const {
-      return priority_;
-    }
+    int Plugin::priority() const { return priority_; }
 
     Plugin::Result Plugin::on_load() const {
       if (!is_valid() || !is_enabled()) {
@@ -385,8 +350,7 @@ namespace micrantha {
         return PREP_ERROR;
       }
 
-      std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(),
-        path};
+      std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(), path};
 
       return execute(Hooks::ADD, info);
     }
@@ -418,14 +382,13 @@ namespace micrantha {
         return PREP_ERROR;
       }
 
-      std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(),
-        path};
+      std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(), path};
 
       return execute(Hooks::REMOVE, info);
     }
 
     Plugin::Result Plugin::on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
-        const std::string &installPath) const {
+                                    const std::string &installPath) const {
       if (!is_valid() || !is_enabled()) {
         return PREP_ERROR;
       }
@@ -436,9 +399,8 @@ namespace micrantha {
 
       log::info("building ", color::m(config.name()), " with ", color::c(name()));
 
-      std::vector<std::string> info(
-          {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath,
-          installPath, config.build_options()});
+      std::vector<std::string> info({internal::get_plugin_string(name(), "name", config), config.version(), sourcePath,
+                                     buildPath, installPath, config.build_options()});
 
       auto env = environment::build_env();
 
@@ -447,7 +409,8 @@ namespace micrantha {
       return execute(Hooks::BUILD, info);
     }
 
-    Plugin::Result Plugin::on_test(const Package &config, const std::string &sourcePath, const std::string &buildPath) const {
+    Plugin::Result Plugin::on_test(const Package &config, const std::string &sourcePath,
+                                   const std::string &buildPath) const {
       if (!is_valid() || !is_enabled()) {
         return PREP_ERROR;
       }
@@ -468,7 +431,8 @@ namespace micrantha {
       return execute(Hooks::TEST, info);
     }
 
-    Plugin::Result Plugin::on_install(const Package &config, const std::string &sourcePath, const std::string &buildPath) const {
+    Plugin::Result Plugin::on_install(const Package &config, const std::string &installPath,
+                                      const std::string &buildPath) const {
       if (!is_valid() || !is_enabled()) {
         return PREP_ERROR;
       }
@@ -480,7 +444,7 @@ namespace micrantha {
       log::info("installing ", color::m(config.name()), " with ", color::c(name()));
 
       std::vector<std::string> info(
-          {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath});
+          {internal::get_plugin_string(name(), "name", config), config.version(), installPath, buildPath});
 
       auto env = environment::build_env();
 
@@ -503,7 +467,6 @@ namespace micrantha {
 
       // if we're the child process...
       if (pid == 0) {
-
         // set the current directory to the plugin path
         if (chdir(basePath_.c_str())) {
           log::error("unable to change directory [", basePath_, "]");
@@ -513,9 +476,9 @@ namespace micrantha {
         const char *argv[] = {name_.c_str(), nullptr};
 
         // execute the plugin in this process
-        execvp(executablePath_.c_str(), (char *const *) argv);
+        execvp(executablePath_.c_str(), (char *const *)argv);
 
-        exit(PREP_FAILURE); // exec never returns
+        exit(PREP_FAILURE);  // exec never returns
       } else {
         // otherwise we are the parent process...
         int status = 0;
@@ -534,7 +497,6 @@ namespace micrantha {
         for (auto it = info.begin(); it != info.end(); ++it) {
           log::trace("param: ", *it);
         }
-
 
         if (internal::write_header(master, method, info) == PREP_FAILURE) {
           log::perror("write_header");
@@ -641,5 +603,5 @@ namespace micrantha {
 
       return PREP_FAILURE;
     }
-  }
-}
+  }  // namespace prep
+}  // namespace micrantha

@@ -36,7 +36,7 @@ pkg_search_module(LibArchive REQUIRED libarchive)
 find_library(LIB_UTIL util)
 find_library(LIB_FTS fts)
 
-if (NOT LIB_FTS) 
+if (NOT LIB_FTS)
   set(LIB_FTS "")
 endif()
 
@@ -60,6 +60,8 @@ if(DOXYGEN_FOUND)
     COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
+
+find_path(CMAKE_PATH cmake)
 
 install(FILES FindPrep.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake-${CMAKE_VERSION}/Modules)
 
