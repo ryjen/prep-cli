@@ -27,12 +27,8 @@ set(PROJECT_LIBRARY "utensil")
 # create the package config for this project
 #---------------------------------------------------------------------------------------------------------
 
-include(CreatePackages MODULE_CREATE_PACKAGE)
-if (EXISTS MODULE_CREATE_PACKAGE)
-  create_packages(DESCRIPTION "a flexible and modular c/c++ dependency manager and build tool")
-else()
-  message(WARNING "unable to include create package module, did you update git submodules?")
-endif()
+include(CreatePackages)
+create_packages(DESCRIPTION "a flexible and modular c/c++ dependency manager and build tool")
 
 #---------------------------------------------------------------------------------------------------------
 # Setup testing
