@@ -378,16 +378,26 @@ Should be pretty self explanitory!
 
 1. `git submodule update --init --recursive`
 2. `mkdir build; cd build`
-3. `cmake ..`
+3. `cmake -DCMAKE_INSTALL_PREFIX=XXX -DCMAKE_BUILD_TYPE=Debug ..`
 4. `make`
+
+#### Notes
+
+- If you are debuging plugins, remember that they are updated once on repository initialization. You will have to install them to the global repository, the remove the plugins folder in you local repository.
+
+#### Homebrew
+
+To build and install a debug build for homebrew use an install prefix that points to the Cellar, than link it.
+
+`cmake -DCMAKE_INSTALL_PREFIX=/usr/local/Cellar/prep/0.5.0 -DCMAKE_BUILD_TYPE=Debug`
+
+`brew link prep`
 
 #### Debian/Ubuntu packaging
 
-To build a debian package:
+To build a debian package simply run:
 
-1. define `CMAKE_INSTALL_PREFIX=<srcdir>/package/usr/local` using cmake
-2. run `make install`
-3. run `dpkg-deb -b <srcdir>/package prep-<version>.deb`
+`cpack`
 
 # Contributing
 
