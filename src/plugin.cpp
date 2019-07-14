@@ -93,19 +93,12 @@ namespace micrantha {
        public:
         std::vector<std::string> returns;
 
-<<<<<<< HEAD
         Interpreter(bool verbose = false) : verbose_(verbose), failure_(false), emitting_(false) {
           tcgetattr(STDIN_FILENO, &term_);
         }
-||||||| merged common ancestors
-        Interpreter(bool verbose = false) : verbose_(verbose), failure_(false) { tcgetattr(STDIN_FILENO, &term_); }
-=======
-        Interpreter(bool verbose = false) : verbose_(verbose), failure_(false) { tcgetattr(STDIN_FILENO, &term_); }
->>>>>>> bash
 
         ~Interpreter() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_); }
 
-<<<<<<< HEAD
         void reset() {
           if (emitting_) {
             emitting_ = false;
@@ -113,11 +106,6 @@ namespace micrantha {
             ::write(STDOUT_FILENO, "\n", 1);
           }
         }
-||||||| merged common ancestors
-        void reset_term() { tcsetattr(STDIN_FILENO, TCSANOW, &term_); }
-=======
-        void reset_term() { tcsetattr(STDIN_FILENO, TCSANOW, &term_); }
->>>>>>> bash
 
         /**
          * @return true if line should be output
@@ -144,71 +132,30 @@ namespace micrantha {
             failure_ = true;
           });
 
-<<<<<<< HEAD
-          res = on_command(line, "ERROR", [this](const std::string &args) {
-            log::error(args);
-            failure_ = true;
-          });
-||||||| merged common ancestors
-          res = on_command(line, "ERROR", [this](const std::string &args) {
-            log::error(args);
-            failure_ = true;
-          });
-=======
           if (res) {
-            return PREP_FAILURE;
+            return failure() ? PREP_FAILURE : PREP_SUCCESS;
           }
->>>>>>> bash
 
           res = on_command(line, "EMIT", [this](const std::string &args) {
-            if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
-              failure_ = true;
-            }
+            emitting_ = true;
 
-<<<<<<< HEAD
-            res = on_command(line, "EMIT", [this](const std::string &args) {
-              emitting_ = true;
-
-              if (args.length() > 0) {
-                if (io::write(STDOUT_FILENO, args) < 0) {
-                  failure_ = true;
-                }
-              }
-
-              struct termios t = term_;
-              t.c_lflag &= ~ECHO;
-              if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
+            if (args.length() > 0) {
+              if (io::write(STDOUT_FILENO, args) < 0) {
                 failure_ = true;
               }
-            });
+            }
 
-            if (res) {
-              return failure() ? PREP_FAILURE : PREP_SUCCESS;
-||||||| merged common ancestors
-            res = on_command(line, "EMIT", [this](const std::string &args) {
-                if (io::write_line(STDOUT_FILENO, "  " + args) < 0) {
-                 failure_ = true;
-                }
-
-                struct termios t = term_;
-                t.c_lflag &= ~ECHO;
-                if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
-                 failure_ = true;
-                }
-            });
-
-            if (res) {
-              return failure() ? PREP_FAILURE : PREP_SUCCESS;
-=======
             struct termios t = term_;
             t.c_lflag &= ~ECHO;
             if (tcsetattr(STDIN_FILENO, TCSANOW, &t)) {
               failure_ = true;
->>>>>>> bash
             }
           });
 
-<<<<<<< HEAD
+          if (res) {
+            return failure() ? PREP_FAILURE : PREP_SUCCESS;
+          }
+
           if (verbose_ || emitting_) {
             if (io::write_line(STDOUT_FILENO, line) < 0) {
               return PREP_ERROR;
@@ -219,28 +166,7 @@ namespace micrantha {
           return PREP_SUCCESS;
         }
 
-        bool failure() const {
-          return failure_;
-||||||| merged common ancestors
-          if (verbose_) {
-            if (io::write_line(STDOUT_FILENO, line) < 0) {
-              return PREP_ERROR;
-            }
-            return PREP_SUCCESS;
-          }
-
-          return PREP_SUCCESS;
-        }
-
-        bool failure() const {
-          return failure_;
-=======
-          if (res) {
-            return failure() ? PREP_FAILURE : PREP_SUCCESS;
->>>>>>> bash
-        }
-
-<<<<<<< HEAD
+        bool failure() const { return failure_; }
         bool emitting() const { return emitting_; }
 
        private:
@@ -261,503 +187,441 @@ namespace micrantha {
           bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
           auto args = ++pos < line.length() ? line.substr(pos) : "";
           return {command, pos, args, valid};
-||||||| merged common ancestors
-
-       private:
-        bool verbose_;
-        bool failure_;
-        struct termios term_;
-
-        struct cmd {
-          std::string name;
-          int args_pos;
-          std::string args;
-          bool valid;
-        };
-
-        static struct cmd parse_command(const std::string &line, const std::string &command) {
-          int pos = command.length();
-          bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
-          auto args = pos < line.length() ? line.substr(pos + 1) : "";
-          return {command, pos, args, valid};
-=======
-          if (verbose_) {
-            if (io::write_line(STDOUT_FILENO, line) < 0) {
-              return PREP_ERROR;
-            }
-            return PREP_SUCCESS;
->>>>>>> bash
         }
 
-        return PREP_SUCCESS;
-      }
+        bool on_command(const std::string &line, const std::string &command,
+                        const std::function<void(const std::string &)> &callback) {
+          auto cmd = parse_command(line, command);
 
-      bool
-      failure() const {
-        return failure_;
-      }
+          if (!cmd.valid) {
+            return false;
+          }
 
-     private:
-      bool verbose_;
-      bool failure_;
-      struct termios term_;
+          callback(cmd.args);
+          return true;
+        }
+      };  // namespace internal
 
-      struct cmd {
-        std::string name;
-        int args_pos;
-        std::string args;
-        bool valid;
-      };
+      std::string get_plugin_string(const std::string &plugin, const std::string &key, const Package &config) {
+        auto json = config.get_value(plugin);
 
-      static struct cmd parse_command(const std::string &line, const std::string &command) {
-        int pos = command.length();
-        bool valid = !strcasecmp(line.substr(0, pos).c_str(), command.c_str());
-        auto args = pos < line.length() ? line.substr(pos + 1) : "";
-        return {command, pos, args, valid};
-      }
+        auto value = json[key];
 
-      bool on_command(const std::string &line, const std::string &command,
-                      const std::function<void(const std::string &)> &callback) {
-        auto cmd = parse_command(line, command);
-
-        if (!cmd.valid) {
-          return false;
+        if (value.is_string()) {
+          return value.get<std::string>();
         }
 
-        callback(cmd.args);
-        return true;
+        value = config.get_value(key);
+
+        if (value.is_string()) {
+          return value;
+        }
+
+        return "";
       }
-    };  // namespace internal
+    }  // namespace internal
 
-    std::string get_plugin_string(const std::string &plugin, const std::string &key, const Package &config) {
-      auto json = config.get_value(plugin);
+    std::ostream &operator<<(std::ostream &out, const Plugin::Result &result) {
+      out << result.code;
+      if (!result.values.empty()) {
+        out << ":";
+        std::copy(result.values.begin(), result.values.end(), std::ostream_iterator<std::string>(out, ","));
+      }
+      return out;
+    }
 
-      auto value = json[key];
+    Plugin::Plugin(const std::string &name) : name_(name), type_(Types::INTERNAL), enabled_(true) {}
 
-      if (value.is_string()) {
-        return value.get<std::string>();
+    Plugin::~Plugin() { on_unload(); }
+
+    Plugin &Plugin::set_verbose(bool value) {
+      verbose_ = value;
+      return *this;
+    }
+
+    Plugin &Plugin::set_enabled(bool value) {
+      config_["enabled"] = enabled_ = value;
+      return *this;
+    }
+
+    Plugin &Plugin::set_priority(int value) {
+      config_["priority"] = priority_ = value;
+      return *this;
+    }
+
+    int Plugin::read_config() {
+      std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
+
+      std::ifstream file(manifest);
+
+      if (!file.is_open()) {
+        return PREP_ERROR;
       }
 
-      value = config.get_value(key);
+      std::ostringstream buf;
 
-      if (value.is_string()) {
-        return value;
-      }
+      file >> buf.rdbuf();
 
-      return "";
-    }
-  }  // namespace prep
+      config_ = Package::json_type::parse(buf.str().c_str());
 
-  std::ostream &operator<<(std::ostream &out, const Plugin::Result &result) {
-    out << result.code;
-    if (!result.values.empty()) {
-      out << ":";
-      std::copy(result.values.begin(), result.values.end(), std::ostream_iterator<std::string>(out, ","));
-    }
-    return out;
-  }
-
-  Plugin::Plugin(const std::string &name) : name_(name), type_(Types::INTERNAL), enabled_(true) {}
-
-  Plugin::~Plugin() { on_unload(); }
-
-  Plugin &Plugin::set_verbose(bool value) {
-    verbose_ = value;
-    return *this;
-  }
-
-  Plugin &Plugin::set_enabled(bool value) {
-    config_["enabled"] = enabled_ = value;
-    return *this;
-  }
-
-  Plugin &Plugin::set_priority(int value) {
-    config_["priority"] = priority_ = value;
-    return *this;
-  }
-
-  int Plugin::read_config() {
-    std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
-
-    std::ifstream file(manifest);
-
-    if (!file.is_open()) {
-      return PREP_ERROR;
-    }
-
-    std::ostringstream buf;
-
-    file >> buf.rdbuf();
-
-    config_ = Package::json_type::parse(buf.str().c_str());
-
-    if (config_.empty()) {
-      log::error("invalid configuration for plugin [", name_, "]");
-      return PREP_FAILURE;
-    }
-
-    auto entry = config_["type"];
-
-    if (entry.is_string()) {
-      type_ = internal::to_type(entry.get<std::string>());
-    }
-
-    entry = config_["version"];
-
-    if (entry.is_string()) {
-      version_ = entry.get<std::string>();
-    }
-
-    entry = config_["priority"];
-
-    if (entry.is_number()) {
-      priority_ = entry.get<int>();
-    }
-
-    entry = config_["enabled"];
-
-    if (entry.is_boolean()) {
-      enabled_ = entry.get<bool>();
-    }
-
-    entry = config_["executable"];
-
-    if (entry.is_string()) {
-      executablePath_ = filesystem::build_path(basePath_, entry.get<std::string>());
-    }
-
-    return PREP_SUCCESS;
-  }
-
-  int Plugin::save() {
-    std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
-
-    std::ofstream file(manifest);
-
-    if (!file.is_open()) {
-      return PREP_ERROR;
-    }
-
-    file << config_;
-
-    file.close();
-
-    return PREP_SUCCESS;
-  }
-
-  int Plugin::load(const std::string &path) {
-    basePath_ = path;
-
-    read_config();
-
-    if (executablePath_.empty() && type_ != Types::INTERNAL) {
-      log::error("plugin [", name_, "] has no executable");
-      return PREP_FAILURE;
-    }
-
-    return PREP_SUCCESS;
-  }
-
-  bool Plugin::is_enabled() const { return enabled_; }
-
-  bool Plugin::is_valid() const { return filesystem::is_file_executable(executablePath_); }
-
-  std::string Plugin::name() const { return name_; }
-
-  Plugin::Types Plugin::type() const { return type_; }
-
-  std::string Plugin::version() const { return version_; }
-
-  int Plugin::priority() const { return priority_; }
-
-  Plugin::Result Plugin::on_load() const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_FAILURE;
-    }
-
-    log::debug("loading ", color::m(name()), " [", color::y(version()), "]");
-
-    return execute(Hooks::LOAD);
-  }
-
-  Plugin::Result Plugin::on_unload() const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_FAILURE;
-    }
-
-    return execute(Hooks::UNLOAD);
-  }
-
-  Plugin::Result Plugin::on_add(const Package &config, const std::string &path) const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_ERROR;
-    }
-
-    if (type_ != Types::DEPENDENCY) {
-      return PREP_ERROR;
-    }
-
-    std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(), path};
-
-    return execute(Hooks::ADD, info);
-  }
-
-  Plugin::Result Plugin::on_resolve(const Package &config, const std::string &sourcePath) const {
-    return on_resolve(internal::get_plugin_string(name(), "location", config), sourcePath);
-  }
-
-  Plugin::Result Plugin::on_resolve(const std::string &location, const std::string &sourcePath) const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_ERROR;
-    }
-
-    if (type_ != Types::RESOLVER) {
-      return PREP_ERROR;
-    }
-
-    std::vector<std::string> info = {sourcePath, location};
-
-    return execute(Hooks::RESOLVE, info);
-  }
-
-  Plugin::Result Plugin::on_remove(const Package &config, const std::string &path) const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_ERROR;
-    }
-
-    if (type_ != Types::DEPENDENCY) {
-      return PREP_ERROR;
-    }
-
-    std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(), path};
-
-    return execute(Hooks::REMOVE, info);
-  }
-
-  Plugin::Result Plugin::on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
-                                  const std::string &installPath) const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_ERROR;
-    }
-
-    if (type_ != Types::BUILD && type_ != Types::CONFIGURATION) {
-      return PREP_ERROR;
-    }
-
-    log::info("building ", color::m(config.name()), " with ", color::c(name()));
-
-    std::vector<std::string> info({internal::get_plugin_string(name(), "name", config), config.version(), sourcePath,
-                                   buildPath, installPath, config.build_options()});
-
-    auto env = environment::build_env();
-
-    info.insert(info.end(), env.begin(), env.end());
-
-    return execute(Hooks::BUILD, info);
-  }
-
-  Plugin::Result Plugin::on_test(const Package &config, const std::string &sourcePath,
-                                 const std::string &buildPath) const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_ERROR;
-    }
-
-    if (type_ != Types::BUILD) {
-      return PREP_ERROR;
-    }
-
-    log::info("testing ", color::m(config.name()), " with ", color::c(name()));
-
-    std::vector<std::string> info(
-        {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath});
-
-    auto env = environment::build_env();
-
-    info.insert(info.end(), env.begin(), env.end());
-
-    return execute(Hooks::TEST, info);
-  }
-
-  Plugin::Result Plugin::on_install(const Package &config, const std::string &installPath,
-                                    const std::string &buildPath) const {
-    if (!is_valid() || !is_enabled()) {
-      return PREP_ERROR;
-    }
-
-    if (type_ != Types::BUILD) {
-      return PREP_ERROR;
-    }
-
-    log::info("installing ", color::m(config.name()), " with ", color::c(name()));
-
-    std::vector<std::string> info(
-        {internal::get_plugin_string(name(), "name", config), config.version(), installPath, buildPath});
-
-    auto env = environment::build_env();
-
-    info.insert(info.end(), env.begin(), env.end());
-
-    return execute(Hooks::INSTALL, info);
-  }
-
-  Plugin::Result Plugin::execute(const Hooks &hook, const std::vector<std::string> &info) const {
-    int master = 0;
-
-    // fork a psuedo terminal
-    pid_t pid = forkpty(&master, nullptr, nullptr, nullptr);
-
-    if (pid < 0) {
-      // respond to error
-      log::perror("forkpty");
-      return PREP_ERROR;
-    }
-
-    // if we're the child process...
-    if (pid == 0) {
-      // set the current directory to the plugin path
-      if (chdir(basePath_.c_str())) {
-        log::error("unable to change directory [", basePath_, "]");
+      if (config_.empty()) {
+        log::error("invalid configuration for plugin [", name_, "]");
         return PREP_FAILURE;
       }
 
-      const char *argv[] = {name_.c_str(), nullptr};
+      auto entry = config_["type"];
 
-      // execute the plugin in this process
-      execvp(executablePath_.c_str(), (char *const *)argv);
-
-      exit(PREP_FAILURE);  // exec never returns
-    } else {
-      // otherwise we are the parent process...
-      int status = 0;
-      internal::Interpreter interpreter(verbose_);
-      struct termios tios = {};
-
-      // set some terminal flags to remove local echo
-      tcgetattr(master, &tios);
-      tios.c_lflag &= ~(ECHO | ECHONL | ECHOCTL);
-      tcsetattr(master, TCSAFLUSH, &tios);
-
-      auto method = internal::to_string(hook);
-
-      log::trace("executing [", method, "] on plugin [", name_, "]");
-
-<<<<<<< HEAD
-||||||| merged common ancestors
-      for (auto it = info.begin(); it != info.end(); ++it) {
-        log::trace("param: ", *it);
+      if (entry.is_string()) {
+        type_ = internal::to_type(entry.get<std::string>());
       }
 
+      entry = config_["version"];
 
-=======
+      if (entry.is_string()) {
+        version_ = entry.get<std::string>();
+      }
+
+      entry = config_["priority"];
+
+      if (entry.is_number()) {
+        priority_ = entry.get<int>();
+      }
+
+      entry = config_["enabled"];
+
+      if (entry.is_boolean()) {
+        enabled_ = entry.get<bool>();
+      }
+
+      entry = config_["executable"];
+
+      if (entry.is_string()) {
+        executablePath_ = filesystem::build_path(basePath_, entry.get<std::string>());
+      }
+
+      return PREP_SUCCESS;
+    }
+
+    int Plugin::save() {
+      std::string manifest = filesystem::build_path(basePath_, MANIFEST_FILE);
+
+      std::ofstream file(manifest);
+
+      if (!file.is_open()) {
+        return PREP_ERROR;
+      }
+
+      file << config_;
+
+      file.close();
+
+      return PREP_SUCCESS;
+    }
+
+    int Plugin::load(const std::string &path) {
+      basePath_ = path;
+
+      read_config();
+
+      if (executablePath_.empty() && type_ != Types::INTERNAL) {
+        log::error("plugin [", name_, "] has no executable");
+        return PREP_FAILURE;
+      }
+
+      return PREP_SUCCESS;
+    }
+
+    bool Plugin::is_enabled() const { return enabled_; }
+
+    bool Plugin::is_valid() const { return filesystem::is_file_executable(executablePath_); }
+
+    std::string Plugin::name() const { return name_; }
+
+    Plugin::Types Plugin::type() const { return type_; }
+
+    std::string Plugin::version() const { return version_; }
+
+    int Plugin::priority() const { return priority_; }
+
+    Plugin::Result Plugin::on_load() const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_FAILURE;
+      }
+
+      log::debug("loading ", color::m(name()), " [", color::y(version()), "]");
+
+      return execute(Hooks::LOAD);
+    }
+
+    Plugin::Result Plugin::on_unload() const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_FAILURE;
+      }
+
+      return execute(Hooks::UNLOAD);
+    }
+
+    Plugin::Result Plugin::on_add(const Package &config, const std::string &path) const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_ERROR;
+      }
+
+      if (type_ != Types::DEPENDENCY) {
+        return PREP_ERROR;
+      }
+
+      std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(), path};
+
+      return execute(Hooks::ADD, info);
+    }
+
+    Plugin::Result Plugin::on_resolve(const Package &config, const std::string &sourcePath) const {
+      return on_resolve(internal::get_plugin_string(name(), "location", config), sourcePath);
+    }
+
+    Plugin::Result Plugin::on_resolve(const std::string &location, const std::string &sourcePath) const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_ERROR;
+      }
+
+      if (type_ != Types::RESOLVER) {
+        return PREP_ERROR;
+      }
+
+      std::vector<std::string> info = {sourcePath, location};
+
+      return execute(Hooks::RESOLVE, info);
+    }
+
+    Plugin::Result Plugin::on_remove(const Package &config, const std::string &path) const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_ERROR;
+      }
+
+      if (type_ != Types::DEPENDENCY) {
+        return PREP_ERROR;
+      }
+
+      std::vector<std::string> info = {internal::get_plugin_string(name(), "name", config), config.version(), path};
+
+      return execute(Hooks::REMOVE, info);
+    }
+
+    Plugin::Result Plugin::on_build(const Package &config, const std::string &sourcePath, const std::string &buildPath,
+                                    const std::string &installPath) const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_ERROR;
+      }
+
+      if (type_ != Types::BUILD && type_ != Types::CONFIGURATION) {
+        return PREP_ERROR;
+      }
+
+      log::info("building ", color::m(config.name()), " with ", color::c(name()));
+
+      std::vector<std::string> info({internal::get_plugin_string(name(), "name", config), config.version(), sourcePath,
+                                     buildPath, installPath, config.build_options()});
+
+      auto env = environment::build_env();
+
+      info.insert(info.end(), env.begin(), env.end());
+
+      return execute(Hooks::BUILD, info);
+    }
+
+    Plugin::Result Plugin::on_test(const Package &config, const std::string &sourcePath,
+                                   const std::string &buildPath) const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_ERROR;
+      }
+
+      if (type_ != Types::BUILD) {
+        return PREP_ERROR;
+      }
+
+      log::info("testing ", color::m(config.name()), " with ", color::c(name()));
+
+      std::vector<std::string> info(
+          {internal::get_plugin_string(name(), "name", config), config.version(), sourcePath, buildPath});
+
+      auto env = environment::build_env();
+
+      info.insert(info.end(), env.begin(), env.end());
+
+      return execute(Hooks::TEST, info);
+    }
+
+    Plugin::Result Plugin::on_install(const Package &config, const std::string &installPath,
+                                      const std::string &buildPath) const {
+      if (!is_valid() || !is_enabled()) {
+        return PREP_ERROR;
+      }
+
+      if (type_ != Types::BUILD) {
+        return PREP_ERROR;
+      }
+
+      log::info("installing ", color::m(config.name()), " with ", color::c(name()));
+
+      std::vector<std::string> info(
+          {internal::get_plugin_string(name(), "name", config), config.version(), installPath, buildPath});
+
+      auto env = environment::build_env();
+
+      info.insert(info.end(), env.begin(), env.end());
+
+      return execute(Hooks::INSTALL, info);
+    }
+
+    Plugin::Result Plugin::execute(const Hooks &hook, const std::vector<std::string> &info) const {
+      int master = 0;
+
+      // fork a psuedo terminal
+      pid_t pid = forkpty(&master, nullptr, nullptr, nullptr);
+
+      if (pid < 0) {
+        // respond to error
+        log::perror("forkpty");
+        return PREP_ERROR;
+      }
+
+      // if we're the child process...
+      if (pid == 0) {
+        // set the current directory to the plugin path
+        if (chdir(basePath_.c_str())) {
+          log::error("unable to change directory [", basePath_, "]");
+          return PREP_FAILURE;
+        }
+
+        const char *argv[] = {name_.c_str(), nullptr};
+
+        // execute the plugin in this process
+        execvp(executablePath_.c_str(), (char *const *)argv);
+
+        exit(PREP_FAILURE);  // exec never returns
+      } else {
+        // otherwise we are the parent process...
+        int status = 0;
+        internal::Interpreter interpreter(verbose_);
+        struct termios tios = {};
+
+        // set some terminal flags to remove local echo
+        tcgetattr(master, &tios);
+        tios.c_lflag &= ~(ECHO | ECHONL | ECHOCTL);
+        tcsetattr(master, TCSAFLUSH, &tios);
+
+        auto method = internal::to_string(hook);
+
+        log::trace("executing [", method, "] on plugin [", name_, "]");
+
         for (auto it = info.begin(); it != info.end(); ++it) {
           log::trace("param: ", *it);
         }
 
->>>>>>> bash
-      if (internal::write_header(master, method, info) == PREP_FAILURE) {
-        log::perror("write_header");
-        if (kill(pid, SIGKILL) < 0) {
-          log::perror("kill");
-        }
-        return PREP_ERROR;
-      }
-
-      // start the io loop with child
-      while (!interpreter.failure()) {
-        fd_set read_fd = {};
-        std::string line;
-
-        FD_ZERO(&read_fd);
-
-        FD_SET(master, &read_fd);
-        FD_SET(STDIN_FILENO, &read_fd);
-
-        // wait for something to happen
-        if (select(master + 1, &read_fd, nullptr, nullptr, nullptr) < 0) {
-          if (errno == EINTR) {
-            continue;
+        if (internal::write_header(master, method, info) == PREP_FAILURE) {
+          log::perror("write_header");
+          if (kill(pid, SIGKILL) < 0) {
+            log::perror("kill");
           }
-          log::perror("select");
-          break;
+          return PREP_ERROR;
         }
 
-        // if we have something to read from child...
-        if (FD_ISSET(master, &read_fd)) {
-          // read a line
-          ssize_t n = io::read_line(master, line);
+        // start the io loop with child
+        while (!interpreter.failure()) {
+          fd_set read_fd = {};
+          std::string line;
 
-          if (n <= 0) {
-            if (n < 0 && errno != EIO) {
-              log::perror("read_line");
+          FD_ZERO(&read_fd);
+
+          FD_SET(master, &read_fd);
+          FD_SET(STDIN_FILENO, &read_fd);
+
+          // wait for something to happen
+          if (select(master + 1, &read_fd, nullptr, nullptr, nullptr) < 0) {
+            if (errno == EINTR) {
+              continue;
             }
+            log::perror("select");
             break;
           }
 
-          if (interpreter.interpret(line) == PREP_ERROR) {
-            log::perror("interpret");
-            break;
-          }
-        }
+          // if we have something to read from child...
+          if (FD_ISSET(master, &read_fd)) {
+            // read a line
+            ssize_t n = io::read_line(master, line);
 
-        // if we have something to read on stdin...
-        if (FD_ISSET(STDIN_FILENO, &read_fd)) {
-          ssize_t n = io::read_line(STDIN_FILENO, line);
-
-          interpreter.reset();
-
-          if (n <= 0) {
-            if (n < 0) {
-              log::perror("read_line");
+            if (n <= 0) {
+              if (n < 0 && errno != EIO) {
+                log::perror("read_line");
+              }
+              break;
             }
-            break;
+
+            if (interpreter.interpret(line) == PREP_ERROR) {
+              log::perror("interpret");
+              break;
+            }
           }
 
-          // send it to the child
-          if (io::write_line(master, line) < 0) {
-            log::perror("write_line");
-            break;
+          // if we have something to read on stdin...
+          if (FD_ISSET(STDIN_FILENO, &read_fd)) {
+            ssize_t n = io::read_line(STDIN_FILENO, line);
+
+            interpreter.reset();
+
+            if (n <= 0) {
+              if (n < 0) {
+                log::perror("read_line");
+              }
+              break;
+            }
+
+            // send it to the child
+            if (io::write_line(master, line) < 0) {
+              log::perror("write_line");
+              break;
+            }
           }
         }
-      }
 
-      // wait for the child to exit
-      pid = waitpid(pid, &status, WUNTRACED);
+        // wait for the child to exit
+        pid = waitpid(pid, &status, WUNTRACED);
 
-      if (pid == -1) {
-        log::perror("error waiting for plugin");
-        return PREP_FAILURE;
-      }
-
-      // check exit status of child
-      if (WIFEXITED(status)) {
-        // convert the exit status to a return value
-        int rval = WEXITSTATUS(status);
-        if (rval == 0 && interpreter.failure()) {
-          rval = process::NotAvailable;
+        if (pid == -1) {
+          log::perror("error waiting for plugin");
+          return PREP_FAILURE;
         }
-        // typically rval will be the return status of the command the plugin executes, 255 = -1
-        rval = rval == 255 ? PREP_ERROR : rval;
-        return {rval, interpreter.returns};
-      } else if (WIFSIGNALED(status)) {
-        int sig = WTERMSIG(status);
 
-        // log signals
-        log::error(name(), " terminated signal ", sig);
+        // check exit status of child
+        if (WIFEXITED(status)) {
+          // convert the exit status to a return value
+          int rval = WEXITSTATUS(status);
+          if (rval == 0 && interpreter.failure()) {
+            rval = process::NotAvailable;
+          }
+          // typically rval will be the return status of the command the plugin executes, 255 = -1
+          rval = rval == 255 ? PREP_ERROR : rval;
+          return {rval, interpreter.returns};
+        } else if (WIFSIGNALED(status)) {
+          int sig = WTERMSIG(status);
 
-        // and core dump
-        if (WCOREDUMP(status)) {
-          log::error(name(), " produced core dump");
+          // log signals
+          log::error(name(), " terminated signal ", sig);
+
+          // and core dump
+          if (WCOREDUMP(status)) {
+            log::error(name(), " produced core dump");
+          }
+        } else if (WIFSTOPPED(status)) {
+          int sig = WSTOPSIG(status);
+
+          log::error(name(), " stopped signal ", sig);
+        } else {
+          log::error(name(), " did not exit cleanly");
         }
-      } else if (WIFSTOPPED(status)) {
-        int sig = WSTOPSIG(status);
-
-        log::error(name(), " stopped signal ", sig);
-      } else {
-        log::error(name(), " did not exit cleanly");
       }
+
+      return PREP_FAILURE;
     }
-
-    return PREP_FAILURE;
-  }
-}  // namespace micrantha
+  }  // namespace prep
 }  // namespace micrantha
