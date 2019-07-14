@@ -50,12 +50,11 @@ namespace micrantha
         }
 
         Decompressor::Decompressor(const std::string &path, const std::string &topath)
-            : from_(path.c_str()), size_(10240), type_(FILE), outPath_(topath), in_(nullptr), out_(nullptr)
+            : from_(strdup(path.c_str())), size_(10240), type_(FILE), outPath_(topath), in_(nullptr), out_(nullptr)
         {
         }
 
-        Decompressor::~Decompressor()
-        {
+        Decompressor::~Decompressor() {
             cleanup();
         }
 
@@ -77,6 +76,11 @@ namespace micrantha
                 archive_write_free(out_);
 #endif
                 out_ = nullptr;
+            }
+
+            if (type_ == FILE && from_) {
+              free(const_cast<void*>(from_));
+              from_ = nullptr;
             }
         }
         int Decompressor::decompress()

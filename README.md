@@ -350,8 +350,8 @@ This is what a configuration from another project looks like:
 - [ ] store hash of configs in meta to detect project changes
 - [ ] website/api for plugins and docs
 - [x] move default plugins to dynamically loaded shared library to save memory
-- [ ] more security on plugins (enforce digital signature?, chroot to prep repository? linux namespaces?)
-- [ ] a way to install new plugins and plugin management
+- [ ] more security on plugins (enforce digital signature?, chroot to prep repository? linux namespaces? blockchain?)
+- [ ] a way to install new plugins and/or plugin management
 - [x] parse archive versions from filename
 - [x] store subset of package.json for dependencies in meta for single use commands
 - [x] a way to rebuild a dependency or all dependencies
@@ -371,6 +371,7 @@ This is what a configuration from another project looks like:
 - [ ] investigate expanding scope to other languages
 - [ ] use linux namespaces?
 - [ ] use ram disk for plugins? (requires mount namespace)
+- [ ] use parallel program/support for faster builds (per depedency?)
 
 # Building
 

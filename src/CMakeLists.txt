@@ -55,7 +55,7 @@ target_include_directories(${PROJECT_LIBRARY} SYSTEM PUBLIC ${LibArchive_INCLUDE
 add_executable(${PROJECT_NAME} main.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # link libraries to the executable
-target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS} ${CMAKE_DL_LIBS} ${LIB_UTIL})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY} ${LibArchive_LDFLAGS} ${CMAKE_DL_LIBS} ${LIB_UTIL} ${LIB_FTS})
 
 # add include directories
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LibArchive_INCLUDE_DIRS})

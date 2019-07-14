@@ -59,23 +59,15 @@ find_package(PkgConfig REQUIRED)
 # find a libarchive.
 pkg_search_module(LibArchive REQUIRED libarchive)
 
+find_library(LIB_UTIL util)
+find_library(LIB_FTS fts)
 
-#---------------------------------------------------------------------------------------------------------
-# add target for code coverage if specified
-#---------------------------------------------------------------------------------------------------------
+find_program(PACKAGER_PROGRAM dpkg-deb)
 
-if(CODE_COVERAGE)
-  include(CodeCoverage)
-
-  # update CXX flags for coverage
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_COVERAGE}")
-
-  # create target to run
-  setup_target_for_coverage(${PROJECT_NAME}-coverage ${PROJECT_SOURCE_DIR}/coverage)
-
+if (NOT LIB_FTS)
+  set(LIB_FTS "")
 endif()
 
-#---------------------------------------------------------------------------------------------------------
 # add directories
 #---------------------------------------------------------------------------------------------------------
 
@@ -90,6 +82,9 @@ add_subdirectory(man)
 #---------------------------------------------------------------------------------------------------------
 
 find_package(Doxygen QUIET)
+
+# add a target to generate API documentation with Doxygen
+find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
 
@@ -106,9 +101,17 @@ else()
 
 endif()
 
+if (PACKAGER_PROGRAM)
+
+  install(DIRECTORY ${CMAKE_BINARY_DIR}/gen/plugins DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prep PATTERN "main" PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+endif()
+
 #---------------------------------------------------------------------------------------------------------
 # install the project cmake module for the current cmake version
 #---------------------------------------------------------------------------------------------------------
+
+find_path(CMAKE_PATH cmake)
 
 install(FILES FindPrep.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake-${CMAKE_VERSION}/Modules)
 
@@ -121,7 +124,7 @@ set(CPACK_GENERATOR "DEB")
 
 # Set a Package Maintainer.
 # This is required
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ryan Jennings <ryan@coda.life>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ryan Jennings <ryan@micrantha.com>")
 
 set(CPACK_PACKAGE_VENDOR "Micrantha Software Solutions")
 

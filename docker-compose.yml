@@ -1,0 +1,19 @@
+version: '2'
+services:
+  test:
+    image: prep_test
+    build:
+      context: .
+      args:
+          CMAKE_DEFINES: -DCMAKE_BUILD_TYPE=Release -DENABLE_MEMCHECK=ON -DCMAKE_CXX_COMPILER=g++
+    privileged: true
+    working_dir: /usr/src/build
+    command: make test ARGS=-V
+  coverage:
+    image: prep_coverage
+    privileged: true
+    build:
+      context: .
+      args:
+          CMAKE_DEFINES: -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DCMAKE_CXX_COMPILER=g++
+    command: make coverage ARGS=-V
